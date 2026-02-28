@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="420" viewBox="0 0 1600 420" role="img" aria-labelledby="title desc">
+  <title id="title">YouTube Intelligence Platform</title>
+  <desc id="desc">Watch less. Know more. Don't miss what matters.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0b1220" />
+      <stop offset="60%" stop-color="#11305f" />
+      <stop offset="100%" stop-color="#0f6a6e" />
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#f97316" />
+      <stop offset="100%" stop-color="#f43f5e" />
+    </linearGradient>
+  </defs>
+
+  <rect x="0" y="0" width="1600" height="420" fill="url(#bg)" rx="18" />
+  <circle cx="1360" cy="-20" r="260" fill="#ffffff" opacity="0.06" />
+  <circle cx="1465" cy="360" r="200" fill="#ffffff" opacity="0.04" />
+  <rect x="72" y="74" width="10" height="272" fill="url(#accent)" rx="5" />
+
+  <text x="112" y="128" fill="#9fc5ff" font-family="Segoe UI, Arial, sans-serif" font-size="28" font-weight="600" letter-spacing="2">
+    YOUTUBE INTELLIGENCE PLATFORM
+  </text>
+  <text x="112" y="202" fill="#ffffff" font-family="Segoe UI, Arial, sans-serif" font-size="60" font-weight="800">
+    Watch less. Know more.
+  </text>
+  <text x="112" y="262" fill="#ffffff" font-family="Segoe UI, Arial, sans-serif" font-size="60" font-weight="800">
+    Don't miss what matters.
+  </text>
+  <text x="112" y="316" fill="#dbeafe" font-family="Segoe UI, Arial, sans-serif" font-size="26" font-weight="500">
+    Turn the video firehose into structured text intelligence you can search, rank, and automate.
+  </text>
+
+  <rect x="1110" y="80" width="390" height="238" rx="16" fill="#0b1220" opacity="0.55" stroke="#7dd3fc" stroke-opacity="0.45" />
+  <text x="1140" y="134" fill="#c7f0ff" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="700">Core Outcomes</text>
+  <text x="1140" y="176" fill="#ffffff" font-family="Segoe UI, Arial, sans-serif" font-size="19">- Searchable transcripts</text>
+  <text x="1140" y="208" fill="#ffffff" font-family="Segoe UI, Arial, sans-serif" font-size="19">- Prioritized watchlists</text>
+  <text x="1140" y="240" fill="#ffffff" font-family="Segoe UI, Arial, sans-serif" font-size="19">- Grounded Q and A</text>
+  <text x="1140" y="272" fill="#ffffff" font-family="Segoe UI, Arial, sans-serif" font-size="19">- CLI and SDK automation</text>
+</svg>

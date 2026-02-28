@@ -1,15 +1,27 @@
-# YouTube Intelligence Platform
+<p align="center">
+  <img src="docs/assets/banner.svg" alt="YouTube Intelligence Platform banner" />
+</p>
 
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Node](https://img.shields.io/badge/node-%3E%3D20-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
-[![Package manager: pnpm](https://img.shields.io/badge/pnpm-9-orange?logo=pnpm&logoColor=white)](https://pnpm.io/)
-[![TypeScript](https://img.shields.io/badge/typed-TypeScript-3178c6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+<h1 align="center">YouTube Intelligence Platform</h1>
 
-<h2 align="center">Watch less. Know more. Don't miss what matters.</h2>
+<h2 align="center"><strong>Watch less. Know more. Don't miss what matters.</strong></h2>
 
 <p align="center">
-Turn the YouTube firehose into structured intelligence you can search, rank,
-and automate.
+  Turn the YouTube firehose into structured intelligence you can search, rank, and automate.
+</p>
+
+<p align="center">
+  <a href="#quickstart-tldr"><strong>Quickstart</strong></a> ·
+  <a href="#product-preview"><strong>Preview</strong></a> ·
+  <a href="#documentation-map"><strong>Docs</strong></a> ·
+  <a href="#connect-and-support"><strong>Support</strong></a>
+</p>
+
+<p align="center">
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-blue.svg"></a>
+  <a href="https://nodejs.org/"><img alt="Node" src="https://img.shields.io/badge/node-%3E%3D20-339933?logo=node.js&logoColor=white"></a>
+  <a href="https://pnpm.io/"><img alt="Package manager: pnpm" src="https://img.shields.io/badge/pnpm-9-orange?logo=pnpm&logoColor=white"></a>
+  <a href="https://www.typescriptlang.org/"><img alt="TypeScript" src="https://img.shields.io/badge/typed-TypeScript-3178c6?logo=typescript&logoColor=white"></a>
 </p>
 
 ---
