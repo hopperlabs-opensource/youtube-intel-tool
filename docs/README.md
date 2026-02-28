@@ -6,15 +6,20 @@ Last updated: 2026-02-28
 ## TL;DR
 - This is the canonical docs directory map.
 - For web docs, open `https://hopperlabs-opensource.github.io/youtube-intel-tool/`.
-- For local preview, run `pnpm docs:requirements` and `pnpm docs:serve`.
+- For local preview, run `pnpm docs:serve` (it bootstraps a local venv at `.run/venvs/docs`).
 
 Docs site (GitHub Pages): `https://hopperlabs-opensource.github.io/youtube-intel-tool/`
 
 Local preview:
 
 ```bash
-pnpm docs:requirements
 pnpm docs:serve
+```
+
+Force a Python dependency resync when needed:
+
+```bash
+YIT_DOCS_FORCE_SYNC=1 pnpm docs:requirements
 ```
 
 - [Connect & Support](CONNECT.md)
