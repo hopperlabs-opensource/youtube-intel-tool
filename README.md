@@ -53,6 +53,10 @@ Install optional local agent packs:
 pnpm agents:install
 ```
 
+Browse docs as a structured site (tabs/sections/search):
+
+- https://hopperlabs-opensource.github.io/youtube-intel-tool/
+
 ## Local-Only Security Notice
 
 - Intended use: local/self-hosted usage by the person running it.
@@ -238,6 +242,13 @@ API guide: [docs/API.md](docs/API.md)
 - Contribution guide: [CONTRIBUTING.md](CONTRIBUTING.md)
 - Public release checklist: [PUBLIC_REPO_CHECKLIST.md](PUBLIC_REPO_CHECKLIST.md)
 
+## Docs Site
+
+- GitHub Pages: `https://hopperlabs-opensource.github.io/youtube-intel-tool/`
+- Local preview:
+  1. `pnpm docs:requirements`
+  2. `pnpm docs:serve`
+
 ## Background / Service Mode
 
 Run stack in the background:
@@ -269,10 +280,16 @@ pnpm svc:uninstall
 - Community docs: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md), [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md)
 - Planned work: [ROADMAP.md](ROADMAP.md)
 
+## Support The Project
+
+- GitHub Sponsors: use the `Sponsor` button on this repository.
+- Patreon: set your creator handle in [`.github/FUNDING.yml`](.github/FUNDING.yml) via:
+  - `patreon: your-patreon-creator-handle`
+
 ## Governance And Maintainers
 
 - Public contributions use fork + pull request; direct pushes to `main` are blocked.
-- Maintainers should use strong account security and keep 2FA enabled.
+- Maintainer accounts are expected to use strong account security with 2FA.
 - See [docs/GOVERNANCE.md](docs/GOVERNANCE.md) for contributor and maintainer access policy.
 
 ## Current Publishing Status

@@ -55,7 +55,7 @@ export YIT_CONTRACT_TEST_INGEST_URL=https://www.youtube.com/watch?v=dQw4w9WgXcQ
 - Public contributors should use fork + pull request.
 - Direct pushes to protected `main` are restricted to repository maintainers.
 - New maintainer access is granted after consistent, high-signal contributions and trusted review behavior.
-- When maintainers are added, they should use strong account security and enable 2FA.
+- Maintainer access is expected to follow org security policy (2FA required).
 
 Maintainer request channels:
 - Preferred: open a GitHub Discussion or Issue requesting maintainer consideration.
