@@ -11,6 +11,28 @@ This project ingests a video once, then gives you synced transcript navigation,
 semantic search, entity extraction, speaker labeling, grounded chat, and an
 operational stack (queues + metrics) you can actually run locally.
 
+## Table of Contents
+
+- [TL;DR](#tldr)
+- [Quick Start](#2-minute-quick-start)
+- [Local-Only Security Notice](#local-only-security-notice)
+- [What You Can Do](#what-you-can-do)
+- [Centralized Config Defaults](#centralized-config-defaults)
+- [OpenAI Key Sources](#openai-key-sources)
+- [Screenshots](#screenshots)
+- [Use Cases](#use-cases)
+- [Architecture At A Glance](#architecture-at-a-glance)
+- [CLI Quick Hits](#cli-quick-hits)
+- [API Snapshot](#api-snapshot)
+- [Documentation Map](#documentation-map)
+- [Docs Site](#docs-site)
+- [Background / Service Mode](#background--service-mode)
+- [Responsible Use](#responsible-use)
+- [Open Source](#open-source)
+- [Support The Project](#support-the-project)
+- [Governance And Maintainers](#governance-and-maintainers)
+- [Current Publishing Status](#current-publishing-status)
+
 ## TL;DR
 
 ### Human quickstart
@@ -56,6 +78,7 @@ pnpm agents:install
 Browse docs as a structured site (tabs/sections/search):
 
 - https://hopperlabs-opensource.github.io/youtube-intel-tool/
+- Quick Start page: [docs/QUICKSTART.md](docs/QUICKSTART.md)
 
 ## Local-Only Security Notice
 
@@ -226,6 +249,7 @@ API guide: [docs/API.md](docs/API.md)
 
 ## Documentation Map
 
+- Quick Start: [docs/QUICKSTART.md](docs/QUICKSTART.md)
 - Start here: [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md)
 - Product workflows: [docs/USE_CASES.md](docs/USE_CASES.md)
 - System internals: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
