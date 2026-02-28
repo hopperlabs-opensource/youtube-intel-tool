@@ -40,7 +40,7 @@ pnpm typecheck
 
 If needed, set:
 ```bash
-export YIT_BASE_URL=http://localhost:3333
+export YIT_BASE_URL="http://localhost:${YIT_WEB_PORT:-3333}"
 export YIT_CONTRACT_TEST_INGEST_URL=https://www.youtube.com/watch?v=dQw4w9WgXcQ
 ```
 
@@ -49,6 +49,20 @@ export YIT_CONTRACT_TEST_INGEST_URL=https://www.youtube.com/watch?v=dQw4w9WgXcQ
 - Include tests or validation notes for behavior changes.
 - Update docs (`README.md`, `docs/`, `plan/`, or API contracts) when interfaces change.
 - Do not commit secrets, local logs, or generated artifacts.
+
+## Access and maintainer policy
+
+- Public contributors should use fork + pull request.
+- Direct pushes to protected `main` are restricted to repository maintainers.
+- New maintainer access is granted after consistent, high-signal contributions and trusted review behavior.
+- When maintainers are added, they should use strong account security and enable 2FA.
+
+Maintainer request channels:
+- Preferred: open a GitHub Discussion or Issue requesting maintainer consideration.
+- Optional: contact `grass@hopperlabs.ai`.
+
+Email note:
+- Publishing an email in a public repo can increase spam risk. A role alias (like `oss@...`) is generally safer than a personal mailbox.
 
 ## Security
 If you find a vulnerability, do not open a public issue first.

@@ -143,7 +143,7 @@ If needed, remove persistent volumes manually before `db:up`.
 Set explicit target and test video if required:
 
 ```bash
-export YIT_BASE_URL=http://localhost:3333
+export YIT_BASE_URL="http://localhost:${YIT_WEB_PORT:-3333}"
 export YIT_CONTRACT_TEST_INGEST_URL=https://www.youtube.com/watch?v=dQw4w9WgXcQ
 pnpm test
 ```

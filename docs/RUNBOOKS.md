@@ -13,10 +13,10 @@ pnpm yit capabilities
 
 Expected:
 
-- Web UI: `http://localhost:3333`
-- Worker metrics: `http://localhost:4010/metrics`
-- Grafana: `http://localhost:53000`
-- Prometheus: `http://localhost:59092`
+- Web UI: `http://localhost:<YIT_WEB_PORT>` (default `3333`)
+- Worker metrics: `http://localhost:<YIT_WORKER_METRICS_PORT>/metrics` (default `4010`)
+- Grafana: `http://localhost:<YIT_GRAFANA_PORT>` (default `53000`)
+- Prometheus: `http://localhost:<YIT_PROMETHEUS_PORT>` (default `59092`)
 
 You can change all local ports from one place: `.env` / `.env.example`.
 

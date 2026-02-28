@@ -20,7 +20,7 @@ pnpm run setup
 pnpm seed:demo   # optional starter ingest list
 ```
 
-Open `http://localhost:3333`.
+Open `http://localhost:<YIT_WEB_PORT>` (default: `http://localhost:3333`).
 
 Stop everything:
 
@@ -106,9 +106,9 @@ pnpm run setup
 
 Open:
 
-- App: `http://localhost:3333`
-- Web metrics: `http://localhost:3333/metrics`
-- Worker metrics: `http://localhost:4010/metrics`
+- App: `http://localhost:<YIT_WEB_PORT>` (default `3333`)
+- Web metrics: `http://localhost:<YIT_WEB_PORT>/metrics`
+- Worker metrics: `http://localhost:<YIT_WORKER_METRICS_PORT>` (default `4010`)
 
 First workflow:
 
@@ -134,6 +134,12 @@ Ports and local URL defaults live in `.env.example` and are shared by scripts/ru
 - `YIT_PROMETHEUS_PORT`, `YIT_GRAFANA_PORT`
 
 Advanced overrides remain available in `.env` (`DATABASE_URL`, `REDIS_URL`, `METRICS_PORT`, `YIT_BASE_URL`).
+
+If your local web port is customized, set CLI base URL accordingly:
+
+```bash
+export YIT_BASE_URL="http://localhost:${YIT_WEB_PORT:-3333}"
+```
 
 ## OpenAI Key Sources
 
@@ -221,6 +227,7 @@ API guide: [docs/API.md](docs/API.md)
 - System internals: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - CLI reference: [docs/CLI.md](docs/CLI.md)
 - API reference: [docs/API.md](docs/API.md)
+- Governance: [docs/GOVERNANCE.md](docs/GOVERNANCE.md)
 - Runbooks (operations): [docs/RUNBOOKS.md](docs/RUNBOOKS.md)
 - Configuration model: [docs/CONFIG.md](docs/CONFIG.md)
 - Agent packs: [docs/AGENT_PACKS.md](docs/AGENT_PACKS.md)
@@ -261,6 +268,12 @@ pnpm svc:uninstall
 - License: [MIT](LICENSE)
 - Community docs: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md), [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md)
 - Planned work: [ROADMAP.md](ROADMAP.md)
+
+## Governance And Maintainers
+
+- Public contributions use fork + pull request; direct pushes to `main` are blocked.
+- Maintainers should use strong account security and keep 2FA enabled.
+- See [docs/GOVERNANCE.md](docs/GOVERNANCE.md) for contributor and maintainer access policy.
 
 ## Current Publishing Status
 

@@ -22,6 +22,12 @@ Before any internet-facing deployment, implement at minimum:
 - secret management and key rotation
 - logging, alerting, and incident response playbooks
 
+## Maintainer account security
+
+Repository maintainers and organization members should use strong account
+security controls, including two-factor authentication (2FA), before receiving
+write/admin privileges.
+
 ## Supported versions
 
 | Version | Supported |

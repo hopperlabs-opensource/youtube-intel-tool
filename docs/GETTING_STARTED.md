@@ -10,7 +10,7 @@ pnpm yit health
 pnpm yit capabilities
 ```
 
-Then open `http://localhost:3333`.
+Then open `http://localhost:<YIT_WEB_PORT>` (default `3333`).
 
 ## 0. Intended Use and Safety
 
@@ -65,9 +65,9 @@ pnpm dev
 
 Expected services:
 
-- Web UI: `http://localhost:3333`
-- Web metrics: `http://localhost:3333/metrics`
-- Worker metrics: `http://localhost:4010/metrics`
+- Web UI: `http://localhost:<YIT_WEB_PORT>` (default `3333`)
+- Web metrics: `http://localhost:<YIT_WEB_PORT>/metrics`
+- Worker metrics: `http://localhost:<YIT_WORKER_METRICS_PORT>` (default `4010`)
 
 ## 5. Verify Health
 
@@ -85,7 +85,7 @@ If healthy, continue.
 
 ### UI flow
 
-1. Open `http://localhost:3333`.
+1. Open `http://localhost:<YIT_WEB_PORT>` (default `3333`).
 2. Paste a YouTube URL and click `Open`.
 3. On the video page, click `Ingest`.
 4. Watch the Job Center for queue progress and logs.
