@@ -78,5 +78,6 @@ nav:
       - Architecture: ARCHITECTURE.md
   - Project Ops:
       - Governance: GOVERNANCE.md
+      - Connect and Support: CONNECT.md
       - Agent Packs: AGENT_PACKS.md
       - Releasing: RELEASING.md

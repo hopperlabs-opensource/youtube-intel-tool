@@ -33,7 +33,5 @@ Access is granted with least privilege first (`maintain` before `admin`).
 ## Contact
 
 - Preferred: open a GitHub Discussion/Issue for governance or maintainer requests.
-- Optional email: `grass@hopperlabs.ai`.
-
-Note: public emails attract spam. A dedicated role alias (for example `oss@...`)
-is safer than a personal mailbox.
+- Official channels are tracked in [CONNECT.md](CONNECT.md).
+- Direct email should be published only after a dedicated role alias is set up.

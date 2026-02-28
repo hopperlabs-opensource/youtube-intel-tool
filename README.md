@@ -232,6 +232,7 @@ API guide: [docs/API.md](docs/API.md)
 - CLI reference: [docs/CLI.md](docs/CLI.md)
 - API reference: [docs/API.md](docs/API.md)
 - Governance: [docs/GOVERNANCE.md](docs/GOVERNANCE.md)
+- Connect/support channels: [docs/CONNECT.md](docs/CONNECT.md)
 - Runbooks (operations): [docs/RUNBOOKS.md](docs/RUNBOOKS.md)
 - Configuration model: [docs/CONFIG.md](docs/CONFIG.md)
 - Agent packs: [docs/AGENT_PACKS.md](docs/AGENT_PACKS.md)
@@ -283,8 +284,10 @@ pnpm svc:uninstall
 ## Support The Project
 
 - GitHub Sponsors: use the `Sponsor` button on this repository.
-- Patreon: set your creator handle in [`.github/FUNDING.yml`](.github/FUNDING.yml) via:
-  - `patreon: your-patreon-creator-handle`
+- Patreon/social channels are not live yet. Track official channel status in
+  [docs/CONNECT.md](docs/CONNECT.md).
+- When Patreon is ready, enable it in [`.github/FUNDING.yml`](.github/FUNDING.yml) with:
+  - `patreon: <official-creator-handle>`
 
 ## Governance And Maintainers
 

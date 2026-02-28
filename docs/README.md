@@ -16,6 +16,7 @@ pnpm docs:serve
 - [CLI Reference](CLI.md)
 - [API Reference](API.md)
 - [Governance](GOVERNANCE.md)
+- [Connect & Support](CONNECT.md)
 - [Configuration Model](CONFIG.md)
 - [Agent Packs](AGENT_PACKS.md)
 - [Releasing](RELEASING.md)
