@@ -2,14 +2,6 @@
   <img src="docs/assets/banner.svg" alt="YouTube Intelligence Platform banner" />
 </p>
 
-<h1 align="center">YouTube Intelligence Platform</h1>
-
-<h2 align="center"><strong>Watch less. Know more. Don't miss what matters.</strong></h2>
-
-<p align="center">
-  Turn the YouTube firehose into structured intelligence you can search, rank, and automate.
-</p>
-
 <p align="center">
   <a href="#quickstart-tldr"><strong>Quickstart</strong></a> ·
   <a href="#product-preview"><strong>Preview</strong></a> ·
