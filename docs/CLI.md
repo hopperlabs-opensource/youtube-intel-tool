@@ -26,7 +26,7 @@ yit --help
 Example:
 
 ```bash
-YIT_BASE_URL=http://localhost:3333 pnpm yit --json health
+YIT_BASE_URL="http://localhost:${YIT_WEB_PORT:-3333}" pnpm yit --json health
 ```
 
 ## Core Commands

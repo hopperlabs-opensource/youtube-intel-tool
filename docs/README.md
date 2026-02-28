@@ -6,6 +6,7 @@
 - [Architecture](ARCHITECTURE.md)
 - [CLI Reference](CLI.md)
 - [API Reference](API.md)
+- [Governance](GOVERNANCE.md)
 - [Configuration Model](CONFIG.md)
 - [Agent Packs](AGENT_PACKS.md)
 - [Releasing](RELEASING.md)

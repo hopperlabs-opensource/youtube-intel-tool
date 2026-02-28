@@ -39,18 +39,20 @@ pnpm dlx playwright install chromium
 From repo root:
 
 ```bash
+BASE_URL="${YIT_BASE_URL:-http://localhost:${YIT_WEB_PORT:-3333}}"
+
 # Home
 pnpm dlx playwright screenshot \
   --device="Desktop Chrome" \
   --wait-for-timeout=1500 \
-  http://localhost:3333 \
+  "$BASE_URL" \
   docs/assets/screenshots/home.png
 
 # Global search
 pnpm dlx playwright screenshot \
   --device="Desktop Chrome" \
   --wait-for-timeout=1500 \
-  "http://localhost:3333/search?q=grounded%20chat" \
+  "$BASE_URL/search?q=grounded%20chat" \
   docs/assets/screenshots/global-search.png
 ```
 
@@ -61,7 +63,7 @@ transcript + search content:
 pnpm dlx playwright screenshot \
   --device="Desktop Chrome" \
   --wait-for-timeout=1500 \
-  "http://localhost:3333/videos/<videoId>" \
+  "$BASE_URL/videos/<videoId>" \
   docs/assets/screenshots/video-workspace.png
 ```
 

@@ -8,7 +8,7 @@ public internet API without additional hardening.
 Base URL (local):
 
 ```text
-http://localhost:3333
+http://localhost:<YIT_WEB_PORT>  (default 3333)
 ```
 
 ## Conventions
@@ -42,7 +42,8 @@ http://localhost:3333
 Quick check:
 
 ```bash
-curl -s http://localhost:3333/api/health | jq
+BASE_URL="${YIT_BASE_URL:-http://localhost:${YIT_WEB_PORT:-3333}}"
+curl -s "$BASE_URL/api/health" | jq
 ```
 
 ## Video Lifecycle
@@ -55,7 +56,8 @@ curl -s http://localhost:3333/api/health | jq
 Resolve example:
 
 ```bash
-curl -s -X POST http://localhost:3333/api/videos/resolve \
+BASE_URL="${YIT_BASE_URL:-http://localhost:${YIT_WEB_PORT:-3333}}"
+curl -s -X POST "$BASE_URL/api/videos/resolve" \
   -H 'content-type: application/json' \
   -d '{"url":"https://www.youtube.com/watch?v=dQw4w9WgXcQ"}' | jq
 ```
@@ -63,7 +65,8 @@ curl -s -X POST http://localhost:3333/api/videos/resolve \
 Ingest example:
 
 ```bash
-curl -i -s -X POST http://localhost:3333/api/videos/<videoId>/ingest \
+BASE_URL="${YIT_BASE_URL:-http://localhost:${YIT_WEB_PORT:-3333}}"
+curl -i -s -X POST "$BASE_URL/api/videos/<videoId>/ingest" \
   -H 'content-type: application/json' \
   -d '{"language":"en","steps":["enrich_cli","diarize"]}'
 ```
@@ -79,7 +82,8 @@ curl -i -s -X POST http://localhost:3333/api/videos/<videoId>/ingest \
 SSE stream example:
 
 ```bash
-curl -N http://localhost:3333/api/jobs/<jobId>/stream
+BASE_URL="${YIT_BASE_URL:-http://localhost:${YIT_WEB_PORT:-3333}}"
+curl -N "$BASE_URL/api/jobs/<jobId>/stream"
 ```
 
 ## Transcript and Search
@@ -93,7 +97,8 @@ curl -N http://localhost:3333/api/jobs/<jobId>/stream
 Global search example:
 
 ```bash
-curl -s -X POST http://localhost:3333/api/search \
+BASE_URL="${YIT_BASE_URL:-http://localhost:${YIT_WEB_PORT:-3333}}"
+curl -s -X POST "$BASE_URL/api/search" \
   -H 'content-type: application/json' \
   -d '{"query":"retrieval quality","mode":"hybrid","limit":10}' | jq
 ```
@@ -110,7 +115,8 @@ curl -s -X POST http://localhost:3333/api/search \
 Speaker relabel example:
 
 ```bash
-curl -s -X PATCH http://localhost:3333/api/videos/<videoId>/speakers/<speakerId> \
+BASE_URL="${YIT_BASE_URL:-http://localhost:${YIT_WEB_PORT:-3333}}"
+curl -s -X PATCH "$BASE_URL/api/videos/<videoId>/speakers/<speakerId>" \
   -H 'content-type: application/json' \
   -d '{"label":"Host"}' | jq
 ```
@@ -125,7 +131,8 @@ curl -s -X PATCH http://localhost:3333/api/videos/<videoId>/speakers/<speakerId>
 Chat example:
 
 ```bash
-curl -s -X POST http://localhost:3333/api/videos/<videoId>/chat \
+BASE_URL="${YIT_BASE_URL:-http://localhost:${YIT_WEB_PORT:-3333}}"
+curl -s -X POST "$BASE_URL/api/videos/<videoId>/chat" \
   -H 'content-type: application/json' \
   -d '{
     "provider":"cli",
