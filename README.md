@@ -11,8 +11,6 @@ This project ingests a video once, then gives you synced transcript navigation,
 semantic search, entity extraction, speaker labeling, grounded chat, and an
 operational stack (queues + metrics) you can actually run locally.
 
-Official community/support channels: [docs/CONNECT.md](docs/CONNECT.md)
-
 ## Table of Contents
 
 - [TL;DR](#tldr)
@@ -27,7 +25,7 @@ Official community/support channels: [docs/CONNECT.md](docs/CONNECT.md)
 - [CLI Quick Hits](#cli-quick-hits)
 - [API Snapshot](#api-snapshot)
 - [Documentation Map](#documentation-map)
-- [Docs Site](#docs-site)
+- [Docs In Repo](#docs-in-repo)
 - [Background / Service Mode](#background--service-mode)
 - [Responsible Use](#responsible-use)
 - [Open Source](#open-source)
@@ -77,10 +75,11 @@ Install optional local agent packs:
 pnpm agents:install
 ```
 
-Browse docs as a structured site (tabs/sections/search):
+Browse docs in this repository:
 
-- https://hopperlabs-opensource.github.io/youtube-intel-tool/
-- Quick Start page: [docs/QUICKSTART.md](docs/QUICKSTART.md)
+- [docs/QUICKSTART.md](docs/QUICKSTART.md)
+- [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md)
+- [docs/RUNBOOKS.md](docs/RUNBOOKS.md)
 
 ## Local-Only Security Notice
 
@@ -251,7 +250,6 @@ API guide: [docs/API.md](docs/API.md)
 
 ## Documentation Map
 
-- Connect/support channels: [docs/CONNECT.md](docs/CONNECT.md)
 - Quick Start: [docs/QUICKSTART.md](docs/QUICKSTART.md)
 - Start here: [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md)
 - Product workflows: [docs/USE_CASES.md](docs/USE_CASES.md)
@@ -269,12 +267,10 @@ API guide: [docs/API.md](docs/API.md)
 - Contribution guide: [CONTRIBUTING.md](CONTRIBUTING.md)
 - Public release checklist: [PUBLIC_REPO_CHECKLIST.md](PUBLIC_REPO_CHECKLIST.md)
 
-## Docs Site
+## Docs In Repo
 
-- GitHub Pages: `https://hopperlabs-opensource.github.io/youtube-intel-tool/`
-- Local preview:
-  1. `pnpm docs:requirements`
-  2. `pnpm docs:serve`
+- Main docs folder: [`docs/`](docs)
+- Start at: [docs/README.md](docs/README.md)
 
 ## Background / Service Mode
 
@@ -309,10 +305,17 @@ pnpm svc:uninstall
 
 ## Support The Project
 
-- GitHub Sponsors: use the `Sponsor` button on this repository.
-- Patreon/social channels are not live yet. Track official channel status in
-  [docs/CONNECT.md](docs/CONNECT.md).
-- When Patreon is ready, enable it in [`.github/FUNDING.yml`](.github/FUNDING.yml) with:
+[![GitHub Sponsors](https://img.shields.io/badge/GitHub%20Sponsors-Live-EA4AAA?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/Unclip1843)
+[![GitHub Discussions](https://img.shields.io/badge/GitHub%20Discussions-Live-0969DA?logo=github&logoColor=white)](https://github.com/hopperlabs-opensource/youtube-intel-tool/discussions)
+[![GitHub Issues](https://img.shields.io/badge/GitHub%20Issues-Live-1F883D?logo=github&logoColor=white)](https://github.com/hopperlabs-opensource/youtube-intel-tool/issues)
+[![Patreon](https://img.shields.io/badge/Patreon-Coming%20Soon-FF424D?logo=patreon&logoColor=white)](#support-the-project)
+[![X](https://img.shields.io/badge/X-Coming%20Soon-111111?logo=x&logoColor=white)](#support-the-project)
+[![YouTube](https://img.shields.io/badge/YouTube-Coming%20Soon-FF0000?logo=youtube&logoColor=white)](#support-the-project)
+
+- Use GitHub Sponsors for direct support today.
+- Use Discussions for community requests and maintainer questions.
+- Patreon/X/YouTube are not live yet; they will be announced in this section.
+- When Patreon is ready, enable it in [`.github/FUNDING.yml`](.github/FUNDING.yml):
   - `patreon: <official-creator-handle>`
 
 ## Governance And Maintainers
