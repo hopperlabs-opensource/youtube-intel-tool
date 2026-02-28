@@ -165,7 +165,7 @@ If needed, remove persistent volumes manually before `db:up`.
 ```bash
 export YIT_BASE_URL="http://localhost:${YIT_WEB_PORT:-3333}"
 export YIT_CONTRACT_TEST_INGEST_URL=https://www.youtube.com/watch?v=dQw4w9WgXcQ
-pnpm test
+pnpm test:integration
 ```
 
 ### Verify

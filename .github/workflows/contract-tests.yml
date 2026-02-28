@@ -36,32 +36,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Start infra
-        run: pnpm db:up
-
-      - name: Migrate database
-        run: pnpm db:migrate
-
-      - name: Start web + worker
-        run: |
-          pnpm dev:web > /tmp/yit-web.log 2>&1 &
-          echo $! > /tmp/yit-web.pid
-          pnpm dev:worker > /tmp/yit-worker.log 2>&1 &
-          echo $! > /tmp/yit-worker.pid
-
-      - name: Wait for health
-        run: |
-          for i in $(seq 1 90); do
-            if curl -fsS http://127.0.0.1:3333/api/health >/dev/null; then
-              exit 0
-            fi
-            sleep 1
-          done
-          echo "web health check timed out"
-          exit 1
-
-      - name: Run contract tests
-        run: pnpm test
+      - name: Run integration contract suite
+        run: pnpm test:integration
 
       - name: Upload logs on failure
         if: failure()
@@ -69,12 +45,9 @@ jobs:
         with:
           name: contract-test-logs
           path: |
-            /tmp/yit-web.log
-            /tmp/yit-worker.log
+            .run/logs/web.log
+            .run/logs/worker.log
 
       - name: Stop background processes
         if: always()
-        run: |
-          test -f /tmp/yit-web.pid && kill $(cat /tmp/yit-web.pid) || true
-          test -f /tmp/yit-worker.pid && kill $(cat /tmp/yit-worker.pid) || true
-          pnpm db:down || true
+        run: pnpm bg:down || true

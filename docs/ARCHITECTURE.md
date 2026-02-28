@@ -81,7 +81,7 @@ Schema migrations live in `packages/core/migrations`.
 - Route handlers validate inputs and outputs against contracts.
 - Web UI calls API through `apps/web/lib/api_client.ts` (SDK wrapper), not ad-hoc fetches.
 - Route coverage parity is enforced by `packages/sdk/test/routes-parity.test.ts`.
-- SDK contract tests run against a live stack via `pnpm test`.
+- SDK contract tests run against a live stack via `pnpm test:integration` (or `pnpm test:contract` with a pre-running stack).
 
 ## Web State Model
 

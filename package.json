@@ -36,7 +36,8 @@
     "test:unit": "pnpm -C packages/sdk test:unit",
     "verify": "pnpm lint && pnpm typecheck && pnpm test:unit",
     "test:contract": "pnpm -C packages/sdk test",
-    "test": "pnpm test:contract"
+    "test:integration": "bash ops/tests/integration.sh",
+    "test": "pnpm test:unit"
   },
   "devDependencies": {
     "concurrently": "^9.2.1"

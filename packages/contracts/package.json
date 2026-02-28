@@ -32,7 +32,7 @@
   "scripts": {
     "build": "tsup src/index.ts --format esm --dts --clean --sourcemap",
     "clean": "rm -rf dist",
-    "lint": "echo \"(contracts) no lint\"",
+    "lint": "tsc -p tsconfig.json --noEmit --pretty false",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "prepack": "pnpm run build"
   }

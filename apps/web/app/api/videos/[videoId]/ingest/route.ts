@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createJob, getPool, initMetrics } from "@yt/core";
+import { createJob, getPool, getVideoById, initMetrics } from "@yt/core";
 import { IngestVideoRequestSchema, IngestVideoResponseSchema } from "@yt/contracts";
 import { jsonError } from "@/lib/server/api";
 import { getIngestQueue } from "@/lib/server/queue";
@@ -19,6 +19,12 @@ export async function POST(req: Request, ctx: { params: Promise<{ videoId: strin
     const pool = getPool();
     const client = await pool.connect();
     try {
+      const video = await getVideoById(client, videoId);
+      if (!video) {
+        metrics.httpRequestsTotal.inc({ route: "/api/videos/:id/ingest", method: "POST", status: "404" });
+        return jsonError("not_found", "video not found", { status: 404 });
+      }
+
       const job = await createJob(client, {
         type: "ingest_video",
         status: "queued",

@@ -31,6 +31,7 @@ Last updated: 2026-02-28
 - Typical status codes:
   - `200` success
   - `400` validation/dependency errors
+  - `404` resource not found
 
 ## Base URL
 
@@ -84,6 +85,7 @@ curl -i -s -X POST "$BASE_URL/api/videos/<videoId>/ingest" \
 ```
 
 `POST /ingest` returns an `x-trace-id` header for correlation.
+If `videoId` does not exist, it returns `404` with a contract error envelope.
 
 ## Jobs
 

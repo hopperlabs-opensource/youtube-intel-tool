@@ -130,6 +130,8 @@ pnpm yit health
 pnpm yit capabilities
 pnpm yit --json health
 pnpm yit smoke --url "https://www.youtube.com/watch?v=..."
+pnpm test
+pnpm test:integration
 ```
 
 ### Verify
