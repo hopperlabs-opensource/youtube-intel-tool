@@ -29,7 +29,7 @@ operational stack (queues + metrics) you can actually run locally.
 - [Background / Service Mode](#background--service-mode)
 - [Responsible Use](#responsible-use)
 - [Open Source](#open-source)
-- [Support The Project](#support-the-project)
+- [Connect and Support](#connect-and-support)
 - [Governance And Maintainers](#governance-and-maintainers)
 - [Current Publishing Status](#current-publishing-status)
 
@@ -303,20 +303,29 @@ pnpm svc:uninstall
 - Community docs: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md), [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md)
 - Planned work: [ROADMAP.md](ROADMAP.md)
 
-## Support The Project
+## Connect and Support
 
-[![GitHub Sponsors](https://img.shields.io/badge/GitHub%20Sponsors-Live-EA4AAA?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/Unclip1843)
-[![GitHub Discussions](https://img.shields.io/badge/GitHub%20Discussions-Live-0969DA?logo=github&logoColor=white)](https://github.com/hopperlabs-opensource/youtube-intel-tool/discussions)
-[![GitHub Issues](https://img.shields.io/badge/GitHub%20Issues-Live-1F883D?logo=github&logoColor=white)](https://github.com/hopperlabs-opensource/youtube-intel-tool/issues)
-[![Patreon](https://img.shields.io/badge/Patreon-Coming%20Soon-FF424D?logo=patreon&logoColor=white)](#support-the-project)
-[![X](https://img.shields.io/badge/X-Coming%20Soon-111111?logo=x&logoColor=white)](#support-the-project)
-[![YouTube](https://img.shields.io/badge/YouTube-Coming%20Soon-FF0000?logo=youtube&logoColor=white)](#support-the-project)
+<p>
+  <a href="https://github.com/sponsors/Unclip1843"><img alt="GitHub Sponsors" src="https://img.shields.io/badge/Sponsors-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white"></a>
+  <a href="https://github.com/hopperlabs-opensource/youtube-intel-tool/discussions"><img alt="GitHub Discussions" src="https://img.shields.io/badge/Discussions-0969DA?style=for-the-badge&logo=github&logoColor=white"></a>
+  <a href="https://github.com/hopperlabs-opensource/youtube-intel-tool/issues"><img alt="GitHub Issues" src="https://img.shields.io/badge/Issues-1F883D?style=for-the-badge&logo=github&logoColor=white"></a>
+  <a href="#connect-and-support"><img alt="Patreon Coming Soon" src="https://img.shields.io/badge/Patreon-Coming_Soon-FF424D?style=for-the-badge&logo=patreon&logoColor=white"></a>
+  <a href="#connect-and-support"><img alt="X Coming Soon" src="https://img.shields.io/badge/X-Coming_Soon-111111?style=for-the-badge&logo=x&logoColor=white"></a>
+  <a href="#connect-and-support"><img alt="YouTube Coming Soon" src="https://img.shields.io/badge/YouTube-Coming_Soon-FF0000?style=for-the-badge&logo=youtube&logoColor=white"></a>
+</p>
+
+| Channel | Status | Link |
+| --- | --- | --- |
+| GitHub Sponsors | Live | https://github.com/sponsors/Unclip1843 |
+| GitHub Discussions | Live | https://github.com/hopperlabs-opensource/youtube-intel-tool/discussions |
+| GitHub Issues | Live | https://github.com/hopperlabs-opensource/youtube-intel-tool/issues |
+| Patreon | Coming soon | Will be published here once active |
+| X | Coming soon | Will be published here once active |
+| YouTube | Coming soon | Will be published here once active |
 
 - Use GitHub Sponsors for direct support today.
-- Use Discussions for community requests and maintainer questions.
-- Patreon/X/YouTube are not live yet; they will be announced in this section.
-- When Patreon is ready, enable it in [`.github/FUNDING.yml`](.github/FUNDING.yml):
-  - `patreon: <official-creator-handle>`
+- Use Discussions for maintainer and community requests.
+- Keep Patreon disabled in [`.github/FUNDING.yml`](.github/FUNDING.yml) until the official handle exists.
 
 ## Governance And Maintainers
 
