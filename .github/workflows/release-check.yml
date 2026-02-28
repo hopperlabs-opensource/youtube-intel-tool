@@ -30,7 +30,7 @@ jobs:
         run: pnpm release:check
 
       - name: Upload pack artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: npm-packages
           path: .run/packs/*.tgz
