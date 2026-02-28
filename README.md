@@ -1,11 +1,35 @@
-# YouTube Intel Tool
+# YouTube Intelligence Platform
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D20-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![Package manager: pnpm](https://img.shields.io/badge/pnpm-9-orange?logo=pnpm&logoColor=white)](https://pnpm.io/)
 [![TypeScript](https://img.shields.io/badge/typed-TypeScript-3178c6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 
-Turn YouTube videos into a time-indexed research system.
+<h2 align="center">Watch less. Know more. Don't miss what matters.</h2>
+
+<p align="center">
+Turn the YouTube firehose into structured intelligence you can search, rank,
+and automate.
+</p>
+
+<p align="center">
+  <img alt="Pain: content overload and no time" src="https://img.shields.io/badge/Pain-Content%20Overload%20%2B%20No%20Time-8B0000?style=for-the-badge">
+  <img alt="Promise: structured intelligence and priority alerts" src="https://img.shields.io/badge/Promise-Structured%20Intel%20%2B%20Priority%20Alerts-1F6FEB?style=for-the-badge">
+  <img alt="Outcome: watch less know more" src="https://img.shields.io/badge/Outcome-Watch%20Less%20-%20Know%20More-137333?style=for-the-badge">
+</p>
+
+## Value Proposition
+
+- Pain: content overload + algorithm mismatch + no time.
+- Promise: turn video firehose into structured text intelligence + priority alerts.
+- Outcome: watch less, know more, don't miss what matters.
+
+## Personal Algorithm (CLI / SDK / API)
+
+- Define channels, topics, and priorities you care about.
+- Run ingestion and ranking policies on schedule (`cron`/CI) via CLI.
+- Use SDK/API to generate raw feeds, priority buckets, and alert workflows.
+- Refine your rules over time instead of depending on platform default algorithms.
 
 This project ingests a video once, then gives you synced transcript navigation,
 semantic search, entity extraction, speaker labeling, grounded chat, and an
@@ -14,6 +38,8 @@ operational stack (queues + metrics) you can actually run locally.
 ## Table of Contents
 
 - [TL;DR](#tldr)
+- [Value Proposition](#value-proposition)
+- [Personal Algorithm (CLI / SDK / API)](#personal-algorithm-cli--sdk--api)
 - [Quick Start](#2-minute-quick-start)
 - [Local-Only Security Notice](#local-only-security-notice)
 - [What You Can Do](#what-you-can-do)
