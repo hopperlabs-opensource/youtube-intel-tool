@@ -8,7 +8,7 @@
   },
   "dependencies": {
     "@yt/contracts": "workspace:*",
-    "compromise": "^14.14.4",
+    "compromise": "^14.15.0",
     "pg": "^8.13.1",
     "pino": "^9.6.0",
     "prom-client": "^15.1.3",
