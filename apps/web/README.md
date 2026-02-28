@@ -24,7 +24,7 @@ pnpm dev
 
 Default URL:
 
-- `http://localhost:3333`
+- `http://localhost:<YIT_WEB_PORT>` (default `3333`)
 
 ## API Surface
 

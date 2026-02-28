@@ -67,6 +67,7 @@ Last updated: 2026-02-28
 - Operating the stack: [Runbooks](RUNBOOKS.md)
 - Integration: [CLI](CLI.md) and [API](API.md)
 - Project policy: [Governance](GOVERNANCE.md)
+- Docs standards: [GitHub Docs Style Guide](github_docs_styleguide.md)
 
 !!! warning "Security boundary"
     This project is not a hardened public internet service by default.

@@ -48,6 +48,14 @@ When reporting, include:
 - impact assessment
 - any proof-of-concept material
 
+## If a key or secret is leaked
+
+1. Rotate the exposed secret immediately.
+2. Remove leaked values from local files and shell history.
+3. Revoke and reissue any affected tokens/keys.
+4. Open a private security report with timeline and impacted surfaces.
+5. If the secret entered git history, coordinate history rewrite/remediation before public disclosure.
+
 ## Response targets
 - Initial acknowledgement: within 3 business days
 - Triage and severity assessment: within 7 business days

@@ -34,5 +34,6 @@ YIT_DOCS_FORCE_SYNC=1 pnpm docs:requirements
 - [Configuration Model](CONFIG.md)
 - [Agent Packs](AGENT_PACKS.md)
 - [Releasing](RELEASING.md)
+- [GitHub Docs Style Guide](github_docs_styleguide.md)
 - [Troubleshooting](TROUBLESHOOTING.md)
 - [Screenshot Workflow](SCREENSHOTS.md)

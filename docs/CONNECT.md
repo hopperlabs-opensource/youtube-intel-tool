@@ -19,7 +19,7 @@ Last updated: 2026-02-28
 <div class="social-grid">
   <article class="social-card">
     <div class="social-head">
-      <span class="icon-badge">GH</span>
+      <span class="icon-badge"><img alt="GitHub" src="https://cdn.simpleicons.org/github/181717" width="16" height="16" /></span>
       <div>
         <h3>GitHub Repository</h3>
         <p>Code, issues, pull requests, release notes.</p>
@@ -33,7 +33,7 @@ Last updated: 2026-02-28
 
   <article class="social-card">
     <div class="social-head">
-      <span class="icon-badge">DOC</span>
+      <span class="icon-badge"><img alt="Read the Docs" src="https://cdn.simpleicons.org/readthedocs/8CA1AF" width="16" height="16" /></span>
       <div>
         <h3>Docs Site</h3>
         <p>Guides, references, and operational runbooks.</p>
@@ -47,7 +47,7 @@ Last updated: 2026-02-28
 
   <article class="social-card">
     <div class="social-head">
-      <span class="icon-badge">D</span>
+      <span class="icon-badge"><img alt="GitHub Discussions" src="https://cdn.simpleicons.org/github/0969DA" width="16" height="16" /></span>
       <div>
         <h3>GitHub Discussions</h3>
         <p>Maintainer questions and community threads.</p>
@@ -61,7 +61,7 @@ Last updated: 2026-02-28
 
   <article class="social-card">
     <div class="social-head">
-      <span class="icon-badge">SP</span>
+      <span class="icon-badge"><img alt="GitHub Sponsors" src="https://cdn.simpleicons.org/githubsponsors/EA4AAA" width="16" height="16" /></span>
       <div>
         <h3>GitHub Sponsors</h3>
         <p>Direct support through the repository sponsor flow.</p>
@@ -75,7 +75,7 @@ Last updated: 2026-02-28
 
   <article class="social-card">
     <div class="social-head">
-      <span class="icon-badge">WEB</span>
+      <span class="icon-badge"><img alt="Website" src="https://cdn.simpleicons.org/googlechrome/1A73E8" width="16" height="16" /></span>
       <div>
         <h3>Project Website</h3>
         <p>`opensource.hopperlabs.com`</p>
@@ -87,7 +87,7 @@ Last updated: 2026-02-28
 
   <article class="social-card">
     <div class="social-head">
-      <span class="icon-badge">PAT</span>
+      <span class="icon-badge"><img alt="Patreon" src="https://cdn.simpleicons.org/patreon/FF424D" width="16" height="16" /></span>
       <div>
         <h3>Patreon</h3>
         <p>Recurring membership support.</p>
@@ -99,7 +99,7 @@ Last updated: 2026-02-28
 
   <article class="social-card">
     <div class="social-head">
-      <span class="icon-badge">X</span>
+      <span class="icon-badge"><img alt="X" src="https://cdn.simpleicons.org/x/111111" width="16" height="16" /></span>
       <div>
         <h3>X / Twitter</h3>
         <p>Short updates and release notes.</p>
@@ -111,7 +111,7 @@ Last updated: 2026-02-28
 
   <article class="social-card">
     <div class="social-head">
-      <span class="icon-badge">YT</span>
+      <span class="icon-badge"><img alt="YouTube" src="https://cdn.simpleicons.org/youtube/FF0000" width="16" height="16" /></span>
       <div>
         <h3>YouTube Channel</h3>
         <p>Demos, setup walkthroughs, and feature overviews.</p>

@@ -43,3 +43,9 @@ If anything unexpected appears, remove it before commit.
   - `SECURITY.md`
   - `CODE_OF_CONDUCT.md`
   - `.github/workflows/*`
+
+## 7) Branch and account protection
+- Enable org/repo 2FA requirements for maintainers.
+- Protect `main` with pull-request requirement and required checks.
+- Keep force-push and branch deletion disabled on `main`.
+- Ensure secret scanning and push protection are enabled.

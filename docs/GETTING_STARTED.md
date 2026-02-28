@@ -77,6 +77,17 @@ Expected outcome:
 - `health` returns success
 - `capabilities` lists providers/dependencies with clear enablement status
 
+## 5.1 Verify Tests
+
+```bash
+pnpm test
+pnpm test:integration
+```
+
+Expected outcome:
+- Unit tests pass without requiring a running stack.
+- Integration suite boots stack, runs contract tests, then tears down.
+
 ## 6. First Ingest (UI and CLI)
 
 ### UI flow

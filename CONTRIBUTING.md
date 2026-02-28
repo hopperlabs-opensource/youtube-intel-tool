@@ -31,12 +31,15 @@ pnpm dev
 ## Quality gates
 Before opening a PR, run:
 ```bash
-pnpm lint
-pnpm typecheck
+pnpm verify
 ```
 
 ## Contract tests
-`pnpm test` runs SDK contract tests against a running local stack.
+Use these commands depending on intent:
+
+- `pnpm test` for unit tests only (no local stack required)
+- `pnpm test:contract` for contract tests against an already running stack
+- `pnpm test:integration` to boot stack + run contract suite + teardown
 
 If needed, set:
 ```bash
@@ -53,16 +56,13 @@ export YIT_CONTRACT_TEST_INGEST_URL=https://www.youtube.com/watch?v=dQw4w9WgXcQ
 ## Access and maintainer policy
 
 - Public contributors should use fork + pull request.
-- Direct pushes to protected `main` are restricted to repository maintainers.
+- Protected `main` requires pull requests and required checks.
 - New maintainer access is granted after consistent, high-signal contributions and trusted review behavior.
 - Maintainer access is expected to follow org security policy (2FA required).
 
 Maintainer request channels:
 - Preferred: open a GitHub Discussion or Issue requesting maintainer consideration.
-- Optional: contact `grass@hopperlabs.ai`.
-
-Email note:
-- Publishing an email in a public repo can increase spam risk. A role alias (like `oss@...`) is generally safer than a personal mailbox.
+- Direct email should only be published after a dedicated role alias exists.
 
 ## Security
 If you find a vulnerability, do not open a public issue first.

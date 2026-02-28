@@ -14,12 +14,13 @@ How this repository is operated and how access is granted.
 
 - Public contributions are welcome through fork + pull request.
 - `main` is protected and requires pull requests plus passing checks.
-- Direct pushes to `main` are restricted to approved maintainers.
+- Automerge is allowed for safe automation PRs only after required checks pass.
 
 ## Who can push
 
 - By default, only repository maintainers can push branches in the upstream repo.
 - Public users cannot push to upstream; they contribute through forks.
+- Required branch protections apply to all merges into `main`.
 
 ## Maintainer policy
 
@@ -37,6 +38,7 @@ Access is granted with least privilege first (`maintain` before `admin`).
 - Maintainers are expected to keep 2FA enabled on GitHub.
 - Sensitive paths are code-owner protected (`.github/workflows`, release/config files).
 - Secret scanning and push protection should remain enabled.
+- Required checks should include CI verification, secret scanning, and release-pack checks.
 
 ## Contact
 

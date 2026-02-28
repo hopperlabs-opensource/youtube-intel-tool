@@ -97,6 +97,13 @@ Preflight checks anytime:
 pnpm run doctor
 ```
 
+Validation:
+
+```bash
+pnpm test
+pnpm test:integration
+```
+
 ### Agentic quickstart
 
 Open Codex, Claude Code, or your preferred agentic CLI in this repo root and
@@ -327,6 +334,7 @@ API guide: [docs/API.md](docs/API.md)
 - Configuration model: [docs/CONFIG.md](docs/CONFIG.md)
 - Agent packs: [docs/AGENT_PACKS.md](docs/AGENT_PACKS.md)
 - Releasing/npm packaging: [docs/RELEASING.md](docs/RELEASING.md)
+- GitHub docs style guide: [docs/github_docs_styleguide.md](docs/github_docs_styleguide.md)
 - Troubleshooting: [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)
 - Screenshot pipeline: [docs/SCREENSHOTS.md](docs/SCREENSHOTS.md)
 - Security policy: [SECURITY.md](SECURITY.md)
@@ -408,7 +416,7 @@ pnpm svc:uninstall
 
 ## Governance And Maintainers
 
-- Public contributions use fork + pull request; direct pushes to `main` are blocked.
+- Public contributions use fork + pull request; protected `main` requires PRs and required checks.
 - Maintainer accounts are required to use 2FA under org security policy.
 - See [docs/GOVERNANCE.md](docs/GOVERNANCE.md) for contributor and maintainer access policy.
 

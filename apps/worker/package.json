@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "node scripts/dev.mjs",
-    "lint": "echo \"(worker) no lint\"",
+    "lint": "tsc -p tsconfig.json --noEmit --pretty false",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {

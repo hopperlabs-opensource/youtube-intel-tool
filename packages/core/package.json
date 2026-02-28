@@ -22,8 +22,7 @@
   },
   "scripts": {
     "migrate": "tsx src/cli/migrate.ts",
-    "lint": "echo \"(core) no lint\"",
+    "lint": "tsc -p tsconfig.json --noEmit --pretty false",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   }
 }
-
