@@ -72,7 +72,15 @@ Schema migrations live in `packages/core/migrations`.
 
 - Request/response schemas live in `packages/contracts` (Zod).
 - Route handlers validate inputs and outputs against contracts.
+- Web UI calls API through `apps/web/lib/api_client.ts` (SDK wrapper), not ad-hoc fetches.
+- Route coverage parity is enforced by `packages/sdk/test/routes-parity.test.ts`.
 - SDK contract tests run against a live stack via `pnpm test`.
+
+## Web State Model
+
+- Server data fetching/caching: React Query.
+- Client-only UI state: Zustand (`apps/web/lib/jobs_store.ts`) for job dock/inspector persistence.
+- This keeps UI state concerns decoupled from transport and API contract logic.
 
 ## Observability
 

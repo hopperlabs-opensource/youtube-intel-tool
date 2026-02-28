@@ -18,6 +18,8 @@ Expected:
 - Grafana: `http://localhost:53000`
 - Prometheus: `http://localhost:59092`
 
+You can change all local ports from one place: `.env` / `.env.example`.
+
 ## 2) Foreground development mode
 
 Use this when actively developing and watching logs in the same terminal.
@@ -43,7 +45,8 @@ pnpm bg:down
 Notes:
 
 - `bg:up` starts infra, runs migrations, starts web/worker, and writes Prometheus config.
-- Override ports with `YIT_WEB_PORT` and `YIT_WORKER_METRICS_PORT`.
+- Override ports with `YIT_WEB_PORT`, `YIT_WORKER_METRICS_PORT`,
+  `YIT_POSTGRES_PORT`, `YIT_REDIS_PORT`, `YIT_PROMETHEUS_PORT`, `YIT_GRAFANA_PORT`.
 
 ## 4) macOS login service mode (`launchd`)
 
@@ -98,7 +101,17 @@ pnpm yit smoke --url "https://www.youtube.com/watch?v=..."
 Run with custom ports:
 
 ```bash
-YIT_WEB_PORT=3344 YIT_WORKER_METRICS_PORT=4011 pnpm bg:up
+YIT_WEB_PORT=3344 \
+YIT_WORKER_METRICS_PORT=4011 \
+YIT_PROMETHEUS_PORT=59093 \
+YIT_GRAFANA_PORT=53001 \
+pnpm bg:up
+```
+
+### Seed starter content
+
+```bash
+pnpm seed:demo
 ```
 
 ### DB state looks broken

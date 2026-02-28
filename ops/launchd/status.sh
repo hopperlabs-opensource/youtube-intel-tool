@@ -1,16 +1,26 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "${HERE}/../.." && pwd)"
+
+# shellcheck source=ops/lib/defaults.sh
+source "${ROOT_DIR}/ops/lib/defaults.sh"
+
 UID_NUM="$(id -u)"
+WEB_PORT_DEFAULT="$(yit_read_default_env "${ROOT_DIR}" "YIT_WEB_PORT" "3333")"
+WORKER_METRICS_PORT_DEFAULT="$(yit_read_default_env "${ROOT_DIR}" "YIT_WORKER_METRICS_PORT" "4010")"
+WEB_PORT="${YIT_WEB_PORT:-${WEB_PORT_DEFAULT}}"
+WORKER_METRICS_PORT="${YIT_WORKER_METRICS_PORT:-${WORKER_METRICS_PORT_DEFAULT}}"
 
 echo "launchd:"
 launchctl list | awk 'NR==1 || $3 ~ /^com\.ytintel\./ {print}'
 echo
 
 echo "health:"
-curl -fsS http://localhost:${YIT_WEB_PORT:-3333}/api/health || echo "(web health failed)"
+curl -fsS "http://localhost:${WEB_PORT}/api/health" || echo "(web health failed)"
 echo
-curl -fsS http://localhost:${YIT_WORKER_METRICS_PORT:-4010}/health || echo "(worker health failed)"
+curl -fsS "http://localhost:${WORKER_METRICS_PORT}/health" || echo "(worker health failed)"
 echo
 
 echo "docker:"

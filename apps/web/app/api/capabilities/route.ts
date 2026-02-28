@@ -1,4 +1,4 @@
-import { getEmbeddingsStatus, initMetrics } from "@yt/core";
+import { getEmbeddingsStatus, getYitDefault, initMetrics } from "@yt/core";
 import { CapabilitiesResponseSchema } from "@yt/contracts";
 import { NextResponse } from "next/server";
 import { spawnSync } from "node:child_process";
@@ -37,7 +37,7 @@ export async function GET(req: Request) {
       return { ...e };
     })();
     if (embeddings.enabled && embeddings.provider === "ollama") {
-      const baseUrl = clean(process.env.OLLAMA_BASE_URL) || "http://127.0.0.1:11434";
+      const baseUrl = clean(process.env.OLLAMA_BASE_URL) || getYitDefault("OLLAMA_BASE_URL");
       try {
         const res = await fetch(`${baseUrl.replace(/\/$/, "")}/api/tags`, { signal: AbortSignal.timeout(500) });
         if (!res.ok) {

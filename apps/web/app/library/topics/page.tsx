@@ -6,18 +6,15 @@ import Link from "next/link";
 import type { LibraryTopic } from "@yt/contracts";
 import { ErrorWithRetry } from "@/components/ErrorWithRetry";
 import { SkeletonCard } from "@/components/Skeleton";
+import { getApiClient } from "@/lib/api_client";
 
 export default function LibraryTopicsPage() {
+  const api = getApiClient();
   const [filter, setFilter] = useState("");
 
   const q = useQuery({
     queryKey: ["libraryTopics"],
-    queryFn: async () => {
-      const res = await fetch("/api/library/topics?limit=500");
-      if (!res.ok) throw new Error(await res.text());
-      const json = await res.json();
-      return json.topics as LibraryTopic[];
-    },
+    queryFn: async () => (await api.listLibraryTopics({ limit: 500 })).topics as LibraryTopic[],
   });
 
   const items = useMemo(() => {
@@ -91,4 +88,3 @@ export default function LibraryTopicsPage() {
     </div>
   );
 }
-

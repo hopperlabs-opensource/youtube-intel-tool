@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import clsx from "clsx";
 import type { Job, JobLog } from "@yt/contracts";
+import { getApiClient, toErrorMessage } from "@/lib/api_client";
 
 function shortId(id: string): string {
   if (id.length <= 10) return id;
@@ -18,6 +19,7 @@ function safeJsonStringify(v: unknown): string {
 }
 
 export function JobInspectDrawer(props: { open: boolean; jobId: string; onClose: () => void }) {
+  const api = getApiClient();
   const { open, jobId, onClose } = props;
   const [tab, setTab] = useState<"summary" | "logs" | "output">("summary");
   const [filter, setFilter] = useState("");
@@ -28,79 +30,67 @@ export function JobInspectDrawer(props: { open: boolean; jobId: string; onClose:
   const [streamError, setStreamError] = useState<string | null>(null);
   const [connected, setConnected] = useState(false);
 
-  function asObject(v: unknown): Record<string, unknown> | null {
-    if (typeof v !== "object" || v === null) return null;
-    return v as Record<string, unknown>;
-  }
-
   // Live stream job status + logs.
   useEffect(() => {
     if (!open) return;
     if (!jobId) return;
 
     // Reset view state when switching inspected job.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setJob(null);
     setLogs([]);
     setStreamError(null);
     setConnected(true);
 
     const seen = new Set<string>();
-    const es = new EventSource(`/api/jobs/${jobId}/stream?ts=${Date.now()}`);
+    const ac = new AbortController();
+    let active = true;
 
-    es.onmessage = (e) => {
-      let parsed: unknown;
+    void (async () => {
       try {
-        parsed = JSON.parse(e.data);
-      } catch {
-        return;
+        const current = await api.getJob(jobId);
+        if (active) setJob(current.job as Job);
+      } catch (err: unknown) {
+        if (!active || ac.signal.aborted) return;
+        setStreamError(toErrorMessage(err, "failed to load job"));
       }
-      const obj = asObject(parsed);
-      if (!obj) return;
 
-      const type = obj.type;
-      if (type === "job" && obj.job) {
-        try {
-          setJob(obj.job as Job);
-        } catch {}
-      }
-      if (type === "log" && obj.log) {
-        const l = obj.log as JobLog;
-        if (l && typeof l.id === "string" && !seen.has(l.id)) {
-          seen.add(l.id);
-          setLogs((prev) => prev.concat([l]));
+      try {
+        for await (const ev of api.streamJob(jobId, { signal: ac.signal })) {
+          if (!active) break;
+          if (ev.type === "job") {
+            setJob(ev.job as Job);
+          }
+          if (ev.type === "log") {
+            const l = ev.log as JobLog;
+            if (!seen.has(l.id)) {
+              seen.add(l.id);
+              setLogs((prev) => prev.concat([l]));
+            }
+          }
+          if (ev.type === "error") {
+            setStreamError(ev.error.message || "stream disconnected");
+            setConnected(false);
+            break;
+          }
+          if (ev.type === "done") {
+            setJob(ev.job as Job);
+            setConnected(false);
+            break;
+          }
         }
-      }
-      const errObj = asObject(obj.error);
-      if (type === "error" && typeof errObj?.message === "string") {
-        setStreamError(errObj.message);
+      } catch (err: unknown) {
+        if (!active || ac.signal.aborted) return;
+        setStreamError(toErrorMessage(err, "stream disconnected"));
         setConnected(false);
-        try {
-          es.close();
-        } catch {}
       }
-      if (type === "done") {
-        setConnected(false);
-        try {
-          es.close();
-        } catch {}
-      }
-    };
-
-    es.onerror = () => {
-      setConnected(false);
-      setStreamError("stream disconnected");
-      try {
-        es.close();
-      } catch {}
-    };
+      if (active && !ac.signal.aborted) setConnected(false);
+    })();
 
     return () => {
-      try {
-        es.close();
-      } catch {}
+      active = false;
+      ac.abort();
     };
-  }, [open, jobId, refreshNonce]);
+  }, [api, open, jobId, refreshNonce]);
 
   const filteredLogs = useMemo(() => {
     const arr = logs || [];

@@ -5,6 +5,7 @@ import { useQueries } from "@tanstack/react-query";
 import clsx from "clsx";
 import type { Job } from "@yt/contracts";
 import { useJobsStore } from "@/lib/jobs_store";
+import { getApiClient } from "@/lib/api_client";
 import { JobInspectDrawer } from "@/components/JobInspectDrawer";
 
 function shortId(id: string): string {
@@ -17,6 +18,7 @@ function isTerminal(status: string | undefined): boolean {
 }
 
 export function JobCenter() {
+  const api = getApiClient();
   const jobs = useJobsStore((s) => s.jobs);
   const dockOpen = useJobsStore((s) => s.dockOpen);
   const setDockOpen = useJobsStore((s) => s.setDockOpen);
@@ -32,12 +34,7 @@ export function JobCenter() {
   const jobQs = useQueries({
     queries: visibleIds.map((jobId) => ({
       queryKey: ["job", jobId],
-      queryFn: async () => {
-        const res = await fetch(`/api/jobs/${jobId}`);
-        if (!res.ok) throw new Error(await res.text());
-        const json = await res.json();
-        return json.job as Job;
-      },
+      queryFn: async () => (await api.getJob(jobId)).job as Job,
       refetchInterval: (q: unknown) => {
         const state = (q as { state?: { data?: Job } } | null)?.state;
         const status = state?.data?.status;

@@ -51,6 +51,10 @@ cp .env.example .env
 
 Start with defaults first. Add optional provider keys later.
 
+Port defaults are centralized in `.env.example` (`YIT_WEB_PORT`,
+`YIT_WORKER_METRICS_PORT`, `YIT_POSTGRES_PORT`, `YIT_REDIS_PORT`,
+`YIT_PROMETHEUS_PORT`, `YIT_GRAFANA_PORT`).
+
 ## 4. Start Infra + App
 
 ```bash
@@ -94,6 +98,14 @@ pnpm yit resolve "https://www.youtube.com/watch?v=..."
 pnpm yit ingest "https://www.youtube.com/watch?v=..." --wait --logs
 pnpm yit search "what was the main argument"
 ```
+
+### Optional demo seed pack
+
+```bash
+pnpm seed:demo
+```
+
+Edit starter URLs in `config/demo_videos.txt`.
 
 ## 7. Optional Enrichment Providers
 

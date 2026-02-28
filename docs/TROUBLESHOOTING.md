@@ -27,10 +27,15 @@ Symptoms:
 Fix:
 
 ```bash
-YIT_WEB_PORT=3344 YIT_WORKER_METRICS_PORT=4011 pnpm bg:up
+YIT_WEB_PORT=3344 \
+YIT_WORKER_METRICS_PORT=4011 \
+YIT_PROMETHEUS_PORT=59093 \
+YIT_GRAFANA_PORT=53001 \
+pnpm bg:up
 ```
 
 Use the printed port values and set `YIT_BASE_URL` for CLI if needed.
+For the full config model, see `docs/CONFIG.md`.
 
 ## `yt-dlp` Errors
 

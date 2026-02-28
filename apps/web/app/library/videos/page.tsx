@@ -7,6 +7,7 @@ import type { Job, LibraryVideo } from "@yt/contracts";
 import { ErrorWithRetry } from "@/components/ErrorWithRetry";
 import { SkeletonCard } from "@/components/Skeleton";
 import { useJobsStore } from "@/lib/jobs_store";
+import { getApiClient, toErrorMessage } from "@/lib/api_client";
 
 function shortId(id: string): string {
   return id.length > 10 ? `${id.slice(0, 8)}...` : id;
@@ -17,6 +18,7 @@ function pickLabel(v: LibraryVideo["video"]): string {
 }
 
 export default function LibraryVideosPage() {
+  const api = getApiClient();
   const [filter, setFilter] = useState("");
   const [cliEnrich, setCliEnrich] = useState(true);
   const [stt, setStt] = useState(true);
@@ -25,12 +27,7 @@ export default function LibraryVideosPage() {
 
   const q = useQuery({
     queryKey: ["libraryVideos"],
-    queryFn: async () => {
-      const res = await fetch("/api/videos?limit=200");
-      if (!res.ok) throw new Error(await res.text());
-      const json = await res.json();
-      return json.items as LibraryVideo[];
-    },
+    queryFn: async () => (await api.listLibraryVideos({ limit: 200 })).items as LibraryVideo[],
   });
 
   const ingest = useMutation({
@@ -39,15 +36,12 @@ export default function LibraryVideosPage() {
       if (cliEnrich) steps.push("enrich_cli");
       if (stt) steps.push("stt");
       if (diarize) steps.push("diarize");
-      const res = await fetch(`/api/videos/${videoId}/ingest`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        // Send an explicit allowlist; empty array means "no optional steps".
-        body: JSON.stringify({ language: "en", steps }),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json?.error?.message || "ingest failed");
-      return json.job as Job;
+      try {
+        const out = await api.ingestVideo(videoId, { language: "en", steps });
+        return out.job as Job;
+      } catch (err: unknown) {
+        throw new Error(toErrorMessage(err, "ingest failed"));
+      }
     },
     onSuccess: (job, videoId) => {
       rememberJob(job.id, { openDock: true, openInspector: true });

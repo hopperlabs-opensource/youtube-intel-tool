@@ -5,7 +5,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import type { CapabilitiesResponse, Job, LibraryHealthItem, LibraryHealthResponse } from "@yt/contracts";
 import { useJobsStore } from "@/lib/jobs_store";
-import { apiFetch } from "@/lib/openai_key";
+import { getApiClient, toErrorMessage } from "@/lib/api_client";
 
 function isBroken(it: LibraryHealthItem, caps: CapabilitiesResponse | null): { broken: boolean; reasons: string[] } {
   const reasons: string[] = [];
@@ -24,6 +24,7 @@ function isBroken(it: LibraryHealthItem, caps: CapabilitiesResponse | null): { b
 }
 
 export default function LibraryRepairPage() {
+  const api = getApiClient();
   const [filter, setFilter] = useState<"all" | "broken">("broken");
   const [cliEnrich, setCliEnrich] = useState(true);
   const [diarize, setDiarize] = useState(false);
@@ -32,21 +33,13 @@ export default function LibraryRepairPage() {
 
   const capsQ = useQuery({
     queryKey: ["capabilities"],
-    queryFn: async () => {
-      const res = await apiFetch("/api/capabilities");
-      if (!res.ok) throw new Error(await res.text());
-      return (await res.json()) as CapabilitiesResponse;
-    },
+    queryFn: async () => (await api.capabilities()) as CapabilitiesResponse,
     staleTime: 30_000,
   });
 
   const healthQ = useQuery({
     queryKey: ["libraryHealth"],
-    queryFn: async () => {
-      const res = await apiFetch("/api/library/health?limit=500");
-      if (!res.ok) throw new Error(await res.text());
-      return (await res.json()) as LibraryHealthResponse;
-    },
+    queryFn: async () => (await api.libraryHealth({ limit: 500 })) as LibraryHealthResponse,
   });
 
   const items = useMemo(() => {
@@ -68,16 +61,12 @@ export default function LibraryRepairPage() {
       if (cliEnrich) steps.push("enrich_cli");
       if (diarize) steps.push("diarize");
       if (stt) steps.push("stt");
-
-      const res = await fetch("/api/library/repair", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        // Send an explicit allowlist; empty array means "no optional steps".
-        body: JSON.stringify({ video_ids: videoIds, language: "en", steps }),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json?.error?.message || "repair failed");
-      return json.jobs as Job[];
+      try {
+        const out = await api.libraryRepair({ video_ids: videoIds, language: "en", steps });
+        return out.jobs as Job[];
+      } catch (err: unknown) {
+        throw new Error(toErrorMessage(err, "repair failed"));
+      }
     },
     onSuccess: (jobs) => {
       const first = jobs[0];

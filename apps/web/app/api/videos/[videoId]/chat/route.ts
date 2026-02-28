@@ -6,6 +6,7 @@ import {
   extractCitedRefsFromAnswer,
   finishChatTurn,
   getPool,
+  getYitDefault,
   initMetrics,
   runClaudeCliText,
   runCodexCliText,
@@ -36,7 +37,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ videoId: strin
     const lastUser = [...body.messages].reverse().find((m) => m.role === "user");
     if (!lastUser) return jsonError("invalid_request", "messages must include at least one user message", { status: 400 });
 
-    const ollamaBaseUrl = process.env.OLLAMA_BASE_URL || "http://127.0.0.1:11434";
+    const ollamaBaseUrl = process.env.OLLAMA_BASE_URL || getYitDefault("OLLAMA_BASE_URL");
     const cliModel =
       body.provider === "cli" ? (body.model_id ?? process.env.YIT_CHAT_CLI_MODEL ?? undefined) : undefined;
     const model_id =

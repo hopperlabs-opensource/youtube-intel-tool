@@ -5,10 +5,15 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 RUN_DIR="${ROOT_DIR}/.run"
 LOG_DIR="${RUN_DIR}/logs"
 
+# shellcheck source=ops/lib/defaults.sh
+source "${ROOT_DIR}/ops/lib/defaults.sh"
+
 mkdir -p "${LOG_DIR}"
 
-WEB_PORT_DEFAULT=3333
-WORKER_METRICS_PORT_DEFAULT=4010
+WEB_PORT_DEFAULT="$(yit_read_default_env "${ROOT_DIR}" "YIT_WEB_PORT" "3333")"
+WORKER_METRICS_PORT_DEFAULT="$(yit_read_default_env "${ROOT_DIR}" "YIT_WORKER_METRICS_PORT" "4010")"
+GRAFANA_PORT_DEFAULT="$(yit_read_default_env "${ROOT_DIR}" "YIT_GRAFANA_PORT" "53000")"
+PROMETHEUS_PORT_DEFAULT="$(yit_read_default_env "${ROOT_DIR}" "YIT_PROMETHEUS_PORT" "59092")"
 
 ts() {
   date -u +"%Y-%m-%dT%H:%M:%SZ"
@@ -37,6 +42,14 @@ web_port() {
 
 worker_metrics_port() {
   echo "${YIT_WORKER_METRICS_PORT:-$WORKER_METRICS_PORT_DEFAULT}"
+}
+
+grafana_port() {
+  echo "${YIT_GRAFANA_PORT:-$GRAFANA_PORT_DEFAULT}"
+}
+
+prometheus_port() {
+  echo "${YIT_PROMETHEUS_PORT:-$PROMETHEUS_PORT_DEFAULT}"
 }
 
 listener_pid() {

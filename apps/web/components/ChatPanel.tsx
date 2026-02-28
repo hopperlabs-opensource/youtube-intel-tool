@@ -4,8 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { ChatResponse } from "@yt/contracts";
 import { ErrorWithRetry } from "@/components/ErrorWithRetry";
+import { getApiClient, toErrorMessage } from "@/lib/api_client";
 import { formatHms } from "@/lib/time";
-import { apiFetch } from "@/lib/openai_key";
 
 type Turn = {
   id: string;
@@ -16,38 +16,13 @@ type Turn = {
   error: string | null;
 };
 
-function parseSseChunk(buf: string): { events: unknown[]; rest: string } {
-  const events: unknown[] = [];
-  while (true) {
-    const sep = buf.indexOf("\n\n");
-    if (sep === -1) break;
-    const raw = buf.slice(0, sep);
-    buf = buf.slice(sep + 2);
-
-    const lines = raw.split("\n");
-    const dataLines = lines.filter((l) => l.startsWith("data:"));
-    if (dataLines.length === 0) continue;
-    const dataStr = dataLines.map((l) => l.slice(5).trimStart()).join("\n");
-    try {
-      events.push(JSON.parse(dataStr));
-    } catch {
-      // Ignore non-JSON events.
-    }
-  }
-  return { events, rest: buf };
-}
-
-function asObject(v: unknown): Record<string, unknown> | null {
-  if (typeof v !== "object" || v === null) return null;
-  return v as Record<string, unknown>;
-}
-
 export function ChatPanel(props: {
   videoId: string;
   atMs: number;
   onSeekToMs: (ms: number) => void;
   onSelectCueId?: (cueId: string) => void;
 }) {
+  const api = getApiClient();
   const [input, setInput] = useState("");
   const [provider, setProvider] = useState<"ollama" | "mock" | "cli">("cli");
   const [modelId, setModelId] = useState("");
@@ -58,11 +33,7 @@ export function ChatPanel(props: {
 
   const capsQ = useQuery({
     queryKey: ["capabilities"],
-    queryFn: async () => {
-      const res = await apiFetch("/api/capabilities");
-      if (!res.ok) throw new Error(await res.text());
-      return (await res.json()) as { embeddings?: { enabled?: boolean } };
-    },
+    queryFn: async () => api.capabilities(),
     staleTime: 30_000,
   });
 
@@ -96,10 +67,7 @@ export function ChatPanel(props: {
     abortRef.current = ac;
 
     try {
-      const res = await apiFetch(`/api/videos/${props.videoId}/chat/stream`, {
-        method: "POST",
-        headers: { "content-type": "application/json", accept: "text/event-stream" },
-        body: JSON.stringify({
+      const req = {
           provider,
           model_id: modelId.trim() ? modelId.trim() : undefined,
           at_ms: props.atMs,
@@ -107,55 +75,28 @@ export function ChatPanel(props: {
           semantic_k: embeddingsOk ? 6 : 0,
           keyword_k: 6,
           messages: history.concat([{ role: "user", content: q }]),
-        }),
-        signal: ac.signal,
-      });
-
-      if (!res.ok || !res.body) {
-        const txt = await res.text().catch(() => "");
-        throw new Error(txt || `chat failed (${res.status})`);
-      }
-
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buf = "";
-
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        buf += decoder.decode(value, { stream: true });
-
-        const parsed = parseSseChunk(buf);
-        buf = parsed.rest;
-
-        for (const ev of parsed.events) {
-          const obj = asObject(ev);
-          if (!obj) continue;
-          const type = obj.type;
-
-          const traceId = obj.trace_id;
-          if (type === "meta" && typeof traceId === "string") {
-            setTurns((t) => t.map((x) => (x.id === turnId ? { ...x, traceId } : x)));
-          }
-          if (type === "text" && typeof obj.delta === "string") {
-            setTurns((t) =>
-              t.map((x) => (x.id === turnId ? { ...x, assistant: x.assistant + obj.delta } : x))
-            );
-          }
-          if (type === "done" && obj.response) {
-            setTurns((t) =>
-              t.map((x) => (x.id === turnId ? { ...x, response: obj.response as ChatResponse } : x))
-            );
-          }
-          const errObj = asObject(obj.error);
-          const errMsg = errObj?.message;
-          if (type === "error" && typeof errMsg === "string") {
-            setTurns((t) => t.map((x) => (x.id === turnId ? { ...x, error: errMsg } : x)));
-          }
+      };
+      for await (const ev of api.streamChat(props.videoId, req, { signal: ac.signal })) {
+        if (ev.type === "meta") {
+          setTurns((t) => t.map((x) => (x.id === turnId ? { ...x, traceId: ev.trace_id } : x)));
+        }
+        if (ev.type === "text") {
+          setTurns((t) => t.map((x) => (x.id === turnId ? { ...x, assistant: x.assistant + ev.delta } : x)));
+        }
+        if (ev.type === "done") {
+          setTurns((t) =>
+            t.map((x) => (x.id === turnId ? { ...x, response: ev.response as ChatResponse } : x))
+          );
+        }
+        if (ev.type === "error") {
+          setTurns((t) =>
+            t.map((x) => (x.id === turnId ? { ...x, error: ev.error.message || "chat stream failed" } : x))
+          );
         }
       }
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
+      if (ac.signal.aborted) return;
+      const msg = toErrorMessage(e, "Chat failed.");
       setTurns((t) => t.map((x) => (x.id === turnId ? { ...x, error: msg } : x)));
     } finally {
       setIsStreaming(false);

@@ -4,20 +4,17 @@ import { useQuery } from "@tanstack/react-query";
 import type { ContextItem, Entity } from "@yt/contracts";
 import { ErrorWithRetry } from "@/components/ErrorWithRetry";
 import { SkeletonLines } from "@/components/Skeleton";
+import { getApiClient } from "@/lib/api_client";
 
 type Card = { entity: Entity; items: ContextItem[] };
 
 export function ContextPanel(props: { videoId: string; atMs: number }) {
+  const api = getApiClient();
   const atBucket = Math.floor(props.atMs / 5000) * 5000;
 
   const q = useQuery({
     queryKey: ["context", props.videoId, atBucket],
-    queryFn: async () => {
-      const res = await fetch(`/api/videos/${props.videoId}/context?at_ms=${atBucket}&window_ms=120000`);
-      if (!res.ok) throw new Error(await res.text());
-      const json = await res.json();
-      return json.cards as Card[];
-    },
+    queryFn: async () => (await api.listContext(props.videoId, { at_ms: atBucket, window_ms: 120_000 })).cards as Card[],
   });
 
   return (
@@ -55,4 +52,3 @@ export function ContextPanel(props: { videoId: string; atMs: number }) {
     </div>
   );
 }
-

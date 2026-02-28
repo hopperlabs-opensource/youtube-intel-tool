@@ -32,8 +32,9 @@ function loadDotEnv(filePath) {
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(here, "../../..");
+const dotEnvExample = loadDotEnv(path.join(repoRoot, ".env.example"));
 const dotEnv = loadDotEnv(path.join(repoRoot, ".env"));
-const mergedEnv = { ...dotEnv, ...process.env };
+const mergedEnv = { ...dotEnvExample, ...dotEnv, ...process.env };
 
 async function isPortFree(port) {
   return await new Promise((resolve) => {
@@ -74,8 +75,9 @@ async function pickPort(startPort, maxTries = 20) {
   return startPort;
 }
 
-const desired = Number(mergedEnv.WEB_PORT || mergedEnv.PORT || 3333);
-const port = Number.isFinite(desired) ? await pickPort(desired) : await pickPort(3333);
+const defaultPort = Number(dotEnvExample.YIT_WEB_PORT || 3333);
+const desired = Number(mergedEnv.WEB_PORT || mergedEnv.PORT || mergedEnv.YIT_WEB_PORT || defaultPort);
+const port = Number.isFinite(desired) ? await pickPort(desired) : await pickPort(defaultPort);
 if (port !== desired) {
   console.warn(`warn: WEB_PORT ${desired} in use; using ${port}`);
 }

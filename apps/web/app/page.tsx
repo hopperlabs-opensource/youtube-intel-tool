@@ -8,6 +8,7 @@ import type { LibraryVideo } from "@yt/contracts";
 import { AppHeader } from "@/components/AppHeader";
 import { ErrorWithRetry } from "@/components/ErrorWithRetry";
 import { SkeletonCard } from "@/components/Skeleton";
+import { getApiClient, toErrorMessage } from "@/lib/api_client";
 
 function pickLabel(v: LibraryVideo["video"]): string {
   return v.title || v.provider_video_id;
@@ -15,6 +16,7 @@ function pickLabel(v: LibraryVideo["video"]): string {
 
 export default function Home() {
   const router = useRouter();
+  const api = getApiClient();
 
   const [url, setUrl] = useState("");
   const [opening, setOpening] = useState(false);
@@ -24,12 +26,7 @@ export default function Home() {
 
   const libraryQ = useQuery({
     queryKey: ["libraryPreview"],
-    queryFn: async () => {
-      const res = await fetch("/api/videos?limit=8");
-      if (!res.ok) throw new Error(await res.text());
-      const json = await res.json();
-      return json.items as LibraryVideo[];
-    },
+    queryFn: async () => (await api.listLibraryVideos({ limit: 8 })).items as LibraryVideo[],
   });
 
   const preview = useMemo(() => (libraryQ.data || []).slice(0, 6), [libraryQ.data]);
@@ -68,17 +65,10 @@ export default function Home() {
                   setOpenError(null);
                   setOpening(true);
                   try {
-                    const res = await fetch("/api/videos/resolve", {
-                      method: "POST",
-                      headers: { "content-type": "application/json" },
-                      body: JSON.stringify({ url: u }),
-                    });
-                    const json = await res.json();
-                    if (!res.ok) throw new Error(json?.error?.message || "resolve failed");
-                    router.push(`/videos/${json.video.id}`);
+                    const out = await api.resolveVideo({ url: u });
+                    router.push(`/videos/${out.video.id}`);
                   } catch (err: unknown) {
-                    const msg = err instanceof Error ? err.message : String(err);
-                    setOpenError(msg);
+                    setOpenError(toErrorMessage(err, "resolve failed"));
                   } finally {
                     setOpening(false);
                   }

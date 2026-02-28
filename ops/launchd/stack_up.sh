@@ -4,14 +4,19 @@ set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${HERE}/../.." && pwd)"
 
+# shellcheck source=ops/lib/defaults.sh
+source "${ROOT_DIR}/ops/lib/defaults.sh"
+
 LOG_DIR="${HOME}/Library/Logs/youtube-intel-tool"
 mkdir -p "${LOG_DIR}"
 
 ts() { date -u +"%Y-%m-%dT%H:%M:%SZ"; }
 log() { printf '%s %s\n' "$(ts)" "$*"; }
 
-WEB_PORT="${YIT_WEB_PORT:-3333}"
-WORKER_METRICS_PORT="${YIT_WORKER_METRICS_PORT:-4010}"
+WEB_PORT_DEFAULT="$(yit_read_default_env "${ROOT_DIR}" "YIT_WEB_PORT" "3333")"
+WORKER_METRICS_PORT_DEFAULT="$(yit_read_default_env "${ROOT_DIR}" "YIT_WORKER_METRICS_PORT" "4010")"
+WEB_PORT="${YIT_WEB_PORT:-${WEB_PORT_DEFAULT}}"
+WORKER_METRICS_PORT="${YIT_WORKER_METRICS_PORT:-${WORKER_METRICS_PORT_DEFAULT}}"
 
 log "stack: waiting for docker..."
 for _ in {1..180}; do

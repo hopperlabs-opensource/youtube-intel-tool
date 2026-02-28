@@ -1,5 +1,6 @@
 import { spawn } from "child_process";
 import path from "path";
+import { fileURLToPath } from "url";
 import { z } from "zod";
 
 const TranscriptProviderResultSchema = z.object({
@@ -24,7 +25,7 @@ export async function fetchTranscriptBestEffort(opts: {
   providerVideoId: string;
   language: string;
 }): Promise<{ is_generated: boolean; cues: TranscriptCueRaw[] }> {
-  const scriptPath = path.resolve(process.cwd(), "python", "fetch_transcript.py");
+  const scriptPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "python", "fetch_transcript.py");
   const pythonBin = (process.env.YIT_PYTHON_BIN || process.env.PYTHON_BIN || "python3").trim() || "python3";
 
   const { stdout, stderr } = await new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {

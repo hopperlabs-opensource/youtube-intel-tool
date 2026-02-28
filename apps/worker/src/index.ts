@@ -1,12 +1,14 @@
 import http from "http";
 import { Worker, QueueEvents } from "bullmq";
-import { initMetrics, logger, QUEUE_NAME } from "@yt/core";
+import { getYitDefault, getYitDefaultNumber, initMetrics, logger, QUEUE_NAME } from "@yt/core";
 import { runIngestVideo } from "./jobs/ingest_video";
 
 const metrics = initMetrics();
 
-const REDIS_URL = process.env.REDIS_URL || "redis://127.0.0.1:56379";
-const METRICS_PORT = Number(process.env.METRICS_PORT || 4010);
+const REDIS_URL = process.env.REDIS_URL || getYitDefault("REDIS_URL");
+const METRICS_PORT = Number(
+  process.env.METRICS_PORT || process.env.YIT_WORKER_METRICS_PORT || getYitDefaultNumber("YIT_WORKER_METRICS_PORT", 4010)
+);
 
 const parsedRedis = new URL(REDIS_URL);
 const connection = {

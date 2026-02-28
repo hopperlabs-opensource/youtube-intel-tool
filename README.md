@@ -17,6 +17,7 @@ operational stack (queues + metrics) you can actually run locally.
 
 ```bash
 pnpm run setup
+pnpm seed:demo   # optional starter ingest list
 ```
 
 Open `http://localhost:3333`.
@@ -45,6 +46,12 @@ Set up this project locally, verify health, and run the first ingest flow.
 
 The scripts and docs are structured so an agent can reliably bring the local
 stack up on a machine with prerequisites installed.
+
+Install optional local agent packs:
+
+```bash
+pnpm agents:install
+```
 
 ## Local-Only Security Notice
 
@@ -109,6 +116,24 @@ First workflow:
 2. On the video page, click `Ingest`.
 3. Watch live progress in the Job Center.
 4. Use `Search`, `Entities`, `Context`, and `Chat` tabs.
+
+Optional starter content:
+
+```bash
+pnpm seed:demo
+```
+
+Edit the list in `config/demo_videos.txt`.
+
+## Centralized Config Defaults
+
+Ports and local URL defaults live in `.env.example` and are shared by scripts/runtime:
+
+- `YIT_WEB_PORT`, `YIT_WORKER_METRICS_PORT`
+- `YIT_POSTGRES_PORT`, `YIT_REDIS_PORT`
+- `YIT_PROMETHEUS_PORT`, `YIT_GRAFANA_PORT`
+
+Advanced overrides remain available in `.env` (`DATABASE_URL`, `REDIS_URL`, `METRICS_PORT`, `YIT_BASE_URL`).
 
 ## OpenAI Key Sources
 
@@ -197,6 +222,9 @@ API guide: [docs/API.md](docs/API.md)
 - CLI reference: [docs/CLI.md](docs/CLI.md)
 - API reference: [docs/API.md](docs/API.md)
 - Runbooks (operations): [docs/RUNBOOKS.md](docs/RUNBOOKS.md)
+- Configuration model: [docs/CONFIG.md](docs/CONFIG.md)
+- Agent packs: [docs/AGENT_PACKS.md](docs/AGENT_PACKS.md)
+- Releasing/npm packaging: [docs/RELEASING.md](docs/RELEASING.md)
 - Troubleshooting: [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)
 - Screenshot pipeline: [docs/SCREENSHOTS.md](docs/SCREENSHOTS.md)
 - Security policy: [SECURITY.md](SECURITY.md)
@@ -236,8 +264,13 @@ pnpm svc:uninstall
 
 ## Current Publishing Status
 
-This repository is source-first.
+This repository is source-first with npm publish scaffolding.
 
-- `@yt/sdk`, `@yt/contracts`, and CLI packages are not yet published to npm.
-- If you want a public npm release, start with `docs/CLI.md` and `docs/API.md`
-  to lock interfaces first.
+- Publishable packages:
+  - `@yt/contracts`
+  - `@yt/sdk`
+  - `@yt/cli`
+- Build and pack dry-run:
+  - `pnpm release:check`
+- Release playbook:
+  - [docs/RELEASING.md](docs/RELEASING.md)

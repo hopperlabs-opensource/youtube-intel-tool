@@ -9,6 +9,15 @@ Run from repo root:
 pnpm yit --help
 ```
 
+Installable package name (for npm publishing): `@yt/cli`.
+
+Global install example:
+
+```bash
+npm install -g @yt/cli
+yit --help
+```
+
 ## Base Options
 
 - `--base-url <url>` override API base URL (or `YIT_BASE_URL` env var)

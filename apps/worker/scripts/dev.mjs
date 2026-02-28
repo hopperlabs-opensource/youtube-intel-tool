@@ -31,8 +31,9 @@ function loadDotEnv(filePath) {
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(here, "../../..");
+const dotEnvExample = loadDotEnv(path.join(repoRoot, ".env.example"));
 const dotEnv = loadDotEnv(path.join(repoRoot, ".env"));
-const mergedEnv = { ...dotEnv, ...process.env };
+const mergedEnv = { ...dotEnvExample, ...dotEnv, ...process.env };
 
 async function isPortFree(port) {
   return await new Promise((resolve) => {
@@ -54,8 +55,9 @@ async function pickPort(startPort, maxTries = 20) {
   return startPort;
 }
 
-const desired = Number(mergedEnv.METRICS_PORT || mergedEnv.WORKER_METRICS_PORT || 4010);
-const port = Number.isFinite(desired) ? await pickPort(desired) : await pickPort(4010);
+const defaultPort = Number(dotEnvExample.YIT_WORKER_METRICS_PORT || dotEnvExample.METRICS_PORT || 4010);
+const desired = Number(mergedEnv.METRICS_PORT || mergedEnv.WORKER_METRICS_PORT || mergedEnv.YIT_WORKER_METRICS_PORT || defaultPort);
+const port = Number.isFinite(desired) ? await pickPort(desired) : await pickPort(defaultPort);
 if (port !== desired) {
   console.warn(`warn: METRICS_PORT ${desired} in use; using ${port}`);
 }

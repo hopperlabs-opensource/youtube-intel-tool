@@ -6,22 +6,19 @@ import { formatHms } from "@/lib/time";
 import { ErrorWithRetry } from "@/components/ErrorWithRetry";
 import { SkeletonLines } from "@/components/Skeleton";
 import type { SearchHit } from "@yt/contracts";
-import { apiFetch } from "@/lib/openai_key";
+import { getApiClient, toErrorMessage } from "@/lib/api_client";
 
 type SearchResult = { hits: SearchHit[]; embedding_error: string | null };
 
 export function SearchPanel(props: { videoId: string; onSeekToMs: (ms: number) => void }) {
+  const api = getApiClient();
   const [query, setQuery] = useState("");
   const [mode, setMode] = useState<"keyword" | "semantic" | "hybrid">("keyword");
   const lastQuery = useRef("");
 
   const capsQ = useQuery({
     queryKey: ["capabilities"],
-    queryFn: async () => {
-      const res = await apiFetch("/api/capabilities");
-      if (!res.ok) throw new Error(await res.text());
-      return (await res.json()) as { embeddings?: { enabled?: boolean; reason?: string | null } };
-    },
+    queryFn: async () => api.capabilities(),
     staleTime: 30_000,
   });
 
@@ -30,21 +27,15 @@ export function SearchPanel(props: { videoId: string; onSeekToMs: (ms: number) =
   const search = useMutation({
     mutationFn: async (q: string) => {
       lastQuery.current = q;
-      const res = await apiFetch(`/api/videos/${props.videoId}/search`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ query: q, mode, limit: 20 }),
-      });
-      if (!res.ok) {
-        let msg = await res.text();
-        try {
-          const j = JSON.parse(msg);
-          msg = j?.error?.message || msg;
-        } catch {}
-        throw new Error(msg);
+      try {
+        const json = await api.searchVideo(props.videoId, { query: q, mode, limit: 20 });
+        return {
+          hits: (json.hits as SearchHit[]) ?? [],
+          embedding_error: (json.embedding_error as string | null) ?? null,
+        } satisfies SearchResult;
+      } catch (err: unknown) {
+        throw new Error(toErrorMessage(err, "Search failed."));
       }
-      const json = await res.json();
-      return { hits: (json.hits as SearchHit[]) ?? [], embedding_error: (json.embedding_error as string | null) ?? null } satisfies SearchResult;
     },
   });
 

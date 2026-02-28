@@ -1,4 +1,5 @@
 import { ApiErrorSchema } from "@yt/contracts";
+import { getYitDefault } from "@yt/core";
 import type { z } from "zod";
 import fs from "node:fs";
 import path from "node:path";
@@ -51,7 +52,7 @@ function readDevBaseUrl(): string | null {
 
 export function makeApiClient(input?: { baseUrl?: string; headers?: Record<string, string> }): ApiClient {
   const baseUrl = normalizeBaseUrl(
-    input?.baseUrl ?? process.env.YIT_BASE_URL ?? readDevBaseUrl() ?? "http://localhost:3333"
+    input?.baseUrl ?? process.env.YIT_BASE_URL ?? readDevBaseUrl() ?? getYitDefault("YIT_BASE_URL")
   );
   return { baseUrl, headers: input?.headers };
 }

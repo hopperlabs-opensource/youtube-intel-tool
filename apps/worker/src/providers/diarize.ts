@@ -1,5 +1,6 @@
 import { spawn } from "child_process";
 import path from "path";
+import { fileURLToPath } from "url";
 import { z } from "zod";
 
 const DiarizeProviderResultSchema = z.object({
@@ -65,7 +66,7 @@ export async function diarizeYouTubeBestEffort(opts: {
   duration_ms: number;
   speakers: Array<{ key: string; segments: Array<{ start_ms: number; end_ms: number; confidence: number | null }> }>;
 }> {
-  const scriptPath = path.resolve(process.cwd(), "python", "diarize.py");
+  const scriptPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "python", "diarize.py");
 
   const args = [
     "--url",
@@ -113,4 +114,3 @@ export async function diarizeYouTubeBestEffort(opts: {
     })),
   };
 }
-

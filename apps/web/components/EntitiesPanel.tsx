@@ -7,6 +7,7 @@ import type { EntityMention } from "@yt/contracts";
 import { ErrorWithRetry } from "@/components/ErrorWithRetry";
 import { SkeletonLines } from "@/components/Skeleton";
 import { formatHms } from "@/lib/time";
+import { getApiClient } from "@/lib/api_client";
 
 export function EntitiesPanel(props: {
   videoId: string;
@@ -14,28 +15,19 @@ export function EntitiesPanel(props: {
   onSeekToMs?: (ms: number) => void;
   onSelectCueId?: (cueId: string) => void;
 }) {
+  const api = getApiClient();
   const atBucket = Math.floor(props.atMs / 5000) * 5000;
   const [selected, setSelected] = useState<Entity | null>(null);
 
   const q = useQuery({
     queryKey: ["entities", props.videoId, atBucket],
-    queryFn: async () => {
-      const res = await fetch(`/api/videos/${props.videoId}/entities?at_ms=${atBucket}&window_ms=120000`);
-      if (!res.ok) throw new Error(await res.text());
-      const json = await res.json();
-      return json.entities as Entity[];
-    },
+    queryFn: async () => (await api.listEntities(props.videoId, { at_ms: atBucket, window_ms: 120_000 })).entities as Entity[],
   });
 
   const mentionsQ = useQuery({
     enabled: Boolean(selected?.id),
     queryKey: ["entityMentions", props.videoId, selected?.id],
-    queryFn: async () => {
-      const res = await fetch(`/api/videos/${props.videoId}/entities/${selected!.id}/mentions?limit=50`);
-      if (!res.ok) throw new Error(await res.text());
-      const json = await res.json();
-      return json.mentions as EntityMention[];
-    },
+    queryFn: async () => (await api.listEntityMentions(props.videoId, String(selected?.id), { limit: 50 })).mentions as EntityMention[],
   });
 
   return (

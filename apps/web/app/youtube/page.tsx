@@ -7,12 +7,14 @@ import Link from "next/link";
 import type { VideoSource } from "@yt/contracts";
 import { AppHeader } from "@/components/AppHeader";
 import { ErrorWithRetry } from "@/components/ErrorWithRetry";
+import { getApiClient, toErrorMessage } from "@/lib/api_client";
 import { formatHms } from "@/lib/time";
 
 type DiscoverTab = "search" | "channel" | "playlist";
 type DiscoverResponse = { items: VideoSource[] };
 
 export default function YouTubeSearchPage() {
+  const api = getApiClient();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [tab, setTab] = useState<DiscoverTab>("search");
@@ -39,38 +41,28 @@ export default function YouTubeSearchPage() {
     mutationFn: async (input: { tab: DiscoverTab; value: string }) => {
       const v = input.value.trim();
       if (!v) throw new Error("input is empty");
-
-      const req = (() => {
+      try {
         if (input.tab === "channel") {
-          return { path: "/api/youtube/channel/uploads", body: { handle_or_url: v, take: 50, cache_hours: 24 } };
+          return (await api.youtubeChannelUploads({ handle_or_url: v, take: 50, cache_hours: 24 })) as DiscoverResponse;
         }
         if (input.tab === "playlist") {
-          return { path: "/api/youtube/playlist/items", body: { url: v, take: 200, cache_hours: 24 } };
+          return (await api.youtubePlaylistItems({ url: v, take: 200, cache_hours: 24 })) as DiscoverResponse;
         }
-        return { path: "/api/youtube/search", body: { query: v, take: 12, cache_hours: 24 } };
-      })();
-
-      const res = await fetch(req.path, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(req.body),
-      });
-      const json = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(json?.error?.message || "youtube discovery failed");
-      return json as DiscoverResponse;
+        return (await api.youtubeSearch({ query: v, take: 12, cache_hours: 24 })) as DiscoverResponse;
+      } catch (err: unknown) {
+        throw new Error(toErrorMessage(err, "youtube discovery failed"));
+      }
     },
   });
 
   const resolveAndOpen = useMutation({
     mutationFn: async (url: string) => {
-      const res = await fetch("/api/videos/resolve", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ url }),
-      });
-      const json = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(json?.error?.message || "resolve failed");
-      return json.video as { id: string };
+      try {
+        const json = await api.resolveVideo({ url });
+        return json.video as { id: string };
+      } catch (err: unknown) {
+        throw new Error(toErrorMessage(err, "resolve failed"));
+      }
     },
     onSuccess: (video) => {
       router.push(`/videos/${video.id}`);

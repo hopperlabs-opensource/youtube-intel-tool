@@ -1,5 +1,5 @@
 import { Queue } from "bullmq";
-import { QUEUE_NAME } from "@yt/core";
+import { QUEUE_NAME, getYitDefault } from "@yt/core";
 
 declare global {
   var __yt_queue__: Queue | undefined;
@@ -8,7 +8,7 @@ declare global {
 export function getIngestQueue(): Queue {
   if (globalThis.__yt_queue__) return globalThis.__yt_queue__;
 
-  const redisUrl = process.env.REDIS_URL || "redis://127.0.0.1:56379";
+  const redisUrl = process.env.REDIS_URL || getYitDefault("REDIS_URL");
   const parsedRedis = new URL(redisUrl);
   const connection = {
     host: parsedRedis.hostname,

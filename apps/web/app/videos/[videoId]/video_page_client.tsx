@@ -19,6 +19,7 @@ import { SettingsButton } from "@/components/SettingsButton";
 import { useUiStore } from "@/lib/store";
 import { useJobsStore } from "@/lib/jobs_store";
 import { formatHms } from "@/lib/time";
+import { getApiClient, toErrorMessage } from "@/lib/api_client";
 
 type TabKey = "chat" | "search" | "outline" | "speakers" | "entities" | "context";
 const VALID_TABS: TabKey[] = ["chat", "search", "outline", "speakers", "entities", "context"];
@@ -33,6 +34,7 @@ function asObject(v: unknown): Record<string, unknown> | null {
 }
 
 export function VideoPageClient(props: { videoId: string; initialAtMs: number | null; initialCueId: string | null }) {
+  const api = getApiClient();
   const validVideoId = Boolean(props.videoId) && props.videoId !== "undefined";
   const playerRef = useRef<YouTubePlayerHandle>(null);
   const router = useRouter();
@@ -83,23 +85,13 @@ export function VideoPageClient(props: { videoId: string; initialAtMs: number | 
   const videoQ = useQuery({
     enabled: validVideoId,
     queryKey: ["video", props.videoId],
-    queryFn: async () => {
-      const res = await fetch(`/api/videos/${props.videoId}`);
-      if (!res.ok) throw new Error(await res.text());
-      const json = await res.json();
-      return json.video as Video;
-    },
+    queryFn: async () => (await api.getVideo(props.videoId)).video as Video,
   });
 
   const transcriptsQ = useQuery({
     enabled: validVideoId,
     queryKey: ["transcripts", props.videoId],
-    queryFn: async () => {
-      const res = await fetch(`/api/videos/${props.videoId}/transcripts`);
-      if (!res.ok) throw new Error(await res.text());
-      const json = await res.json();
-      return json.transcripts as Transcript[];
-    },
+    queryFn: async () => (await api.listTranscripts(props.videoId)).transcripts as Transcript[],
   });
 
   const transcriptId = useMemo(() => transcriptsQ.data?.[0]?.id ?? null, [transcriptsQ.data]);
@@ -107,12 +99,7 @@ export function VideoPageClient(props: { videoId: string; initialAtMs: number | 
   const speakersQ = useQuery({
     enabled: validVideoId,
     queryKey: ["videoSpeakers", props.videoId],
-    queryFn: async () => {
-      const res = await fetch(`/api/videos/${props.videoId}/speakers`);
-      if (!res.ok) throw new Error(await res.text());
-      const json = await res.json();
-      return json.speakers as VideoSpeaker[];
-    },
+    queryFn: async () => (await api.listVideoSpeakers(props.videoId)).speakers as VideoSpeaker[],
   });
 
   const speakerById = useMemo(() => {
@@ -124,23 +111,13 @@ export function VideoPageClient(props: { videoId: string; initialAtMs: number | 
   const cuesQ = useQuery({
     enabled: Boolean(transcriptId),
     queryKey: ["cues", transcriptId],
-    queryFn: async () => {
-      const res = await fetch(`/api/transcripts/${transcriptId}/cues?cursor=0&limit=5000`);
-      if (!res.ok) throw new Error(await res.text());
-      const json = await res.json();
-      return json.cues as TranscriptCue[];
-    },
+    queryFn: async () => (await api.listCues(String(transcriptId), { cursor: 0, limit: 5000 })).cues as TranscriptCue[],
   });
 
   const jobQ = useQuery({
     enabled: Boolean(jobId),
     queryKey: ["job", jobId],
-    queryFn: async () => {
-      const res = await fetch(`/api/jobs/${jobId}`);
-      if (!res.ok) throw new Error(await res.text());
-      const json = await res.json();
-      return json.job as Job;
-    },
+    queryFn: async () => (await api.getJob(String(jobId))).job as Job,
     refetchInterval: (q) => {
       const status = (q.state.data as Job | undefined)?.status;
       return status === "completed" || status === "failed" ? false : 1000;
@@ -231,23 +208,15 @@ export function VideoPageClient(props: { videoId: string; initialAtMs: number | 
                 if (cliEnrich) steps.push("enrich_cli");
                 if (stt) steps.push("stt");
                 if (diarize) steps.push("diarize");
-                const res = await fetch(`/api/videos/${props.videoId}/ingest`, {
-                  method: "POST",
-                  headers: { "content-type": "application/json" },
-                  // Send an explicit allowlist; empty array means "no optional steps".
-                  body: JSON.stringify({ language: "en", steps }),
-                });
-                const json = await res.json();
-                if (!res.ok) throw new Error(json?.error?.message || "ingest failed");
-                setJobId(json.job.id);
-                rememberJob(json.job.id, { openDock: true, openInspector: true });
+                const out = await api.ingestVideo(props.videoId, { language: "en", steps });
+                setJobId(out.job.id);
+                rememberJob(out.job.id, { openDock: true, openInspector: true });
                 try {
-                  localStorage.setItem(`yit:lastIngestJob:${props.videoId}`, json.job.id);
+                  localStorage.setItem(`yit:lastIngestJob:${props.videoId}`, out.job.id);
                 } catch {}
                 await transcriptsQ.refetch();
               } catch (err: unknown) {
-                const msg = err instanceof Error ? err.message : String(err);
-                setIngestError(msg);
+                setIngestError(toErrorMessage(err, "ingest failed"));
               } finally {
                 setIngestSubmitting(false);
               }

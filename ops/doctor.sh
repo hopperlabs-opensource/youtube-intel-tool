@@ -4,6 +4,9 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${ROOT_DIR}"
 
+# shellcheck source=ops/lib/defaults.sh
+source "${ROOT_DIR}/ops/lib/defaults.sh"
+
 FAILURES=0
 
 ok() {
@@ -89,8 +92,11 @@ else
   warn ".env missing (copy .env.example -> .env)"
 fi
 
-WEB_PORT="${YIT_WEB_PORT:-3333}"
-WORKER_METRICS_PORT="${YIT_WORKER_METRICS_PORT:-4010}"
+WEB_PORT_DEFAULT="$(yit_read_default_env "${ROOT_DIR}" "YIT_WEB_PORT" "3333")"
+WORKER_METRICS_PORT_DEFAULT="$(yit_read_default_env "${ROOT_DIR}" "YIT_WORKER_METRICS_PORT" "4010")"
+
+WEB_PORT="${YIT_WEB_PORT:-${WEB_PORT_DEFAULT}}"
+WORKER_METRICS_PORT="${YIT_WORKER_METRICS_PORT:-${WORKER_METRICS_PORT_DEFAULT}}"
 
 if curl -fsS "http://localhost:${WEB_PORT}/api/health" >/dev/null 2>&1; then
   ok "web health reachable on :${WEB_PORT}"

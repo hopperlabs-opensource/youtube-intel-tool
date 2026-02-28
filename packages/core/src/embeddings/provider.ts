@@ -1,5 +1,6 @@
 import { embedWithOllama } from "./ollama";
 import { embedWithOpenAI } from "./openai";
+import { getYitDefault } from "../config/defaults";
 
 export type EmbeddingsProvider = "ollama" | "openai" | "disabled";
 
@@ -73,7 +74,7 @@ export function getEmbeddingsStatus(env: Record<string, string | undefined> = pr
   }
 
   // provider === "ollama"
-  const baseUrl = clean(env.OLLAMA_BASE_URL) || "http://127.0.0.1:11434";
+  const baseUrl = clean(env.OLLAMA_BASE_URL) || getYitDefault("OLLAMA_BASE_URL");
   const model = clean(env.OLLAMA_EMBED_MODEL) || "nomic-embed-text";
   return {
     enabled: true,
@@ -93,7 +94,7 @@ export function createEmbedderFromEnv(env: Record<string, string | undefined> = 
   if (status.provider === "openai") {
     const apiKey = clean(env.OPENAI_API_KEY);
     const model = clean(env.YIT_OPENAI_EMBED_MODEL) || "text-embedding-3-small";
-    const baseUrl = clean(env.OPENAI_BASE_URL) || undefined;
+    const baseUrl = clean(env.OPENAI_BASE_URL) || getYitDefault("OPENAI_BASE_URL");
     const dims = status.dimensions;
     return {
       provider: "openai",
@@ -106,7 +107,7 @@ export function createEmbedderFromEnv(env: Record<string, string | undefined> = 
   }
 
   if (status.provider === "ollama") {
-    const baseUrl = clean(env.OLLAMA_BASE_URL) || "http://127.0.0.1:11434";
+    const baseUrl = clean(env.OLLAMA_BASE_URL) || getYitDefault("OLLAMA_BASE_URL");
     const model = clean(env.OLLAMA_EMBED_MODEL) || "nomic-embed-text";
     return {
       provider: "ollama",
@@ -120,4 +121,3 @@ export function createEmbedderFromEnv(env: Record<string, string | undefined> = 
 
   throw new Error(status.reason || "embeddings disabled");
 }
-

@@ -6,18 +6,15 @@ import Link from "next/link";
 import type { LibraryChannel } from "@yt/contracts";
 import { ErrorWithRetry } from "@/components/ErrorWithRetry";
 import { SkeletonCard } from "@/components/Skeleton";
+import { getApiClient } from "@/lib/api_client";
 
 export default function LibraryChannelsPage() {
+  const api = getApiClient();
   const [filter, setFilter] = useState("");
 
   const q = useQuery({
     queryKey: ["libraryChannels"],
-    queryFn: async () => {
-      const res = await fetch("/api/library/channels?limit=500");
-      if (!res.ok) throw new Error(await res.text());
-      const json = await res.json();
-      return json.channels as LibraryChannel[];
-    },
+    queryFn: async () => (await api.listLibraryChannels({ limit: 500 })).channels as LibraryChannel[],
   });
 
   const items = useMemo(() => {
@@ -94,4 +91,3 @@ export default function LibraryChannelsPage() {
     </div>
   );
 }
-

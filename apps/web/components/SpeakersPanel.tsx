@@ -5,6 +5,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import type { SpeakerSegment, VideoSpeaker } from "@yt/contracts";
 import { ErrorWithRetry } from "@/components/ErrorWithRetry";
 import { SkeletonLines } from "@/components/Skeleton";
+import { getApiClient, toErrorMessage } from "@/lib/api_client";
 import { formatHms } from "@/lib/time";
 
 const EMPTY_SPEAKERS: VideoSpeaker[] = [];
@@ -44,29 +45,25 @@ export function SpeakersPanel(props: {
   atMs: number;
   onSeekToMs: (ms: number) => void;
 }) {
+  const api = getApiClient();
   const [selectedSpeakerId, setSelectedSpeakerId] = useState<string | null>(null);
   const [labelDraft, setLabelDraft] = useState("");
 
   const speakersQ = useQuery({
     queryKey: ["videoSpeakers", props.videoId],
-    queryFn: async () => {
-      const res = await fetch(`/api/videos/${props.videoId}/speakers`);
-      if (!res.ok) throw new Error(await res.text());
-      const json = await res.json();
-      return json.speakers as VideoSpeaker[];
-    },
+    queryFn: async () => (await api.listVideoSpeakers(props.videoId)).speakers as VideoSpeaker[],
   });
 
   const segmentsQ = useQuery({
     enabled: Boolean(props.transcriptId),
     queryKey: ["speakerSegments", props.videoId, props.transcriptId],
-    queryFn: async () => {
-      const q = props.transcriptId ? `?transcript_id=${encodeURIComponent(props.transcriptId)}&limit=50000` : "";
-      const res = await fetch(`/api/videos/${props.videoId}/speakers/segments${q}`);
-      if (!res.ok) throw new Error(await res.text());
-      const json = await res.json();
-      return json.segments as SpeakerSegment[];
-    },
+    queryFn: async () =>
+      (
+        await api.listSpeakerSegments(props.videoId, {
+          transcript_id: props.transcriptId || undefined,
+          limit: 50_000,
+        })
+      ).segments as SpeakerSegment[],
   });
 
   const speakers = speakersQ.data ?? EMPTY_SPEAKERS;
@@ -102,14 +99,12 @@ export function SpeakersPanel(props: {
 
   const rename = useMutation({
     mutationFn: async (input: { speakerId: string; label: string | null }) => {
-      const res = await fetch(`/api/videos/${props.videoId}/speakers/${input.speakerId}`, {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ label: input.label }),
-      });
-      const json = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(json?.error?.message || "rename failed");
-      return json.speaker as VideoSpeaker;
+      try {
+        const json = await api.updateVideoSpeaker(props.videoId, input.speakerId, { label: input.label });
+        return json.speaker as VideoSpeaker;
+      } catch (err: unknown) {
+        throw new Error(toErrorMessage(err, "rename failed"));
+      }
     },
     onSuccess: () => {
       void speakersQ.refetch();

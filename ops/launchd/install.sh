@@ -4,6 +4,9 @@ set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${HERE}/../.." && pwd)"
 
+# shellcheck source=ops/lib/defaults.sh
+source "${ROOT_DIR}/ops/lib/defaults.sh"
+
 UID_NUM="$(id -u)"
 AGENTS_DIR="${HOME}/Library/LaunchAgents"
 LOG_DIR="${HOME}/Library/Logs/youtube-intel-tool"
@@ -25,8 +28,10 @@ DOCKER_DIR="$(dirname "${DOCKER_BIN}")"
 # Launchd does not reliably inherit your shell PATH (especially with nvm).
 LAUNCHD_PATH="${PNPM_DIR}:${DOCKER_DIR}:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 
-WEB_PORT="${YIT_WEB_PORT:-3333}"
-WORKER_METRICS_PORT="${YIT_WORKER_METRICS_PORT:-4010}"
+WEB_PORT_DEFAULT="$(yit_read_default_env "${ROOT_DIR}" "YIT_WEB_PORT" "3333")"
+WORKER_METRICS_PORT_DEFAULT="$(yit_read_default_env "${ROOT_DIR}" "YIT_WORKER_METRICS_PORT" "4010")"
+WEB_PORT="${YIT_WEB_PORT:-${WEB_PORT_DEFAULT}}"
+WORKER_METRICS_PORT="${YIT_WORKER_METRICS_PORT:-${WORKER_METRICS_PORT_DEFAULT}}"
 
 STACK_PLIST="${AGENTS_DIR}/com.ytintel.stack.plist"
 WEB_PLIST="${AGENTS_DIR}/com.ytintel.web.plist"

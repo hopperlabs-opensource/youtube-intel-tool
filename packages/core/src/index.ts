@@ -29,3 +29,4 @@ export * from "./chat";
 export * from "./logging/logger";
 export * from "./metrics/metrics";
 export * from "./queue";
+export * from "./config/defaults";

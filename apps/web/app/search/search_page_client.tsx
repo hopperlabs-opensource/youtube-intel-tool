@@ -8,11 +8,12 @@ import type { CapabilitiesResponse, LibraryChannel, LibraryPerson, LibrarySearch
 import { AppHeader } from "@/components/AppHeader";
 import { ErrorWithRetry } from "@/components/ErrorWithRetry";
 import { formatHms } from "@/lib/time";
-import { apiFetch } from "@/lib/openai_key";
+import { getApiClient, toErrorMessage } from "@/lib/api_client";
 
 type SearchResponse = { hits: LibrarySearchHit[]; embedding_error: string | null };
 
 export function SearchPageClient(props: { initialQuery: string; initialChannel: string | null; initialTopic: string | null; initialPerson: string | null }) {
+  const api = getApiClient();
   const router = useRouter();
   const didAutoSearch = useRef(false);
   const [query, setQuery] = useState(() => props.initialQuery);
@@ -23,41 +24,22 @@ export function SearchPageClient(props: { initialQuery: string; initialChannel: 
 
   const channelsQ = useQuery({
     queryKey: ["facetChannels"],
-    queryFn: async () => {
-      const res = await fetch("/api/library/channels?limit=500");
-      if (!res.ok) throw new Error(await res.text());
-      const json = await res.json();
-      return json.channels as LibraryChannel[];
-    },
+    queryFn: async () => (await api.listLibraryChannels({ limit: 500 })).channels as LibraryChannel[],
   });
 
   const topicsQ = useQuery({
     queryKey: ["facetTopics"],
-    queryFn: async () => {
-      const res = await fetch("/api/library/topics?limit=500");
-      if (!res.ok) throw new Error(await res.text());
-      const json = await res.json();
-      return json.topics as LibraryTopic[];
-    },
+    queryFn: async () => (await api.listLibraryTopics({ limit: 500 })).topics as LibraryTopic[],
   });
 
   const peopleQ = useQuery({
     queryKey: ["facetPeople"],
-    queryFn: async () => {
-      const res = await fetch("/api/library/people?limit=500");
-      if (!res.ok) throw new Error(await res.text());
-      const json = await res.json();
-      return json.people as LibraryPerson[];
-    },
+    queryFn: async () => (await api.listLibraryPeople({ limit: 500 })).people as LibraryPerson[],
   });
 
   const capsQ = useQuery({
     queryKey: ["capabilities"],
-    queryFn: async () => {
-      const res = await apiFetch("/api/capabilities");
-      if (!res.ok) throw new Error(await res.text());
-      return (await res.json()) as CapabilitiesResponse;
-    },
+    queryFn: async () => (await api.capabilities()) as CapabilitiesResponse,
     staleTime: 30_000,
   });
 
@@ -70,20 +52,17 @@ export function SearchPageClient(props: { initialQuery: string; initialChannel: 
       if (topic) scope.topics = [topic];
       if (person) scope.people = [person];
 
-      const res = await apiFetch("/api/search", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
+      try {
+        return (await api.searchLibrary({
           query: q,
           mode,
           limit: 30,
           language: "en",
           scope: Object.keys(scope).length ? scope : undefined,
-        }),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json?.error?.message || "search failed");
-      return json as SearchResponse;
+        })) as SearchResponse;
+      } catch (err: unknown) {
+        throw new Error(toErrorMessage(err, "search failed"));
+      }
     },
   });
 

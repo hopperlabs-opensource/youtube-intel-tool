@@ -18,6 +18,12 @@ export const ApiErrorSchema = z.object({
 });
 export type ApiError = z.infer<typeof ApiErrorSchema>;
 
+export const HealthResponseSchema = z.object({
+  ok: z.boolean(),
+  service: z.string().min(1),
+});
+export type HealthResponse = z.infer<typeof HealthResponseSchema>;
+
 export const VideoProviderSchema = z.enum(["youtube"]);
 export type VideoProvider = z.infer<typeof VideoProviderSchema>;
 
@@ -340,6 +346,41 @@ export const GetChatTurnResponseSchema = z.object({
   turn: ChatTurnSchema,
 });
 
+export const ChatStreamMetaEventSchema = z.object({
+  type: z.literal("meta"),
+  trace_id: z.string().min(1),
+});
+export type ChatStreamMetaEvent = z.infer<typeof ChatStreamMetaEventSchema>;
+
+export const ChatStreamTextEventSchema = z.object({
+  type: z.literal("text"),
+  delta: z.string(),
+});
+export type ChatStreamTextEvent = z.infer<typeof ChatStreamTextEventSchema>;
+
+export const ChatStreamDoneEventSchema = z.object({
+  type: z.literal("done"),
+  response: ChatResponseSchema,
+});
+export type ChatStreamDoneEvent = z.infer<typeof ChatStreamDoneEventSchema>;
+
+export const ChatStreamErrorEventSchema = z.object({
+  type: z.literal("error"),
+  error: z.object({
+    code: z.string().min(1),
+    message: z.string().min(1),
+  }),
+});
+export type ChatStreamErrorEvent = z.infer<typeof ChatStreamErrorEventSchema>;
+
+export const ChatStreamEventSchema = z.discriminatedUnion("type", [
+  ChatStreamMetaEventSchema,
+  ChatStreamTextEventSchema,
+  ChatStreamDoneEventSchema,
+  ChatStreamErrorEventSchema,
+]);
+export type ChatStreamEvent = z.infer<typeof ChatStreamEventSchema>;
+
 // Library
 export const LibraryVideoSchema = z.object({
   video: VideoSchema,
@@ -545,6 +586,72 @@ export const LibraryRepairResponseSchema = z.object({
   jobs: z.array(JobSchema),
 });
 export type LibraryRepairResponse = z.infer<typeof LibraryRepairResponseSchema>;
+
+export const SettingsOpenAIResponseSchema = z.object({
+  openai: z.object({
+    env_available: z.boolean(),
+    request_key_provided: z.boolean(),
+    effective_source: z.enum(["env", "header", "none"]),
+  }),
+  embeddings: z.object({
+    enabled: z.boolean(),
+    provider: z.string().nullable(),
+    model_id: z.string().nullable(),
+    dimensions: z.number().int().nullable(),
+    reason: z.string().nullable(),
+  }),
+});
+export type SettingsOpenAIResponse = z.infer<typeof SettingsOpenAIResponseSchema>;
+
+export const JobStreamHelloEventSchema = z.object({
+  type: z.literal("hello"),
+  trace_id: z.string().min(1),
+  job_id: IdSchema,
+});
+export type JobStreamHelloEvent = z.infer<typeof JobStreamHelloEventSchema>;
+
+export const JobStreamJobEventSchema = z.object({
+  type: z.literal("job"),
+  job: JobSchema,
+});
+export type JobStreamJobEvent = z.infer<typeof JobStreamJobEventSchema>;
+
+export const JobStreamLogEventSchema = z.object({
+  type: z.literal("log"),
+  log: JobLogSchema,
+});
+export type JobStreamLogEvent = z.infer<typeof JobStreamLogEventSchema>;
+
+export const JobStreamHeartbeatEventSchema = z.object({
+  type: z.literal("heartbeat"),
+  ts: IsoDateTimeSchema,
+});
+export type JobStreamHeartbeatEvent = z.infer<typeof JobStreamHeartbeatEventSchema>;
+
+export const JobStreamDoneEventSchema = z.object({
+  type: z.literal("done"),
+  job: JobSchema,
+});
+export type JobStreamDoneEvent = z.infer<typeof JobStreamDoneEventSchema>;
+
+export const JobStreamErrorEventSchema = z.object({
+  type: z.literal("error"),
+  error: z.object({
+    code: z.string().min(1),
+    message: z.string().min(1),
+  }),
+});
+export type JobStreamErrorEvent = z.infer<typeof JobStreamErrorEventSchema>;
+
+export const JobStreamEventSchema = z.discriminatedUnion("type", [
+  JobStreamHelloEventSchema,
+  JobStreamJobEventSchema,
+  JobStreamLogEventSchema,
+  JobStreamHeartbeatEventSchema,
+  JobStreamDoneEventSchema,
+  JobStreamErrorEventSchema,
+]);
+export type JobStreamEvent = z.infer<typeof JobStreamEventSchema>;
 
 // CLI Enrichment (structured output consumed from external CLIs like gemini/claude/codex)
 export const CliEnrichmentEntitySchema = z.object({

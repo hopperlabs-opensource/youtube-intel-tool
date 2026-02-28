@@ -2,28 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import type { SettingsOpenAIResponse } from "@yt/contracts";
+import { getApiClient } from "@/lib/api_client";
 import {
-  apiFetch,
   clearStoredOpenAIKey,
   getStoredOpenAIKey,
   hasStoredOpenAIKey,
   saveStoredOpenAIKey,
 } from "@/lib/openai_key";
-
-type SettingsStatusResponse = {
-  openai: {
-    env_available: boolean;
-    request_key_provided: boolean;
-    effective_source: "env" | "header" | "none";
-  };
-  embeddings: {
-    enabled: boolean;
-    provider: string | null;
-    model_id: string | null;
-    dimensions: number | null;
-    reason: string | null;
-  };
-};
 
 function sourceLabel(source: "env" | "header" | "none"): string {
   if (source === "env") return ".env (server)";
@@ -32,6 +18,7 @@ function sourceLabel(source: "env" | "header" | "none"): string {
 }
 
 export function SettingsButton() {
+  const api = getApiClient();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [draftKey, setDraftKey] = useState(() => getStoredOpenAIKey());
@@ -51,11 +38,7 @@ export function SettingsButton() {
   const statusQ = useQuery({
     queryKey: ["settingsOpenAIStatus", savedInBrowser],
     enabled: open,
-    queryFn: async () => {
-      const res = await apiFetch("/api/settings/openai");
-      if (!res.ok) throw new Error(await res.text());
-      return (await res.json()) as SettingsStatusResponse;
-    },
+    queryFn: async () => (await api.settingsOpenAI()) as SettingsOpenAIResponse,
   });
 
   const sourceText = useMemo(() => {

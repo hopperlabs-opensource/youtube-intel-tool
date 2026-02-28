@@ -18,6 +18,8 @@ fi
 
 WEB_PORT="$(web_port)"
 WORKER_METRICS_PORT="$(worker_metrics_port)"
+GRAFANA_PORT="$(grafana_port)"
+PROMETHEUS_PORT="$(prometheus_port)"
 
 log "prometheus: writing config for web:${WEB_PORT} worker:${WORKER_METRICS_PORT}"
 cat >"${ROOT_DIR}/ops/observability/prometheus/prometheus.generated.yml" <<YAML
@@ -78,6 +80,6 @@ else
 fi
 
 log "up: web http://localhost:${WEB_PORT}"
-log "up: grafana http://localhost:53000 (container yt_grafana)"
-log "up: prometheus http://localhost:59092 (container yt_prometheus)"
+log "up: grafana http://localhost:${GRAFANA_PORT} (container yt_grafana)"
+log "up: prometheus http://localhost:${PROMETHEUS_PORT} (container yt_prometheus)"
 log "up: logs: pnpm bg:logs"

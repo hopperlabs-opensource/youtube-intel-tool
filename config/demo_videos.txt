@@ -1,0 +1,7 @@
+# Demo ingest list (editable)
+# Keep this list short to reduce first-run time/cost.
+# Add your own URLs here (for example: OpenClaw founder interviews or Lex Fridman episodes).
+
+https://www.youtube.com/watch?v=dQw4w9WgXcQ
+https://www.youtube.com/watch?v=jNQXAC9IVRw
+https://www.youtube.com/watch?v=M7lc1UVf-VE

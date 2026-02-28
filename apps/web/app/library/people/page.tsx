@@ -6,18 +6,15 @@ import Link from "next/link";
 import type { LibraryPerson } from "@yt/contracts";
 import { ErrorWithRetry } from "@/components/ErrorWithRetry";
 import { SkeletonCard } from "@/components/Skeleton";
+import { getApiClient } from "@/lib/api_client";
 
 export default function LibraryPeoplePage() {
+  const api = getApiClient();
   const [filter, setFilter] = useState("");
 
   const q = useQuery({
     queryKey: ["libraryPeople"],
-    queryFn: async () => {
-      const res = await fetch("/api/library/people?limit=500");
-      if (!res.ok) throw new Error(await res.text());
-      const json = await res.json();
-      return json.people as LibraryPerson[];
-    },
+    queryFn: async () => (await api.listLibraryPeople({ limit: 500 })).people as LibraryPerson[],
   });
 
   const items = useMemo(() => {
@@ -94,4 +91,3 @@ export default function LibraryPeoplePage() {
     </div>
   );
 }
-

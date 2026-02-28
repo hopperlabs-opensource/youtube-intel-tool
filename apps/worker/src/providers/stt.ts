@@ -2,7 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
-import { spawnCapture } from "@yt/core";
+import { getYitDefault, spawnCapture } from "@yt/core";
 import { z } from "zod";
 
 const OpenAITranscriptionSchema = z.object({
@@ -84,7 +84,7 @@ export async function transcribeYouTubeBestEffort(opts: {
   if (!apiKey) throw new Error("OPENAI_API_KEY not set");
 
   const model = clean(process.env.YIT_OPENAI_STT_MODEL) || "whisper-1";
-  const baseUrl = (clean(process.env.OPENAI_BASE_URL) || "https://api.openai.com").replace(/\/$/, "");
+  const baseUrl = (clean(process.env.OPENAI_BASE_URL) || getYitDefault("OPENAI_BASE_URL")).replace(/\/$/, "");
 
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "yit-stt-"));
   try {
@@ -136,4 +136,3 @@ export async function transcribeYouTubeBestEffort(opts: {
     } catch {}
   }
 }
-

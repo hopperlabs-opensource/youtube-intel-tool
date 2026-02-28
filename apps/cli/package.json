@@ -1,20 +1,37 @@
 {
-  "name": "cli",
+  "name": "@yt/cli",
   "version": "0.0.1",
-  "private": true,
+  "description": "Command-line client for YouTube Intel Tool.",
+  "license": "MIT",
   "type": "module",
+  "bin": {
+    "yit": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
+    "build": "tsup src/index.ts --format esm --target node20 --clean --sourcemap",
+    "clean": "rm -rf dist",
     "yit": "tsx src/index.ts",
     "lint": "echo \"(cli) no lint\"",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "prepack": "pnpm run build"
   },
   "dependencies": {
     "@yt/contracts": "workspace:*",
+    "@yt/core": "workspace:*",
     "commander": "^13.1.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/node": "^22.13.5",
+    "tsup": "^8.5.0",
     "tsx": "^4.19.2",
     "typescript": "^5.5.4"
   }

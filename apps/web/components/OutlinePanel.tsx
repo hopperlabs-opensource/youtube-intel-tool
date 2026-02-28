@@ -5,30 +5,22 @@ import { formatHms } from "@/lib/time";
 import { ErrorWithRetry } from "@/components/ErrorWithRetry";
 import { SkeletonLines } from "@/components/Skeleton";
 import type { VideoChapter } from "@yt/contracts";
+import { getApiClient } from "@/lib/api_client";
 
 function isActiveChapter(ch: VideoChapter, atMs: number): boolean {
   return ch.start_ms <= atMs && atMs < ch.end_ms;
 }
 
 export function OutlinePanel(props: { videoId: string; atMs: number; onSeekToMs: (ms: number) => void }) {
+  const api = getApiClient();
   const tagsQ = useQuery({
     queryKey: ["videoTags", props.videoId],
-    queryFn: async () => {
-      const res = await fetch(`/api/videos/${props.videoId}/tags`);
-      if (!res.ok) throw new Error(await res.text());
-      const json = await res.json();
-      return json.tags as string[];
-    },
+    queryFn: async () => (await api.listVideoTags(props.videoId)).tags as string[],
   });
 
   const chaptersQ = useQuery({
     queryKey: ["videoChapters", props.videoId],
-    queryFn: async () => {
-      const res = await fetch(`/api/videos/${props.videoId}/chapters`);
-      if (!res.ok) throw new Error(await res.text());
-      const json = await res.json();
-      return json.chapters as VideoChapter[];
-    },
+    queryFn: async () => (await api.listVideoChapters(props.videoId)).chapters as VideoChapter[],
   });
 
   const tags = tagsQ.data || [];
@@ -106,4 +98,3 @@ export function OutlinePanel(props: { videoId: string; atMs: number; onSeekToMs:
     </div>
   );
 }
-

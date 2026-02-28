@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import clsx from "clsx";
 import type { Job } from "@yt/contracts";
 import { JobInspectDrawer } from "@/components/JobInspectDrawer";
+import { getApiClient } from "@/lib/api_client";
 
 function shortId(id: string): string {
   if (id.length <= 10) return id;
@@ -22,17 +23,13 @@ export function JobDock(props: {
   onDismiss?: () => void;
   title?: string;
 }) {
+  const api = getApiClient();
   const { jobId, open, onOpen, onClose, onDismiss, title } = props;
 
   const jobQ = useQuery({
     enabled: Boolean(jobId),
     queryKey: ["job", jobId],
-    queryFn: async () => {
-      const res = await fetch(`/api/jobs/${jobId}`);
-      if (!res.ok) throw new Error(await res.text());
-      const json = await res.json();
-      return json.job as Job;
-    },
+    queryFn: async () => (await api.getJob(jobId!)).job as Job,
     refetchInterval: (q) => {
       const status = (q.state.data as Job | undefined)?.status;
       return isTerminal(status) ? false : 1000;
