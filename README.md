@@ -316,12 +316,12 @@ pnpm svc:uninstall
 
 | Channel | Status | Link |
 | --- | --- | --- |
-| GitHub Sponsors | Live | https://github.com/sponsors/Unclip1843 |
-| GitHub Discussions | Live | https://github.com/hopperlabs-opensource/youtube-intel-tool/discussions |
-| GitHub Issues | Live | https://github.com/hopperlabs-opensource/youtube-intel-tool/issues |
-| Patreon | Coming soon | Will be published here once active |
-| X | Coming soon | Will be published here once active |
-| YouTube | Coming soon | Will be published here once active |
+| [![GitHub Sponsors](https://img.shields.io/badge/GitHub%20Sponsors-EA4AAA?style=flat-square&logo=githubsponsors&logoColor=white)](https://github.com/sponsors/Unclip1843) GitHub Sponsors | Live | [github.com/sponsors/Unclip1843](https://github.com/sponsors/Unclip1843) |
+| [![GitHub Discussions](https://img.shields.io/badge/GitHub%20Discussions-0969DA?style=flat-square&logo=github&logoColor=white)](https://github.com/hopperlabs-opensource/youtube-intel-tool/discussions) GitHub Discussions | Live | [github.com/hopperlabs-opensource/youtube-intel-tool/discussions](https://github.com/hopperlabs-opensource/youtube-intel-tool/discussions) |
+| [![GitHub Issues](https://img.shields.io/badge/GitHub%20Issues-1F883D?style=flat-square&logo=github&logoColor=white)](https://github.com/hopperlabs-opensource/youtube-intel-tool/issues) GitHub Issues | Live | [github.com/hopperlabs-opensource/youtube-intel-tool/issues](https://github.com/hopperlabs-opensource/youtube-intel-tool/issues) |
+| ![Patreon](https://img.shields.io/badge/Patreon-FF424D?style=flat-square&logo=patreon&logoColor=white) Patreon | Coming soon | Will be published here once active |
+| ![X](https://img.shields.io/badge/X-111111?style=flat-square&logo=x&logoColor=white) X | Coming soon | Will be published here once active |
+| ![YouTube](https://img.shields.io/badge/YouTube-FF0000?style=flat-square&logo=youtube&logoColor=white) YouTube | Coming soon | Will be published here once active |
 
 - Use GitHub Sponsors for direct support today.
 - Use Discussions for maintainer and community requests.
