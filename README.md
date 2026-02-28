@@ -316,12 +316,12 @@ pnpm svc:uninstall
 
 | Channel | Status | Link |
 | --- | --- | --- |
-| [![GitHub Sponsors](https://img.shields.io/badge/GitHub%20Sponsors-EA4AAA?style=flat-square&logo=githubsponsors&logoColor=white)](https://github.com/sponsors/Unclip1843) GitHub Sponsors | Live | [github.com/sponsors/Unclip1843](https://github.com/sponsors/Unclip1843) |
-| [![GitHub Discussions](https://img.shields.io/badge/GitHub%20Discussions-0969DA?style=flat-square&logo=github&logoColor=white)](https://github.com/hopperlabs-opensource/youtube-intel-tool/discussions) GitHub Discussions | Live | [github.com/hopperlabs-opensource/youtube-intel-tool/discussions](https://github.com/hopperlabs-opensource/youtube-intel-tool/discussions) |
-| [![GitHub Issues](https://img.shields.io/badge/GitHub%20Issues-1F883D?style=flat-square&logo=github&logoColor=white)](https://github.com/hopperlabs-opensource/youtube-intel-tool/issues) GitHub Issues | Live | [github.com/hopperlabs-opensource/youtube-intel-tool/issues](https://github.com/hopperlabs-opensource/youtube-intel-tool/issues) |
-| ![Patreon](https://img.shields.io/badge/Patreon-FF424D?style=flat-square&logo=patreon&logoColor=white) Patreon | Coming soon | Will be published here once active |
-| ![X](https://img.shields.io/badge/X-111111?style=flat-square&logo=x&logoColor=white) X | Coming soon | Will be published here once active |
-| ![YouTube](https://img.shields.io/badge/YouTube-FF0000?style=flat-square&logo=youtube&logoColor=white) YouTube | Coming soon | Will be published here once active |
+| <a href="https://github.com/sponsors/Unclip1843"><img alt="GitHub Sponsors" src="https://cdn.simpleicons.org/githubsponsors/EA4AAA" width="16" height="16"></a> GitHub Sponsors | Live | [github.com/sponsors/Unclip1843](https://github.com/sponsors/Unclip1843) |
+| <a href="https://github.com/hopperlabs-opensource/youtube-intel-tool/discussions"><img alt="GitHub Discussions" src="https://cdn.simpleicons.org/github/0969DA" width="16" height="16"></a> GitHub Discussions | Live | [github.com/hopperlabs-opensource/youtube-intel-tool/discussions](https://github.com/hopperlabs-opensource/youtube-intel-tool/discussions) |
+| <a href="https://github.com/hopperlabs-opensource/youtube-intel-tool/issues"><img alt="GitHub Issues" src="https://cdn.simpleicons.org/github/1F883D" width="16" height="16"></a> GitHub Issues | Live | [github.com/hopperlabs-opensource/youtube-intel-tool/issues](https://github.com/hopperlabs-opensource/youtube-intel-tool/issues) |
+| <img alt="Patreon" src="https://cdn.simpleicons.org/patreon/FF424D" width="16" height="16"> Patreon | Coming soon | Will be published here once active |
+| <img alt="X" src="https://cdn.simpleicons.org/x/111111" width="16" height="16"> X | Coming soon | Will be published here once active |
+| <img alt="YouTube" src="https://cdn.simpleicons.org/youtube/FF0000" width="16" height="16"> YouTube | Coming soon | Will be published here once active |
 
 - Use GitHub Sponsors for direct support today.
 - Use Discussions for maintainer and community requests.
