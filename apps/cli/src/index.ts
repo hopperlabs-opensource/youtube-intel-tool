@@ -3,6 +3,7 @@ import { Command } from "commander";
 import {
   ChatRequestSchema,
   ChatResponseSchema,
+  CapabilitiesResponseSchema,
   GetContextResponseSchema,
   GetJobResponseSchema,
   GetVideoResponseSchema,
@@ -114,6 +115,66 @@ program
       const data = await res.json().catch(() => ({}));
       if (opts.json) console.log(JSON.stringify(data, null, 2));
       else console.log(`${client.baseUrl} ok`);
+    } catch (err) {
+      handleErr(err);
+    }
+  });
+
+program
+  .command("capabilities")
+  .description("Show backend capabilities and dependency status")
+  .action(async () => {
+    try {
+      const opts = program.opts<{ baseUrl?: string; json: boolean }>();
+      const client = makeApiClient({ baseUrl: opts.baseUrl });
+      const { data } = await apiJson({
+        client,
+        method: "GET",
+        path: "/api/capabilities",
+        schema: CapabilitiesResponseSchema,
+      });
+
+      if (opts.json) {
+        console.log(JSON.stringify(data, null, 2));
+        return;
+      }
+
+      const rows = [
+        {
+          feature: "embeddings",
+          enabled: data.embeddings.enabled ? "yes" : "no",
+          details: data.embeddings.enabled
+            ? `${data.embeddings.provider || "unknown"} ${data.embeddings.model_id || ""}`.trim()
+            : data.embeddings.reason || "disabled",
+        },
+        {
+          feature: "stt",
+          enabled: data.stt.enabled ? "yes" : "no",
+          details: data.stt.enabled
+            ? `${data.stt.provider || "unknown"} ${data.stt.model_id || ""}`.trim()
+            : data.stt.reason || "disabled",
+        },
+        {
+          feature: "diarization",
+          enabled: data.diarization.enabled ? "yes" : "no",
+          details: data.diarization.enabled
+            ? data.diarization.backend || "enabled"
+            : data.diarization.reason || "disabled",
+        },
+        {
+          feature: "cli tools",
+          enabled: data.cli.gemini || data.cli.claude || data.cli.codex ? "yes" : "no",
+          details: `gemini=${data.cli.gemini ? "yes" : "no"} claude=${data.cli.claude ? "yes" : "no"} codex=${data.cli.codex ? "yes" : "no"}`,
+        },
+        {
+          feature: "system tools",
+          enabled: data.tools.yt_dlp && data.tools.ffmpeg && data.tools.python ? "yes" : "partial",
+          details: `yt-dlp=${data.tools.yt_dlp ? "yes" : "no"} ffmpeg=${data.tools.ffmpeg ? "yes" : "no"} python=${data.tools.python ? "yes" : "no"}`,
+        },
+      ];
+
+      console.log(`base_url: ${client.baseUrl}`);
+      printTable(rows);
     } catch (err) {
       handleErr(err);
     }

@@ -5,6 +5,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import type { CapabilitiesResponse, Job, LibraryHealthItem, LibraryHealthResponse } from "@yt/contracts";
 import { useJobsStore } from "@/lib/jobs_store";
+import { apiFetch } from "@/lib/openai_key";
 
 function isBroken(it: LibraryHealthItem, caps: CapabilitiesResponse | null): { broken: boolean; reasons: string[] } {
   const reasons: string[] = [];
@@ -32,7 +33,7 @@ export default function LibraryRepairPage() {
   const capsQ = useQuery({
     queryKey: ["capabilities"],
     queryFn: async () => {
-      const res = await fetch("/api/capabilities");
+      const res = await apiFetch("/api/capabilities");
       if (!res.ok) throw new Error(await res.text());
       return (await res.json()) as CapabilitiesResponse;
     },
@@ -42,7 +43,7 @@ export default function LibraryRepairPage() {
   const healthQ = useQuery({
     queryKey: ["libraryHealth"],
     queryFn: async () => {
-      const res = await fetch("/api/library/health?limit=500");
+      const res = await apiFetch("/api/library/health?limit=500");
       if (!res.ok) throw new Error(await res.text());
       return (await res.json()) as LibraryHealthResponse;
     },

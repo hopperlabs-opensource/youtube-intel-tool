@@ -8,6 +8,7 @@ import type { CapabilitiesResponse, LibraryChannel, LibraryPerson, LibrarySearch
 import { AppHeader } from "@/components/AppHeader";
 import { ErrorWithRetry } from "@/components/ErrorWithRetry";
 import { formatHms } from "@/lib/time";
+import { apiFetch } from "@/lib/openai_key";
 
 type SearchResponse = { hits: LibrarySearchHit[]; embedding_error: string | null };
 
@@ -53,7 +54,7 @@ export function SearchPageClient(props: { initialQuery: string; initialChannel: 
   const capsQ = useQuery({
     queryKey: ["capabilities"],
     queryFn: async () => {
-      const res = await fetch("/api/capabilities");
+      const res = await apiFetch("/api/capabilities");
       if (!res.ok) throw new Error(await res.text());
       return (await res.json()) as CapabilitiesResponse;
     },
@@ -69,7 +70,7 @@ export function SearchPageClient(props: { initialQuery: string; initialChannel: 
       if (topic) scope.topics = [topic];
       if (person) scope.people = [person];
 
-      const res = await fetch("/api/search", {
+      const res = await apiFetch("/api/search", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({

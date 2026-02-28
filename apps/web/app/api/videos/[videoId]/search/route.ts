@@ -3,6 +3,7 @@ import { createEmbedderFromEnv, getPool, initMetrics, searchChunksByVideoSemanti
 import { SearchRequestSchema, SearchResponseSchema } from "@yt/contracts";
 import type { SearchHit } from "@yt/contracts";
 import { jsonError } from "@/lib/server/api";
+import { getEmbeddingsEnvForRequest } from "@/lib/server/openai_key";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,6 +13,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ videoId: strin
   try {
     const { videoId } = await ctx.params;
     const body = SearchRequestSchema.parse(await req.json());
+    const embedEnv = getEmbeddingsEnvForRequest(req);
 
     const pool = getPool();
     const client = await pool.connect();
@@ -23,7 +25,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ videoId: strin
         hits = await searchCuesByVideo(client, videoId, body.query, { limit: body.limit, language: "en" });
       } else if (body.mode === "semantic") {
         try {
-          const embedder = createEmbedderFromEnv();
+          const embedder = createEmbedderFromEnv(embedEnv);
           const emb = await embedder.embed(body.query);
           if (emb.length !== 768) return jsonError("embed_dim_mismatch", `expected 768 dims, got ${emb.length}`, { status: 500 });
           hits = await searchChunksByVideoSemantic(client, videoId, emb, {
@@ -41,7 +43,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ videoId: strin
         const kw = await searchCuesByVideo(client, videoId, body.query, { limit: body.limit, language: "en" });
         let sem: typeof kw = [];
         try {
-          const embedder = createEmbedderFromEnv();
+          const embedder = createEmbedderFromEnv(embedEnv);
           const emb = await embedder.embed(body.query);
           if (emb.length === 768) {
             sem = await searchChunksByVideoSemantic(client, videoId, emb, {

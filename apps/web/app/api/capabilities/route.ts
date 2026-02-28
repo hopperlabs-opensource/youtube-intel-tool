@@ -2,6 +2,7 @@ import { getEmbeddingsStatus, initMetrics } from "@yt/core";
 import { CapabilitiesResponseSchema } from "@yt/contracts";
 import { NextResponse } from "next/server";
 import { spawnSync } from "node:child_process";
+import { getEmbeddingsEnvForRequest } from "@/lib/server/openai_key";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,7 +16,7 @@ function cmdExists(cmd: string): boolean {
   return res.status === 0;
 }
 
-export async function GET() {
+export async function GET(req: Request) {
   const metrics = initMetrics();
   try {
     const tools = {
@@ -32,7 +33,7 @@ export async function GET() {
     };
 
     const embeddings = (() => {
-      const e = getEmbeddingsStatus(process.env);
+      const e = getEmbeddingsStatus(getEmbeddingsEnvForRequest(req));
       return { ...e };
     })();
     if (embeddings.enabled && embeddings.provider === "ollama") {

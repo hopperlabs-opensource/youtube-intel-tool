@@ -1,5 +1,27 @@
 # Security Policy
 
+## Security model and intended deployment
+
+This repository is designed first for local/self-hosted use on trusted
+infrastructure.
+
+By default, this project is **not** a hardened public SaaS deployment. If you
+expose it to the public internet without additional controls, you may allow:
+
+- unauthenticated API access
+- transcript/chat data disclosure
+- header/token leakage
+- queue/compute abuse
+
+Before any internet-facing deployment, implement at minimum:
+
+- strong authentication and authorization
+- TLS termination and a reverse proxy
+- request rate limits and abuse protections
+- CORS and origin restrictions
+- secret management and key rotation
+- logging, alerting, and incident response playbooks
+
 ## Supported versions
 
 | Version | Supported |

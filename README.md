@@ -11,6 +11,57 @@ This project ingests a video once, then gives you synced transcript navigation,
 semantic search, entity extraction, speaker labeling, grounded chat, and an
 operational stack (queues + metrics) you can actually run locally.
 
+## TL;DR
+
+### Human quickstart
+
+```bash
+pnpm run setup
+```
+
+Open `http://localhost:3333`.
+
+Stop everything:
+
+```bash
+pnpm bg:down
+```
+
+Preflight checks anytime:
+
+```bash
+pnpm run doctor
+```
+
+### Agentic quickstart
+
+Open Codex, Claude Code, or your preferred agentic CLI in this repo root and
+use a prompt like:
+
+```text
+Read README.md, docs/GETTING_STARTED.md, and docs/RUNBOOKS.md.
+Set up this project locally, verify health, and run the first ingest flow.
+```
+
+The scripts and docs are structured so an agent can reliably bring the local
+stack up on a machine with prerequisites installed.
+
+## Local-Only Security Notice
+
+- Intended use: local/self-hosted usage by the person running it.
+- Not intended: exposing this app directly to the public internet as-is.
+- Why: the default stack is not a hardened multi-tenant internet service.
+
+If exposed publicly without additional hardening, you risk:
+
+- Unauthenticated access to API routes.
+- Transcript/chat data exposure.
+- API key/header leakage (including browser-provided keys).
+- Queue abuse and compute/cost abuse.
+
+If you need internet-facing hosting, add your own authentication, TLS/reverse
+proxy, rate limiting, CORS controls, secret management, and monitoring first.
+
 ## What You Can Do
 
 - Resolve YouTube URLs into canonical video records.
@@ -40,6 +91,12 @@ pnpm db:migrate
 pnpm dev
 ```
 
+or use one command:
+
+```bash
+pnpm run setup
+```
+
 Open:
 
 - App: `http://localhost:3333`
@@ -52,6 +109,13 @@ First workflow:
 2. On the video page, click `Ingest`.
 3. Watch live progress in the Job Center.
 4. Use `Search`, `Entities`, `Context`, and `Chat` tabs.
+
+## OpenAI Key Sources
+
+- Preferred: set `OPENAI_API_KEY` in local `.env` (server-side).
+- Fallback: use the UI `Settings` modal to save a browser-local key.
+- Precedence: server `.env` key wins; browser key is only used when `.env` key is missing.
+- Risk: browser-saved keys are stored in `localStorage` plaintext for that browser profile.
 
 ## Screenshots
 
@@ -94,6 +158,7 @@ Deep dive: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 ```bash
 # health
 pnpm yit health
+pnpm yit capabilities
 
 # resolve URL
 pnpm yit resolve "https://www.youtube.com/watch?v=..."
@@ -131,6 +196,7 @@ API guide: [docs/API.md](docs/API.md)
 - System internals: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - CLI reference: [docs/CLI.md](docs/CLI.md)
 - API reference: [docs/API.md](docs/API.md)
+- Runbooks (operations): [docs/RUNBOOKS.md](docs/RUNBOOKS.md)
 - Troubleshooting: [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)
 - Screenshot pipeline: [docs/SCREENSHOTS.md](docs/SCREENSHOTS.md)
 - Security policy: [SECURITY.md](SECURITY.md)

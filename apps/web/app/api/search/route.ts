@@ -12,6 +12,7 @@ import {
   type LibrarySearchHit,
 } from "@yt/contracts";
 import { jsonError } from "@/lib/server/api";
+import { getEmbeddingsEnvForRequest } from "@/lib/server/openai_key";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -37,7 +38,7 @@ export async function POST(req: Request) {
 
       const embedder = (() => {
         try {
-          return createEmbedderFromEnv();
+          return createEmbedderFromEnv(getEmbeddingsEnvForRequest(req));
         } catch (err: unknown) {
           embedding_error = err instanceof Error ? err.message : String(err);
           return null;

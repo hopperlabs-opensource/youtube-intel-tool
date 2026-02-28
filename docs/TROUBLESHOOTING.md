@@ -2,13 +2,20 @@
 
 Use this checklist when local runs are failing.
 
+## Scope reminder
+
+This stack is intended for local/self-hosted use. If you expose it to the
+public internet and observe abuse/security issues, treat that as a deployment
+hardening gap (auth/TLS/rate limits/secrets/CORS), not a local-run issue.
+
 ## Quick Triage
 
 1. Confirm infra is up: `pnpm db:up`
 2. Confirm migrations are applied: `pnpm db:migrate`
 3. Confirm app is running: `pnpm dev`
-4. Confirm API health: `pnpm yit health`
-5. Inspect capabilities: `curl -s http://localhost:3333/api/capabilities | jq`
+4. Run preflight: `pnpm run doctor`
+5. Confirm API health: `pnpm yit health`
+6. Inspect capabilities: `pnpm yit capabilities`
 
 ## Port Conflicts
 

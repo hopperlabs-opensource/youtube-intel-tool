@@ -64,6 +64,7 @@ export async function buildRagForVideoChat(
     keyword_k: number;
     max_window_cues?: number;
     max_sources?: number;
+    embedding_env?: Record<string, string | undefined>;
   }
 ): Promise<{
   transcript_id: string;
@@ -105,7 +106,7 @@ export async function buildRagForVideoChat(
 
   if (opts.semantic_k > 0) {
     try {
-      const embedder = createEmbedderFromEnv();
+      const embedder = createEmbedderFromEnv(opts.embedding_env ?? process.env);
       const embedding = await embedder.embed(opts.query);
       if (embedding.length !== 768) throw new Error(`expected 768 dims, got ${embedding.length}`);
       semanticHits = await searchChunksByVideoSemantic(client, opts.videoId, embedding, {

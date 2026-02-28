@@ -23,6 +23,7 @@ pnpm dev
 ## Documentation standards
 - Treat `README.md` as the product landing page: short value proposition, fast start, links to deeper docs.
 - Put detailed guides under `docs/` (`GETTING_STARTED`, `USE_CASES`, `API`, `CLI`, `TROUBLESHOOTING`).
+- Keep `docs/RUNBOOKS.md` aligned with `package.json` scripts and `ops/*` behavior.
 - Keep command examples copy-paste ready and tested against current scripts.
 - Prefer screenshots that show real data states; keep assets under `docs/assets/screenshots/`.
 - If a UI/API behavior changes, update docs in the same PR.

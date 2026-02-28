@@ -13,6 +13,7 @@ import {
 } from "@yt/core";
 import { ChatRequestSchema, ChatResponseSchema } from "@yt/contracts";
 import { jsonError } from "@/lib/server/api";
+import { getEmbeddingsEnvForRequest } from "@/lib/server/openai_key";
 import { randomUUID } from "crypto";
 
 export const runtime = "nodejs";
@@ -29,6 +30,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ videoId: strin
   try {
     const { videoId } = await ctx.params;
     const body = ChatRequestSchema.parse(await req.json().catch(() => ({})));
+    const embedEnv = getEmbeddingsEnvForRequest(req);
     provider = body.provider;
 
     const lastUser = [...body.messages].reverse().find((m) => m.role === "user");
@@ -55,6 +57,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ videoId: strin
           window_ms: body.window_ms,
           semantic_k: body.semantic_k,
           keyword_k: body.keyword_k,
+          embedding_env: embedEnv,
         });
 
         const created = await createChatTurn(client, {

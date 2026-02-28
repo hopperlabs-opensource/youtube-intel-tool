@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
+import { SettingsButton } from "@/components/SettingsButton";
 
 const NAV = [
   { href: "/", label: "Ingest" },
@@ -41,7 +42,10 @@ export function AppHeader(props?: { right?: React.ReactNode }) {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">{props?.right}</div>
+        <div className="flex items-center gap-2">
+          {props?.right}
+          <SettingsButton />
+        </div>
       </div>
     </div>
   );

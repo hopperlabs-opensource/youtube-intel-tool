@@ -38,8 +38,9 @@ export function JobCenter() {
         const json = await res.json();
         return json.job as Job;
       },
-      refetchInterval: (q) => {
-        const status = (q.state.data as Job | undefined)?.status;
+      refetchInterval: (q: unknown) => {
+        const state = (q as { state?: { data?: Job } } | null)?.state;
+        const status = state?.data?.status;
         return isTerminal(status) ? false : 1000;
       },
       retry: 0,

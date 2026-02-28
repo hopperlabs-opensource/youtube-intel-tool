@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { ChatResponse } from "@yt/contracts";
 import { ErrorWithRetry } from "@/components/ErrorWithRetry";
 import { formatHms } from "@/lib/time";
+import { apiFetch } from "@/lib/openai_key";
 
 type Turn = {
   id: string;
@@ -58,7 +59,7 @@ export function ChatPanel(props: {
   const capsQ = useQuery({
     queryKey: ["capabilities"],
     queryFn: async () => {
-      const res = await fetch("/api/capabilities");
+      const res = await apiFetch("/api/capabilities");
       if (!res.ok) throw new Error(await res.text());
       return (await res.json()) as { embeddings?: { enabled?: boolean } };
     },
@@ -95,7 +96,7 @@ export function ChatPanel(props: {
     abortRef.current = ac;
 
     try {
-      const res = await fetch(`/api/videos/${props.videoId}/chat/stream`, {
+      const res = await apiFetch(`/api/videos/${props.videoId}/chat/stream`, {
         method: "POST",
         headers: { "content-type": "application/json", accept: "text/event-stream" },
         body: JSON.stringify({

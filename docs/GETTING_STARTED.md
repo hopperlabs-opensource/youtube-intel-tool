@@ -2,6 +2,22 @@
 
 This guide gets the full stack running locally and walks one successful end-to-end ingestion.
 
+## TL;DR
+
+```bash
+pnpm run setup
+pnpm yit health
+pnpm yit capabilities
+```
+
+Then open `http://localhost:3333`.
+
+## 0. Intended Use and Safety
+
+This project is intended for local/self-hosted use. Do not expose it directly
+to the public internet without additional hardening (auth, TLS/reverse proxy,
+rate limiting, secret management, monitoring).
+
 ## 1. Prerequisites
 
 - macOS or Linux
@@ -54,7 +70,9 @@ Expected services:
 In a new terminal:
 
 ```bash
+pnpm run doctor
 pnpm yit health
+pnpm yit capabilities
 ```
 
 If healthy, continue.
@@ -82,9 +100,18 @@ pnpm yit search "what was the main argument"
 ### Semantic embeddings
 
 ```bash
-export YIT_EMBEDDINGS_PROVIDER=ollama
-export YIT_OLLAMA_MODEL=nomic-embed-text
+export YIT_EMBED_PROVIDER=ollama
+export OLLAMA_EMBED_MODEL=nomic-embed-text
 ```
+
+OpenAI embeddings option:
+
+```bash
+export YIT_EMBED_PROVIDER=openai
+export OPENAI_API_KEY=...
+```
+
+If `OPENAI_API_KEY` is not set in `.env`, the UI `Settings` modal can save a browser-local key and send it to local API routes for embeddings-backed search/chat retrieval.
 
 ### STT fallback (when captions are disabled)
 

@@ -3,6 +3,8 @@
   "private": true,
   "packageManager": "pnpm@9.14.2",
   "scripts": {
+    "setup": "bash ops/setup.sh",
+    "doctor": "bash ops/doctor.sh",
     "dev": "concurrently -n web,worker -c cyan,magenta \"pnpm -C apps/web dev\" \"pnpm -C apps/worker dev\"",
     "dev:web": "pnpm -C apps/web dev",
     "dev:worker": "pnpm -C apps/worker dev",

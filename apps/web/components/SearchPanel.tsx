@@ -6,6 +6,7 @@ import { formatHms } from "@/lib/time";
 import { ErrorWithRetry } from "@/components/ErrorWithRetry";
 import { SkeletonLines } from "@/components/Skeleton";
 import type { SearchHit } from "@yt/contracts";
+import { apiFetch } from "@/lib/openai_key";
 
 type SearchResult = { hits: SearchHit[]; embedding_error: string | null };
 
@@ -17,7 +18,7 @@ export function SearchPanel(props: { videoId: string; onSeekToMs: (ms: number) =
   const capsQ = useQuery({
     queryKey: ["capabilities"],
     queryFn: async () => {
-      const res = await fetch("/api/capabilities");
+      const res = await apiFetch("/api/capabilities");
       if (!res.ok) throw new Error(await res.text());
       return (await res.json()) as { embeddings?: { enabled?: boolean; reason?: string | null } };
     },
@@ -29,7 +30,7 @@ export function SearchPanel(props: { videoId: string; onSeekToMs: (ms: number) =
   const search = useMutation({
     mutationFn: async (q: string) => {
       lastQuery.current = q;
-      const res = await fetch(`/api/videos/${props.videoId}/search`, {
+      const res = await apiFetch(`/api/videos/${props.videoId}/search`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ query: q, mode, limit: 20 }),

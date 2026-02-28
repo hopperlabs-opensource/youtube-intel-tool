@@ -2,6 +2,7 @@ import { getEmbeddingsStatus, getPool, initMetrics, listLibraryHealth } from "@y
 import { LibraryHealthResponseSchema } from "@yt/contracts";
 import { NextResponse } from "next/server";
 import { jsonError } from "@/lib/server/api";
+import { getEmbeddingsEnvForRequest } from "@/lib/server/openai_key";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -13,7 +14,7 @@ export async function GET(req: Request) {
     const limit = url.searchParams.get("limit");
     const offset = url.searchParams.get("offset");
 
-    const embStatus = getEmbeddingsStatus(process.env);
+    const embStatus = getEmbeddingsStatus(getEmbeddingsEnvForRequest(req));
     const embeddings_model_id = embStatus.enabled ? embStatus.model_id : null;
 
     const pool = getPool();
@@ -35,4 +36,3 @@ export async function GET(req: Request) {
     return jsonError("invalid_request", msg, { status: 400 });
   }
 }
-

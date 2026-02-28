@@ -23,6 +23,7 @@ YIT_BASE_URL=http://localhost:3333 pnpm yit --json health
 ## Core Commands
 
 - `health` check API reachability
+- `capabilities` show dependency/provider readiness
 - `smoke` end-to-end smoke flow
 - `resolve <url>` URL to canonical video
 - `ingest <videoIdOrUrl>` queue ingest job
@@ -41,6 +42,7 @@ YIT_BASE_URL=http://localhost:3333 pnpm yit --json health
 ### 1. Resolve + ingest + follow logs
 
 ```bash
+pnpm yit capabilities
 pnpm yit resolve "https://www.youtube.com/watch?v=..."
 pnpm yit ingest "https://www.youtube.com/watch?v=..." --wait --logs
 ```
@@ -100,6 +102,7 @@ pnpm yit --json library --limit 5 | jq
 ## Troubleshooting
 
 - If commands fail with connection errors, run `pnpm yit health`.
+- If features are disabled, run `pnpm yit capabilities`.
 - If semantic results are empty, verify embeddings provider in `/api/capabilities`.
 - If discovery fails, verify `yt-dlp` is installed on the host.
 

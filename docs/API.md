@@ -2,6 +2,9 @@
 
 The API is served by Next.js route handlers under `apps/web/app/api`.
 
+This API is intended for local/self-hosted usage. It is not a production-ready
+public internet API without additional hardening.
+
 Base URL (local):
 
 ```text
@@ -11,6 +14,7 @@ http://localhost:3333
 ## Conventions
 
 - Content type: `application/json`
+- Optional header for browser-supplied OpenAI fallback key: `x-openai-api-key: <key>`
 - Validation: request and response schemas are defined with Zod in `packages/contracts`
 - Error shape:
 
@@ -32,6 +36,7 @@ http://localhost:3333
 
 - `GET /api/health`
 - `GET /api/capabilities`
+- `GET /api/settings/openai`
 - `GET /api/metrics`
 
 Quick check:

@@ -15,6 +15,7 @@ import { OutlinePanel } from "@/components/OutlinePanel";
 import { SpeakersPanel } from "@/components/SpeakersPanel";
 import { ErrorWithRetry } from "@/components/ErrorWithRetry";
 import { SkeletonLines } from "@/components/Skeleton";
+import { SettingsButton } from "@/components/SettingsButton";
 import { useUiStore } from "@/lib/store";
 import { useJobsStore } from "@/lib/jobs_store";
 import { formatHms } from "@/lib/time";
@@ -216,6 +217,8 @@ export function VideoPageClient(props: { videoId: string; initialAtMs: number | 
             <input type="checkbox" checked={diarize} onChange={(e) => setDiarize(e.target.checked)} />
             Diarize
           </label>
+
+          <SettingsButton />
 
           <button
             className="rounded-lg bg-zinc-900 px-3 py-2 text-xs font-medium text-white hover:bg-zinc-800 disabled:opacity-60"
