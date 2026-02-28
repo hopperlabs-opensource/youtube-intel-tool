@@ -289,7 +289,7 @@ pnpm svc:uninstall
 ## Governance And Maintainers
 
 - Public contributions use fork + pull request; direct pushes to `main` are blocked.
-- Maintainer accounts are expected to use strong account security with 2FA.
+- Maintainer accounts are required to use 2FA under org security policy.
 - See [docs/GOVERNANCE.md](docs/GOVERNANCE.md) for contributor and maintainer access policy.
 
 ## Current Publishing Status
