@@ -25,7 +25,7 @@ Access is granted with least privilege first (`maintain` before `admin`).
 
 ## Security baseline
 
-- Organization policy should require 2FA for members with elevated repository access.
+- Organization policy requires 2FA for members with elevated repository access.
 - Maintainers are expected to keep 2FA enabled on GitHub.
 - Sensitive paths are code-owner protected (`.github/workflows`, release/config files).
 - Secret scanning and push protection should remain enabled.
