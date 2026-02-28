@@ -1,0 +1,22 @@
+{
+  "name": "@yt/sdk",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@yt/contracts": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.5.4"
+  },
+  "scripts": {
+    "lint": "echo \"(sdk) no lint\"",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "node --import tsx --test test/contract.test.ts"
+  }
+}

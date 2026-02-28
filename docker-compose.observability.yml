@@ -1,0 +1,27 @@
+services:
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    container_name: yt_prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+    ports:
+      - "59092:9090"
+    volumes:
+      - ./ops/observability/prometheus/prometheus.generated.yml:/etc/prometheus/prometheus.yml:ro
+      - yt_prometheus_data:/prometheus
+
+  grafana:
+    image: grafana/grafana:11.2.2
+    container_name: yt_grafana
+    ports:
+      - "53000:3000"
+    volumes:
+      - ./ops/observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - yt_grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+
+volumes:
+  yt_prometheus_data:
+  yt_grafana_data:

@@ -1,0 +1,32 @@
+{
+  "name": "youtube-intel-tool",
+  "private": true,
+  "packageManager": "pnpm@9.14.2",
+  "scripts": {
+    "dev": "concurrently -n web,worker -c cyan,magenta \"pnpm -C apps/web dev\" \"pnpm -C apps/worker dev\"",
+    "dev:web": "pnpm -C apps/web dev",
+    "dev:worker": "pnpm -C apps/worker dev",
+    "yit": "pnpm -C apps/cli yit",
+    "bg:up": "bash ops/bg/up.sh",
+    "bg:down": "bash ops/bg/down.sh",
+    "bg:restart": "bash ops/bg/restart.sh",
+    "bg:status": "bash ops/bg/status.sh",
+    "bg:logs": "bash ops/bg/logs.sh",
+    "svc:install": "bash ops/launchd/install.sh",
+    "svc:uninstall": "bash ops/launchd/uninstall.sh",
+    "svc:status": "bash ops/launchd/status.sh",
+    "db:up": "docker compose up -d postgres redis",
+    "db:down": "docker compose down",
+    "db:migrate": "pnpm -C packages/core migrate",
+    "obs:up": "docker compose -f docker-compose.yml -f docker-compose.observability.yml up -d prometheus grafana",
+    "obs:down": "docker compose -f docker-compose.yml -f docker-compose.observability.yml stop prometheus grafana",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck",
+    "verify": "pnpm lint && pnpm typecheck",
+    "test:contract": "pnpm -C packages/sdk test",
+    "test": "pnpm test:contract"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

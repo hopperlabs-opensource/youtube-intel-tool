@@ -1,0 +1,39 @@
+# OS / editor noise
+.DS_Store
+.vscode/
+.idea/
+
+# Dependencies
+node_modules/
+
+# Build artifacts
+.next/
+dist/
+build/
+coverage/
+*.tsbuildinfo
+
+# Runtime / local process state
+.run/
+*.log
+*.pid
+
+# Local environment and machine state
+.env
+.env.*
+!.env.example
+.yit-dev.json
+.npmrc
+
+# Python caches
+__pycache__/
+*.pyc
+
+# Common sensitive/local data files
+*.db
+*.sqlite
+*.pem
+*.key
+
+# Safety: keep competitor/vendor audits out of public repo if re-added
+.competitors/
