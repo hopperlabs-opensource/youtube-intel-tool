@@ -45,6 +45,7 @@
 - Operating the stack: [Runbooks](RUNBOOKS.md)
 - Integration: [CLI](CLI.md) and [API](API.md)
 - Project policy: [Governance](GOVERNANCE.md)
+- Community channels: [Connect & Support](CONNECT.md)
 
 !!! warning "Security boundary"
     This project is not a hardened public internet service by default.
