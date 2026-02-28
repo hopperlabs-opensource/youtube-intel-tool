@@ -163,3 +163,5 @@ pnpm svc:uninstall
 - Read [CLI.md](CLI.md) for command recipes.
 - Read [API.md](API.md) for endpoint-level integration.
 - Use [TROUBLESHOOTING.md](TROUBLESHOOTING.md) if anything fails.
+
+_Last updated: February 28, 2026._

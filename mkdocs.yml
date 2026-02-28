@@ -62,9 +62,14 @@ extra:
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/hopperlabs-opensource/youtube-intel-tool
+    - icon: fontawesome/regular/comments
+      link: https://github.com/hopperlabs-opensource/youtube-intel-tool/discussions
+    - icon: fontawesome/solid/heart
+      link: https://github.com/sponsors/Unclip1843
 
 nav:
   - Home: index.md
+  - Connect & Support: CONNECT.md
   - Quick Start: QUICKSTART.md
   - Guides:
       - Getting Started: GETTING_STARTED.md
@@ -79,6 +84,5 @@ nav:
       - Architecture: ARCHITECTURE.md
   - Project Ops:
       - Governance: GOVERNANCE.md
-      - Connect and Support: CONNECT.md
       - Agent Packs: AGENT_PACKS.md
       - Releasing: RELEASING.md

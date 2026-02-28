@@ -9,15 +9,15 @@ pnpm docs:requirements
 pnpm docs:serve
 ```
 
-- [Runbooks](RUNBOOKS.md)
+- [Connect & Support](CONNECT.md)
 - [Quick Start](QUICKSTART.md)
 - [Getting Started](GETTING_STARTED.md)
+- [Runbooks](RUNBOOKS.md)
 - [Use Cases](USE_CASES.md)
 - [Architecture](ARCHITECTURE.md)
 - [CLI Reference](CLI.md)
 - [API Reference](API.md)
 - [Governance](GOVERNANCE.md)
-- [Connect & Support](CONNECT.md)
 - [Configuration Model](CONFIG.md)
 - [Agent Packs](AGENT_PACKS.md)
 - [Releasing](RELEASING.md)

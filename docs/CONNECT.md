@@ -1,37 +1,130 @@
 # Connect & Support
 
-Official public channels for this project are listed here.
+<div class="support-hero">
+  <p class="support-eyebrow">Community</p>
+  <h2>Official channels and support, in one place</h2>
+  <p>This page is the source of truth for project channels. If a channel is marked <strong>Coming Soon</strong>, treat similarly named accounts as unofficial until this page is updated.</p>
+</div>
 
-If a channel is marked **Coming soon**, treat similarly named accounts as
-unofficial until this page is updated.
+## Channel Directory
 
-## Channel Status
+<div class="social-grid">
+  <article class="social-card">
+    <div class="social-head">
+      <span class="icon-badge">GH</span>
+      <div>
+        <h3>GitHub Repository</h3>
+        <p>Code, issues, pull requests, release notes.</p>
+      </div>
+      <span class="status-chip status-live">Live</span>
+    </div>
+    <p class="social-actions">
+      <a href="https://github.com/hopperlabs-opensource/youtube-intel-tool">Open repository</a>
+    </p>
+  </article>
 
-| Channel | Status | Notes |
-| --- | --- | --- |
-| GitHub repository | Live | Primary place for issues, discussions, and pull requests. |
-| GitHub Pages docs | Live | `https://hopperlabs-opensource.github.io/youtube-intel-tool/` |
-| Project website (`opensource.hopperlabs.com`) | Coming soon | Will be announced here once DNS and hosting are active. |
-| Patreon | Coming soon | Will be enabled through GitHub Sponsor links after account setup. |
-| X / Twitter | Coming soon | Handle will be published here once claimed. |
-| YouTube channel | Coming soon | Demos and walkthroughs planned. |
+  <article class="social-card">
+    <div class="social-head">
+      <span class="icon-badge">DOC</span>
+      <div>
+        <h3>Docs Site</h3>
+        <p>Guides, references, and operational runbooks.</p>
+      </div>
+      <span class="status-chip status-live">Live</span>
+    </div>
+    <p class="social-actions">
+      <a href="https://hopperlabs-opensource.github.io/youtube-intel-tool/">Open docs</a>
+    </p>
+  </article>
 
-## Current Best Contact Path
+  <article class="social-card">
+    <div class="social-head">
+      <span class="icon-badge">D</span>
+      <div>
+        <h3>GitHub Discussions</h3>
+        <p>Maintainer questions and community threads.</p>
+      </div>
+      <span class="status-chip status-live">Live</span>
+    </div>
+    <p class="social-actions">
+      <a href="https://github.com/hopperlabs-opensource/youtube-intel-tool/discussions">Open discussions</a>
+    </p>
+  </article>
 
-- Open a GitHub Issue for bugs and feature requests.
-- Open a GitHub Discussion for governance/maintainer questions.
-- Use the security policy process for private vulnerability reports:
-  [SECURITY.md](https://github.com/hopperlabs-opensource/youtube-intel-tool/blob/main/SECURITY.md).
+  <article class="social-card">
+    <div class="social-head">
+      <span class="icon-badge">SP</span>
+      <div>
+        <h3>GitHub Sponsors</h3>
+        <p>Direct support through the repository sponsor flow.</p>
+      </div>
+      <span class="status-chip status-live">Live</span>
+    </div>
+    <p class="social-actions">
+      <a href="https://github.com/sponsors/Unclip1843">Sponsor on GitHub</a>
+    </p>
+  </article>
 
-## Support Setup Notes
+  <article class="social-card">
+    <div class="social-head">
+      <span class="icon-badge">WEB</span>
+      <div>
+        <h3>Project Website</h3>
+        <p>`opensource.hopperlabs.com`</p>
+      </div>
+      <span class="status-chip status-soon">Coming Soon</span>
+    </div>
+    <p class="social-note">Will be linked here after DNS and hosting are live.</p>
+  </article>
 
-- `Sponsor` button support is managed via
-  [`.github/FUNDING.yml`](https://github.com/hopperlabs-opensource/youtube-intel-tool/blob/main/.github/FUNDING.yml).
-- Keep Patreon disabled in that file until the official handle is created.
-- Prefer a dedicated role alias email (for example `oss@...`) over personal
-  email before publishing a direct contact address.
+  <article class="social-card">
+    <div class="social-head">
+      <span class="icon-badge">PAT</span>
+      <div>
+        <h3>Patreon</h3>
+        <p>Recurring membership support.</p>
+      </div>
+      <span class="status-chip status-soon">Coming Soon</span>
+    </div>
+    <p class="social-note">Will be activated in <code>.github/FUNDING.yml</code> after handle setup.</p>
+  </article>
 
-## Safety Note
+  <article class="social-card">
+    <div class="social-head">
+      <span class="icon-badge">X</span>
+      <div>
+        <h3>X / Twitter</h3>
+        <p>Short updates and release notes.</p>
+      </div>
+      <span class="status-chip status-soon">Coming Soon</span>
+    </div>
+    <p class="social-note">Official handle will be announced here first.</p>
+  </article>
 
-Never share API keys, tokens, or private logs in public issues, discussions, or
-social posts.
+  <article class="social-card">
+    <div class="social-head">
+      <span class="icon-badge">YT</span>
+      <div>
+        <h3>YouTube Channel</h3>
+        <p>Demos, setup walkthroughs, and feature overviews.</p>
+      </div>
+      <span class="status-chip status-soon">Coming Soon</span>
+    </div>
+    <p class="social-note">Channel link will be published here once launched.</p>
+  </article>
+</div>
+
+## Support Today
+
+- Bug reports and feature requests: open a GitHub Issue.
+- Governance and maintainer requests: open a GitHub Discussion.
+- Private vulnerability reports: follow [SECURITY.md](https://github.com/hopperlabs-opensource/youtube-intel-tool/blob/main/SECURITY.md).
+
+## Verification and Safety
+
+- Only channels listed here are official.
+- Do not share API keys, access tokens, or private logs in public posts.
+- Keep Patreon disabled in [`.github/FUNDING.yml`](https://github.com/hopperlabs-opensource/youtube-intel-tool/blob/main/.github/FUNDING.yml) until the official account exists.
+- Prefer a dedicated role alias (for example `oss@...`) before publishing a direct email contact.
+
+_Last updated: February 28, 2026._

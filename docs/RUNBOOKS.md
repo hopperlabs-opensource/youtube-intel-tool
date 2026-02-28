@@ -138,3 +138,5 @@ If anything fails, use docs/TROUBLESHOOTING.md and report root cause + fix.
 These runbooks are for local/self-hosted operation. For public internet
 exposure, add your own hardening first (auth, TLS/reverse proxy, rate limits,
 secret management, monitoring).
+
+_Last updated: February 28, 2026._
