@@ -37,7 +37,7 @@ export async function fetchTranscriptBestEffort(opts: {
     proc.stdout.on("data", (d) => (out += String(d)));
     proc.stderr.on("data", (d) => (err += String(d)));
     proc.on("error", reject);
-    proc.on("close", (code) => {
+    proc.on("close", () => {
       resolve({ stdout: out.trim(), stderr: err.trim() });
     });
   });

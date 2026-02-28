@@ -104,6 +104,8 @@ pnpm test
 pnpm test:integration
 ```
 
+`pnpm test:integration` bootstraps pinned Python deps in `.run/venvs/tests` from `ops/tests/requirements.txt`.
+
 ### Agentic quickstart
 
 Open Codex, Claude Code, or your preferred agentic CLI in this repo root and
@@ -416,7 +418,7 @@ pnpm svc:uninstall
 
 ## Governance And Maintainers
 
-- Public contributions use fork + pull request; protected `main` requires PRs and required checks.
+- Public contributions use fork + pull request; protected `main` requires PRs, required checks, and 1 approval.
 - Maintainer accounts are required to use 2FA under org security policy.
 - See [docs/GOVERNANCE.md](docs/GOVERNANCE.md) for contributor and maintainer access policy.
 

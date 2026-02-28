@@ -22,7 +22,7 @@
   },
   "scripts": {
     "migrate": "tsx src/cli/migrate.ts",
-    "lint": "tsc -p tsconfig.json --noEmit --pretty false",
+    "lint": "pnpm -w exec eslint packages/core/src --ext .ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   }
 }

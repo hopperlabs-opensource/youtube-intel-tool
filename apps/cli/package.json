@@ -19,7 +19,7 @@
     "build": "tsup src/index.ts --format esm --target node20 --clean --sourcemap",
     "clean": "rm -rf dist",
     "yit": "tsx src/index.ts",
-    "lint": "tsc -p tsconfig.json --noEmit --pretty false",
+    "lint": "pnpm -w exec eslint apps/cli/src --ext .ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "prepack": "pnpm run build"
   },

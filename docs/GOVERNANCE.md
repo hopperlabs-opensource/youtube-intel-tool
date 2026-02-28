@@ -13,7 +13,7 @@ How this repository is operated and how access is granted.
 ## Contribution model
 
 - Public contributions are welcome through fork + pull request.
-- `main` is protected and requires pull requests plus passing checks.
+- `main` is protected and requires pull requests, passing checks, and at least 1 approval.
 - Automerge is allowed for safe automation PRs only after required checks pass.
 
 ## Who can push

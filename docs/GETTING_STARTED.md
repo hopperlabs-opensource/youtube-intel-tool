@@ -87,6 +87,7 @@ pnpm test:integration
 Expected outcome:
 - Unit tests pass without requiring a running stack.
 - Integration suite boots stack, runs contract tests, then tears down.
+- Integration suite bootstraps pinned Python deps in `.run/venvs/tests` from `ops/tests/requirements.txt`.
 
 ## 6. First Ingest (UI and CLI)
 

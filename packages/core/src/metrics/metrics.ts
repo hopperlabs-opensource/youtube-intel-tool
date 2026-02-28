@@ -10,7 +10,6 @@ export type Metrics = {
 };
 
 declare global {
-  // eslint-disable-next-line no-var
   var __yt_metrics__: Metrics | undefined;
 }
 

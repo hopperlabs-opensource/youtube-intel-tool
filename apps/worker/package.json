@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "node scripts/dev.mjs",
-    "lint": "tsc -p tsconfig.json --noEmit --pretty false",
+    "lint": "pnpm -w exec eslint apps/worker/src --ext .ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
