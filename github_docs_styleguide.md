@@ -47,7 +47,8 @@ Scope: `README.md`, `docs/*.md`, docs assets, and documentation-related PRs.
 - `github_docs_styleguide.md` (this file)
 
 ### 1.2 Canonical docs under `/docs`
-- `docs/index.md` (docs index)
+- `docs/README.md` (docs index for repo browsing)
+- `docs/index.md` (docs index for docs site)
 - `docs/QUICKSTART.md`
 - `docs/GETTING_STARTED.md`
 - `docs/RUNBOOKS.md`

@@ -1,6 +1,18 @@
 # Quick Start
+Owner: Maintainers
+Status: Stable
+Last updated: 2026-02-28
 
-Get the local stack running in a few minutes.
+## TL;DR
+- Fastest path: run setup + doctor, then open the app.
+- Use this doc for a first local bring-up only.
+- For deeper ops and debugging, use `docs/RUNBOOKS.md` and `docs/TROUBLESHOOTING.md`.
+
+> ✅ **Good default**
+> Use `pnpm run setup` for first bring-up on a new machine.
+
+> ⚠️ **Watch out**
+> This stack is local-first and not hardened for direct public internet exposure.
 
 ## Prerequisites
 
@@ -9,25 +21,38 @@ Get the local stack running in a few minutes.
 - Docker Desktop (Postgres + Redis)
 - `yt-dlp` (example: `brew install yt-dlp`)
 
-## Fast Setup
+## Bring Up The Stack
 
+### Requirements
+- Repo cloned locally
+- Prerequisites installed
+
+### Steps
 ```bash
 pnpm run setup
 pnpm run doctor
 ```
 
-Open:
-
+### Verify
 - App: `http://localhost:<YIT_WEB_PORT>` (default `3333`)
 - Web metrics: `http://localhost:<YIT_WEB_PORT>/metrics`
-- Worker metrics: `http://localhost:<YIT_WORKER_METRICS_PORT>` (default `4010`)
+- Worker metrics: `http://localhost:<YIT_WORKER_METRICS_PORT>/metrics` (default `4010`)
 
 ## First Ingest Flow
 
-1. Paste a YouTube URL on `/` and select `Open`.
-2. On the video page, select `Ingest`.
-3. Watch live progress in Job Center.
-4. Use `Search`, `Entities`, `Context`, and `Chat`.
+### Requirements
+- Stack is running and healthy
+
+### Steps
+1. Open `http://localhost:<YIT_WEB_PORT>` (default `3333`).
+2. Paste a YouTube URL on `/` and select `Open`.
+3. On the video page, select `Ingest`.
+4. Watch progress in Job Center.
+5. Use `Search`, `Entities`, `Context`, and `Chat`.
+
+### Verify
+- Job status moves from queued/running to completed.
+- Search results and transcript cues are returned for the ingested video.
 
 Optional starter content:
 
@@ -35,7 +60,7 @@ Optional starter content:
 pnpm seed:demo
 ```
 
-The starter list is in `config/demo_videos.txt`.
+Starter list path: `config/demo_videos.txt`.
 
 ## Agentic Setup
 
@@ -58,10 +83,8 @@ pnpm agents:install
 pnpm bg:down
 ```
 
-For deeper setup and operations details, see:
+## Next Docs
 
 - [GETTING_STARTED.md](GETTING_STARTED.md)
 - [RUNBOOKS.md](RUNBOOKS.md)
 - [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
-
-_Last updated: February 28, 2026._

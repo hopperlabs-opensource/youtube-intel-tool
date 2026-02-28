@@ -1,7 +1,14 @@
 # Architecture
+Owner: Maintainers
+Status: Stable
+Last updated: 2026-02-28
 
-This repository is a TypeScript monorepo with a web app, worker, shared core,
-shared contracts, and SDK tests.
+## TL;DR
+- Monorepo with `apps/web`, `apps/worker`, `apps/cli`, `packages/core`, `packages/contracts`, and `packages/sdk`.
+- API boundaries are contract-first (Zod) and shared across UI/CLI/SDK/tests.
+- Worker-driven ingest/enrichment feeds searchable transcript and chat workflows.
+
+This repository is a TypeScript monorepo with a web app, worker, shared core, shared contracts, and SDK tests.
 
 ## Component Overview
 

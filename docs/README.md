@@ -1,4 +1,12 @@
 # Documentation Index
+Owner: Maintainers
+Status: Stable
+Last updated: 2026-02-28
+
+## TL;DR
+- This is the canonical docs directory map.
+- For web docs, open `https://hopperlabs-opensource.github.io/youtube-intel-tool/`.
+- For local preview, run `pnpm docs:requirements` and `pnpm docs:serve`.
 
 Docs site (GitHub Pages): `https://hopperlabs-opensource.github.io/youtube-intel-tool/`
 

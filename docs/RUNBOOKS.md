@@ -1,9 +1,23 @@
 # Runbooks
+Owner: Maintainers
+Status: Stable
+Last updated: 2026-02-28
 
-Operational playbooks for local/self-hosted usage.
+## TL;DR
+- Use `pnpm run setup` + `pnpm run doctor` for first-time bring-up.
+- Use `pnpm bg:*` commands for stable background operation.
+- Treat these runbooks as local/self-hosted operation guides.
 
-## 1) First-time bring-up
+> ⚠️ **Watch out**
+> These procedures assume local/self-hosted operation. Public internet deployment requires extra hardening.
 
+## 1. First-Time Bring-Up
+
+### Requirements
+- Docker running
+- Prerequisites installed (`Node`, `pnpm`, `yt-dlp`)
+
+### Steps
 ```bash
 pnpm run setup
 pnpm run doctor
@@ -11,95 +25,131 @@ pnpm yit health
 pnpm yit capabilities
 ```
 
-Expected:
-
+### Verify
 - Web UI: `http://localhost:<YIT_WEB_PORT>` (default `3333`)
 - Worker metrics: `http://localhost:<YIT_WORKER_METRICS_PORT>/metrics` (default `4010`)
 - Grafana: `http://localhost:<YIT_GRAFANA_PORT>` (default `53000`)
 - Prometheus: `http://localhost:<YIT_PROMETHEUS_PORT>` (default `59092`)
 
-You can change all local ports from one place: `.env` / `.env.example`.
+## 2. Foreground Development Mode
 
-## 2) Foreground development mode
+### Requirements
+- Docker running
 
-Use this when actively developing and watching logs in the same terminal.
-
+### Steps
 ```bash
 pnpm db:up
 pnpm db:migrate
 pnpm dev
 ```
 
-## 3) Background stack mode
+### Verify
+```bash
+pnpm yit health
+pnpm yit capabilities
+```
 
-Use this for stable local service behavior.
+## 3. Background Stack Mode
 
+### Requirements
+- `.env` configured (or defaults from `.env.example`)
+
+### Steps
 ```bash
 pnpm bg:up
 pnpm bg:status
 pnpm bg:logs
 pnpm bg:restart
+```
+
+To stop:
+
+```bash
 pnpm bg:down
 ```
 
+### Verify
+- `pnpm bg:status` shows all expected services as running.
+- `pnpm yit health` returns success.
+
 Notes:
-
 - `bg:up` starts infra, runs migrations, starts web/worker, and writes Prometheus config.
-- Override ports with `YIT_WEB_PORT`, `YIT_WORKER_METRICS_PORT`,
-  `YIT_POSTGRES_PORT`, `YIT_REDIS_PORT`, `YIT_PROMETHEUS_PORT`, `YIT_GRAFANA_PORT`.
+- Port overrides: `YIT_WEB_PORT`, `YIT_WORKER_METRICS_PORT`, `YIT_POSTGRES_PORT`, `YIT_REDIS_PORT`, `YIT_PROMETHEUS_PORT`, `YIT_GRAFANA_PORT`.
 
-## 4) macOS login service mode (`launchd`)
+## 4. macOS Login Service Mode (`launchd`)
 
-Use this to auto-start on login.
+### Requirements
+- macOS host
 
+### Steps
 ```bash
 pnpm svc:install
 pnpm svc:status
+```
+
+To uninstall:
+
+```bash
 pnpm svc:uninstall
 ```
 
-This installs three agents:
+### Verify
+- `pnpm svc:status` shows expected agents:
+  - `com.ytintel.stack`
+  - `com.ytintel.web`
+  - `com.ytintel.worker`
 
-- `com.ytintel.stack`
-- `com.ytintel.web`
-- `com.ytintel.worker`
+## 5. Observability Controls
 
-## 5) Observability-only controls
+### Requirements
+- Stack already running
 
+### Steps
 ```bash
 pnpm obs:up
+```
+
+To stop observability services only:
+
+```bash
 pnpm obs:down
 ```
 
-## 6) Verification / smoke
+### Verify
+- Prometheus and Grafana endpoints are reachable on configured ports.
 
-Fast checks:
+## 6. Verification and Smoke
 
+### Requirements
+- Stack healthy
+
+### Steps
 ```bash
 pnpm run doctor
 pnpm yit health
 pnpm yit capabilities
 pnpm yit --json health
-```
-
-End-to-end smoke:
-
-```bash
 pnpm yit smoke --url "https://www.youtube.com/watch?v=..."
 ```
 
-## 7) Common incidents
+### Verify
+- Smoke flow exits successfully and returns expected ingest/search status.
+
+## 7. Incident Procedures
 
 ### App not reachable
 
+#### Steps
 1. `pnpm bg:status`
 2. `pnpm bg:logs`
 3. `pnpm yit health`
 
+#### Verify
+- API health endpoint responds and UI becomes reachable.
+
 ### Port conflict
 
-Run with custom ports:
-
+#### Steps
 ```bash
 YIT_WEB_PORT=3344 \
 YIT_WORKER_METRICS_PORT=4011 \
@@ -108,23 +158,32 @@ YIT_GRAFANA_PORT=53001 \
 pnpm bg:up
 ```
 
+#### Verify
+- Services bind to new ports and CLI reaches API via updated `YIT_BASE_URL`.
+
 ### Seed starter content
 
+#### Steps
 ```bash
 pnpm seed:demo
 ```
 
+#### Verify
+- New demo videos appear in library views.
+
 ### DB state looks broken
 
+#### Steps
 ```bash
 pnpm db:down
 pnpm db:up
 pnpm db:migrate
 ```
 
-## 8) Agentic operator prompt
+#### Verify
+- Migrations apply cleanly and `pnpm yit health` succeeds.
 
-For Codex/Claude Code/other agentic CLIs:
+## 8. Agentic Operator Prompt
 
 ```text
 Use docs/GETTING_STARTED.md and docs/RUNBOOKS.md to bring the stack up.
@@ -133,10 +192,6 @@ Ingest one test URL and verify search works.
 If anything fails, use docs/TROUBLESHOOTING.md and report root cause + fix.
 ```
 
-## 9) Scope reminder
+## 9. Scope Reminder
 
-These runbooks are for local/self-hosted operation. For public internet
-exposure, add your own hardening first (auth, TLS/reverse proxy, rate limits,
-secret management, monitoring).
-
-_Last updated: February 28, 2026._
+For public internet exposure, add auth, TLS/reverse proxy, rate limits, CORS controls, secret management, and monitoring before deployment.

@@ -1,4 +1,12 @@
 # Connect & Support
+Owner: Maintainers
+Status: Stable
+Last updated: 2026-02-28
+
+## TL;DR
+- This page is the source of truth for official channels and support paths.
+- Treat any channel marked "Coming Soon" as unofficial until listed live here.
+- Prefer GitHub Discussions/Issues for maintainer and project support.
 
 <div class="support-hero">
   <p class="support-eyebrow">Community</p>
@@ -126,5 +134,3 @@
 - Do not share API keys, access tokens, or private logs in public posts.
 - Keep Patreon disabled in [`.github/FUNDING.yml`](https://github.com/hopperlabs-opensource/youtube-intel-tool/blob/main/.github/FUNDING.yml) until the official account exists.
 - Prefer a dedicated role alias (for example `oss@...`) before publishing a direct email contact.
-
-_Last updated: February 28, 2026._

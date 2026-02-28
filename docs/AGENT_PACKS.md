@@ -1,4 +1,12 @@
 # Agent Packs
+Owner: Maintainers
+Status: Stable
+Last updated: 2026-02-28
+
+## TL;DR
+- The repo ships installable packs for Codex and Claude Code.
+- Run `pnpm agents:install` from repo root.
+- Packs are local developer tooling assets, not runtime dependencies.
 
 This repo includes installable packs for Codex and Claude Code.
 

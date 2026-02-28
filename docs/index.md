@@ -1,3 +1,13 @@
+# Docs Home
+Owner: Maintainers
+Status: Stable
+Last updated: 2026-02-28
+
+## TL;DR
+- Start with `pnpm run setup`, then verify with `pnpm run doctor` and `pnpm yit health`.
+- Use this index to jump to quickstart, runbooks, API/CLI references, and governance.
+- This project is local-first; public internet exposure requires hardening.
+
 <div class="yit-hero">
   <h1>YouTube Intel Tool</h1>
   <p>Turn long YouTube videos into a local, time-indexed research surface with transcript search, entities, grounded chat, and operational observability.</p>
@@ -62,5 +72,3 @@
     This project is not a hardened public internet service by default.
     If you expose it publicly, add authentication, TLS/reverse proxy,
     rate limiting, and robust secret management first.
-
-_Last updated: February 28, 2026._

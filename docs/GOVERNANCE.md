@@ -1,4 +1,12 @@
 # Governance
+Owner: Maintainers
+Status: Stable
+Last updated: 2026-02-28
+
+## TL;DR
+- Public contributors use fork + pull request.
+- `main` is protected; maintainers manage merges and release operations.
+- Elevated access requires strong security posture (including 2FA).
 
 How this repository is operated and how access is granted.
 
