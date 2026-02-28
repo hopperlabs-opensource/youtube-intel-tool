@@ -13,33 +13,18 @@ cleanup() {
 }
 trap cleanup EXIT
 
-PY_BIN="${YIT_PYTHON_BIN:-python3}"
-if ! command -v "${PY_BIN}" >/dev/null 2>&1; then
-  if command -v python3 >/dev/null 2>&1; then
-    PY_BIN="python3"
-  elif command -v python >/dev/null 2>&1; then
-    PY_BIN="python"
-  fi
-fi
-
-if command -v "${PY_BIN}" >/dev/null 2>&1; then
-  PY_BIN="$(command -v "${PY_BIN}")"
-  export YIT_PYTHON_BIN="${PY_BIN}"
-  export PYTHON_BIN="${PY_BIN}"
-  if ! "${PY_BIN}" -c "import youtube_transcript_api" >/dev/null 2>&1; then
-    echo "integration: installing missing python dependency youtube-transcript-api via ${PY_BIN}"
-    "${PY_BIN}" -m pip install --user youtube-transcript-api
-  fi
-fi
+PY_BIN="$(bash "${ROOT_DIR}/ops/tests/ensure_py_deps.sh")"
+export YIT_PYTHON_BIN="${PY_BIN}"
+export PYTHON_BIN="${PY_BIN}"
 
 echo "integration: starting local stack"
 # Keep integration suite deterministic without external model credentials.
 export YIT_EMBED_PROVIDER="${YIT_EMBED_PROVIDER:-none}"
 export YIT_STT_PROVIDER="${YIT_STT_PROVIDER:-}"
 export YIT_DIARIZE_BACKEND="${YIT_DIARIZE_BACKEND:-}"
-echo "integration: python=${YIT_PYTHON_BIN:-<unset>} embed=${YIT_EMBED_PROVIDER} stt=${YIT_STT_PROVIDER:-<unset>}"
-YIT_PYTHON_BIN="${YIT_PYTHON_BIN:-}" \
-PYTHON_BIN="${PYTHON_BIN:-}" \
+echo "integration: python=${YIT_PYTHON_BIN} embed=${YIT_EMBED_PROVIDER} stt=${YIT_STT_PROVIDER:-<unset>}"
+YIT_PYTHON_BIN="${YIT_PYTHON_BIN}" \
+PYTHON_BIN="${PYTHON_BIN}" \
 YIT_EMBED_PROVIDER="${YIT_EMBED_PROVIDER}" \
 YIT_STT_PROVIDER="${YIT_STT_PROVIDER:-}" \
 YIT_DIARIZE_BACKEND="${YIT_DIARIZE_BACKEND:-}" \

@@ -23,6 +23,7 @@ pnpm release:check
 ```
 
 `pnpm release:check` builds each publishable package and writes `.tgz` artifacts to `.run/packs`.
+`pnpm test:integration` bootstraps Python deps from pinned `ops/tests/requirements.txt` into `.run/venvs/tests`.
 
 ## Versioning policy
 

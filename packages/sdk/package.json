@@ -40,7 +40,7 @@
   "scripts": {
     "build": "tsup src/index.ts src/routes.ts --format esm --dts --clean --sourcemap",
     "clean": "rm -rf dist",
-    "lint": "tsc -p tsconfig.json --noEmit --pretty false",
+    "lint": "pnpm -w exec eslint packages/sdk/src packages/sdk/test --ext .ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "node --import tsx --test test/contract.test.ts",
     "test:unit": "node --import tsx --test test/error-envelope.test.ts test/routes-parity.test.ts",

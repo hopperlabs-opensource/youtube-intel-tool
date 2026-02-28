@@ -102,7 +102,7 @@ export async function buildRagForVideoChat(
 
   let semanticHits: SearchHit[] = [];
   let embeddingError: string | null = null;
-  let chunkTextById = new Map<string, string>();
+  const chunkTextById = new Map<string, string>();
 
   if (opts.semantic_k > 0) {
     try {

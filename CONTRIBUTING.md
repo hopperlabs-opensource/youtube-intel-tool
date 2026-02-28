@@ -56,7 +56,7 @@ export YIT_CONTRACT_TEST_INGEST_URL=https://www.youtube.com/watch?v=dQw4w9WgXcQ
 ## Access and maintainer policy
 
 - Public contributors should use fork + pull request.
-- Protected `main` requires pull requests and required checks.
+- Protected `main` requires pull requests, required checks, and 1 approval.
 - New maintainer access is granted after consistent, high-signal contributions and trusted review behavior.
 - Maintainer access is expected to follow org security policy (2FA required).
 

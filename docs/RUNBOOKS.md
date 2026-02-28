@@ -136,6 +136,7 @@ pnpm test:integration
 
 ### Verify
 - Smoke flow exits successfully and returns expected ingest/search status.
+- `pnpm test:integration` uses a pinned Python test venv at `.run/venvs/tests` (source of truth: `ops/tests/requirements.txt`).
 
 ## 7. Incident Procedures
 

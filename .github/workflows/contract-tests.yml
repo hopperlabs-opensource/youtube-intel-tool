@@ -30,9 +30,6 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install Python transcript dependency
-        run: pip install youtube-transcript-api
-
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 

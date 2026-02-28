@@ -170,6 +170,7 @@ pnpm test:integration
 
 ### Verify
 - Contract test suite exits successfully.
+- Python transcript dependency is sourced from pinned `ops/tests/requirements.txt` via `.run/venvs/tests`.
 
 ## Still Stuck
 

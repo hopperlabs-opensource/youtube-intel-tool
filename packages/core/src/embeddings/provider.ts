@@ -74,7 +74,6 @@ export function getEmbeddingsStatus(env: Record<string, string | undefined> = pr
   }
 
   // provider === "ollama"
-  const baseUrl = clean(env.OLLAMA_BASE_URL) || getYitDefault("OLLAMA_BASE_URL");
   const model = clean(env.OLLAMA_EMBED_MODEL) || "nomic-embed-text";
   return {
     enabled: true,
