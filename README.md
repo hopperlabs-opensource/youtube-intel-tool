@@ -11,6 +11,8 @@ This project ingests a video once, then gives you synced transcript navigation,
 semantic search, entity extraction, speaker labeling, grounded chat, and an
 operational stack (queues + metrics) you can actually run locally.
 
+Official community/support channels: [docs/CONNECT.md](docs/CONNECT.md)
+
 ## Table of Contents
 
 - [TL;DR](#tldr)
@@ -249,6 +251,7 @@ API guide: [docs/API.md](docs/API.md)
 
 ## Documentation Map
 
+- Connect/support channels: [docs/CONNECT.md](docs/CONNECT.md)
 - Quick Start: [docs/QUICKSTART.md](docs/QUICKSTART.md)
 - Start here: [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md)
 - Product workflows: [docs/USE_CASES.md](docs/USE_CASES.md)
@@ -256,7 +259,6 @@ API guide: [docs/API.md](docs/API.md)
 - CLI reference: [docs/CLI.md](docs/CLI.md)
 - API reference: [docs/API.md](docs/API.md)
 - Governance: [docs/GOVERNANCE.md](docs/GOVERNANCE.md)
-- Connect/support channels: [docs/CONNECT.md](docs/CONNECT.md)
 - Runbooks (operations): [docs/RUNBOOKS.md](docs/RUNBOOKS.md)
 - Configuration model: [docs/CONFIG.md](docs/CONFIG.md)
 - Agent packs: [docs/AGENT_PACKS.md](docs/AGENT_PACKS.md)

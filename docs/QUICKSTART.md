@@ -63,3 +63,5 @@ For deeper setup and operations details, see:
 - [GETTING_STARTED.md](GETTING_STARTED.md)
 - [RUNBOOKS.md](RUNBOOKS.md)
 - [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
+
+_Last updated: February 28, 2026._

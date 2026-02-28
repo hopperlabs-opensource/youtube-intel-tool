@@ -3,6 +3,16 @@
   <p>Turn long YouTube videos into a local, time-indexed research surface with transcript search, entities, grounded chat, and operational observability.</p>
 </div>
 
+<div class="support-hero">
+  <p class="support-eyebrow">Connect and Support</p>
+  <h2>Official channels, status, and safe support paths</h2>
+  <p>Use the Connect page as the source of truth for live channels. If a channel is marked "Coming Soon", treat similarly named accounts as unofficial.</p>
+  <div class="cta-row">
+    <a class="md-button md-button--primary" href="CONNECT/">Open Connect &amp; Support</a>
+    <a class="md-button" href="https://github.com/hopperlabs-opensource/youtube-intel-tool/discussions">GitHub Discussions</a>
+  </div>
+</div>
+
 <div class="yit-grid">
   <div class="yit-card">
     <strong>Local First</strong>
@@ -41,14 +51,16 @@
 
 ## Documentation Paths
 
+- Community channels and support: [Connect & Support](CONNECT.md)
 - Start fast: [Quick Start](QUICKSTART.md)
 - New here: [Getting Started](GETTING_STARTED.md)
 - Operating the stack: [Runbooks](RUNBOOKS.md)
 - Integration: [CLI](CLI.md) and [API](API.md)
 - Project policy: [Governance](GOVERNANCE.md)
-- Community channels: [Connect & Support](CONNECT.md)
 
 !!! warning "Security boundary"
     This project is not a hardened public internet service by default.
     If you expose it publicly, add authentication, TLS/reverse proxy,
     rate limiting, and robust secret management first.
+
+_Last updated: February 28, 2026._
