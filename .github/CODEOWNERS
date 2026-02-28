@@ -1,0 +1,8 @@
+# Default owner for all code paths.
+* @Unclip1843
+
+# Extra-sensitive paths.
+/.github/workflows/* @Unclip1843
+/package.json @Unclip1843
+/pnpm-lock.yaml @Unclip1843
+/ops/release/* @Unclip1843
