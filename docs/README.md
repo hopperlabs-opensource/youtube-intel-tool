@@ -1,5 +1,14 @@
 # Documentation Index
 
+Docs site (GitHub Pages): `https://hopperlabs-opensource.github.io/youtube-intel-tool/`
+
+Local preview:
+
+```bash
+pnpm docs:requirements
+pnpm docs:serve
+```
+
 - [Runbooks](RUNBOOKS.md)
 - [Getting Started](GETTING_STARTED.md)
 - [Use Cases](USE_CASES.md)

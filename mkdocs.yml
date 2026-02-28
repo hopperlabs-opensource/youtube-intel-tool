@@ -1,0 +1,82 @@
+site_name: YouTube Intel Tool
+site_description: Local-first YouTube research and intelligence toolkit
+site_url: https://hopperlabs-opensource.github.io/youtube-intel-tool/
+repo_url: https://github.com/hopperlabs-opensource/youtube-intel-tool
+repo_name: hopperlabs-opensource/youtube-intel-tool
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  language: en
+  favicon: assets/screenshots/home.png
+  icon:
+    repo: fontawesome/brands/github
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - navigation.footer
+    - toc.follow
+    - content.code.copy
+    - content.action.edit
+    - content.tabs.link
+    - search.highlight
+    - search.suggest
+  palette:
+    - scheme: default
+      primary: amber
+      accent: deep orange
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - scheme: slate
+      primary: teal
+      accent: lime
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+
+plugins:
+  - search
+
+exclude_docs: |
+  README.md
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - md_in_html
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+  - pymdownx.tabbed:
+      alternate_style: true
+
+extra_css:
+  - assets/stylesheets/extra.css
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/hopperlabs-opensource/youtube-intel-tool
+
+nav:
+  - Home: index.md
+  - Quickstart:
+      - Getting Started: GETTING_STARTED.md
+      - Runbooks: RUNBOOKS.md
+      - Screenshot Workflow: SCREENSHOTS.md
+      - Troubleshooting: TROUBLESHOOTING.md
+  - Build and Use:
+      - Use Cases: USE_CASES.md
+      - CLI Reference: CLI.md
+      - API Reference: API.md
+      - Configuration: CONFIG.md
+      - Architecture: ARCHITECTURE.md
+  - Project Ops:
+      - Governance: GOVERNANCE.md
+      - Agent Packs: AGENT_PACKS.md
+      - Releasing: RELEASING.md
