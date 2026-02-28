@@ -10,6 +10,7 @@ pnpm docs:serve
 ```
 
 - [Runbooks](RUNBOOKS.md)
+- [Quick Start](QUICKSTART.md)
 - [Getting Started](GETTING_STARTED.md)
 - [Use Cases](USE_CASES.md)
 - [Architecture](ARCHITECTURE.md)

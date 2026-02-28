@@ -41,6 +41,7 @@
 
 ## Documentation Paths
 
+- Start fast: [Quick Start](QUICKSTART.md)
 - New here: [Getting Started](GETTING_STARTED.md)
 - Operating the stack: [Runbooks](RUNBOOKS.md)
 - Integration: [CLI](CLI.md) and [API](API.md)

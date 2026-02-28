@@ -65,7 +65,8 @@ extra:
 
 nav:
   - Home: index.md
-  - Quickstart:
+  - Quick Start: QUICKSTART.md
+  - Guides:
       - Getting Started: GETTING_STARTED.md
       - Runbooks: RUNBOOKS.md
       - Screenshot Workflow: SCREENSHOTS.md
