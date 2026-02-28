@@ -1,31 +1,34 @@
 # Troubleshooting
+Owner: Maintainers
+Status: Stable
+Last updated: 2026-02-28
 
-Use this checklist when local runs are failing.
+## TL;DR
+- Start with `pnpm run doctor`, then `pnpm yit health` and `pnpm yit capabilities`.
+- Most local failures are port conflicts, missing host tools, or provider configuration gaps.
+- Use this guide for local/self-hosted operation.
 
-## Scope reminder
-
-This stack is intended for local/self-hosted use. If you expose it to the
-public internet and observe abuse/security issues, treat that as a deployment
-hardening gap (auth/TLS/rate limits/secrets/CORS), not a local-run issue.
+> ⚠️ **Watch out**
+> If you expose this stack publicly and see abuse/security issues, treat that as an internet hardening gap (auth/TLS/rate limits/secrets/CORS), not a local-run defect.
 
 ## Quick Triage
 
-1. Confirm infra is up: `pnpm db:up`
-2. Confirm migrations are applied: `pnpm db:migrate`
-3. Confirm app is running: `pnpm dev`
-4. Run preflight: `pnpm run doctor`
-5. Confirm API health: `pnpm yit health`
-6. Inspect capabilities: `pnpm yit capabilities`
+```bash
+pnpm db:up
+pnpm db:migrate
+pnpm dev
+pnpm run doctor
+pnpm yit health
+pnpm yit capabilities
+```
 
-## Port Conflicts
+## Symptom: Port conflicts
 
-Symptoms:
+### Likely causes
+- Existing process already bound to default ports
+- Previous stack instance still running
 
-- Web app starts on a different port
-- Metrics endpoint unreachable
-
-Fix:
-
+### Steps
 ```bash
 YIT_WEB_PORT=3344 \
 YIT_WORKER_METRICS_PORT=4011 \
@@ -34,100 +37,113 @@ YIT_GRAFANA_PORT=53001 \
 pnpm bg:up
 ```
 
-Use the printed port values and set `YIT_BASE_URL` for CLI if needed.
-For the full config model, see `docs/CONFIG.md`.
+### Verify
+- App and metrics endpoints are reachable on new ports.
+- If needed, set CLI base URL:
 
-## `yt-dlp` Errors
+```bash
+export YIT_BASE_URL="http://localhost:${YIT_WEB_PORT:-3333}"
+pnpm yit health
+```
 
-Symptoms:
+## Symptom: `yt-dlp` errors
 
-- YouTube discovery fails
-- Ingest cannot fetch transcript source
+### Likely causes
+- `yt-dlp` missing from host
+- Old `yt-dlp` binary
 
-Fix:
-
+### Steps
 ```bash
 brew install yt-dlp
 yt-dlp --version
 ```
 
-Then restart web and worker.
+Then restart web/worker processes.
 
-## `ffmpeg` Missing
+### Verify
+- `pnpm yit youtube search "test"` returns results.
+- Ingest can fetch transcript sources.
 
-Symptoms:
+## Symptom: `ffmpeg` missing
 
-- Audio conversion or fallback STT steps fail
+### Likely causes
+- `ffmpeg` not installed on host
 
-Fix:
-
+### Steps
 ```bash
 brew install ffmpeg
 ffmpeg -version
 ```
 
-## Semantic Search Returns Empty Results
+### Verify
+- Audio conversion and fallback STT steps complete during ingest.
 
-Symptoms:
+## Symptom: Semantic search returns empty results
 
-- `mode=semantic` returns no hits
-- `embedding_error` present in response
+### Likely causes
+- Embeddings provider disabled/misconfigured
+- Existing videos ingested before embeddings were enabled
 
-Fix:
-
+### Steps
 1. Inspect `/api/capabilities` embeddings section.
-2. Configure embedding provider environment variables.
-3. Re-run ingest for affected videos so chunks get embeddings.
+2. Configure provider environment variables.
+3. Re-run ingest for affected videos.
 
-## Diarization Not Available
+### Verify
+- `mode=semantic` or `mode=hybrid` search returns embedding-backed hits.
 
-Symptoms:
+## Symptom: Diarization unavailable
 
-- Speaker segments missing
-- Diarization steps skipped
+### Likely causes
+- Diarization backend not configured
+- Missing Hugging Face token or Python runtime
 
-Fix:
-
+### Steps
 ```bash
 export YIT_DIARIZE_BACKEND=pyannote
 export YIT_HF_TOKEN=...
 export YIT_PYTHON_BIN=python3.11
 ```
 
-Install required Python dependencies for your pyannote setup and re-run ingest with `--diarize`.
+Install required Python deps for your pyannote setup, then re-run ingest with diarization enabled.
 
-## STT Fallback Not Available
+### Verify
+- Speaker segments appear in `GET /api/videos/:videoId/speakers/segments`.
 
-Symptoms:
+## Symptom: STT fallback unavailable
 
-- Caption-disabled videos fail ingest
+### Likely causes
+- STT provider not configured
+- Missing provider key
 
-Fix:
-
+### Steps
 ```bash
 export YIT_STT_PROVIDER=openai
 export OPENAI_API_KEY=...
 ```
 
-Re-run ingest. If you need strict transcript-only behavior, keep STT disabled.
+Re-run ingest.
 
-## Queue and Worker Issues
+### Verify
+- Caption-disabled videos can complete ingest via STT fallback.
 
-Symptoms:
+## Symptom: Jobs stay queued / no worker logs
 
-- Jobs stay queued forever
-- No job logs appear
+### Likely causes
+- Worker process not running
+- Redis or DB connectivity failure
 
-Fix:
+### Steps
+1. Ensure worker is running (`pnpm dev` starts web + worker).
+2. Check logs for connection errors.
+3. Verify Redis container health.
 
-1. Ensure worker process is running (`pnpm dev` starts both web + worker).
-2. Check worker logs for Redis/DB connection failures.
-3. Verify Redis container is healthy.
+### Verify
+- New ingest jobs transition from queued to running.
 
-## Database Reset (Local Only)
+## Symptom: Local DB state is corrupted
 
-If your local DB state is corrupted and you want a clean start:
-
+### Steps
 ```bash
 pnpm db:down
 pnpm db:up
@@ -136,20 +152,29 @@ pnpm db:migrate
 
 If needed, remove persistent volumes manually before `db:up`.
 
-## Contract Test Failures
+### Verify
+- Migration completes and `pnpm yit health` succeeds.
 
-`pnpm test` expects a running local stack.
+## Symptom: Contract tests failing
 
-Set explicit target and test video if required:
+### Likely causes
+- Local stack not running
+- Test ingest URL unavailable
 
+### Steps
 ```bash
 export YIT_BASE_URL="http://localhost:${YIT_WEB_PORT:-3333}"
 export YIT_CONTRACT_TEST_INGEST_URL=https://www.youtube.com/watch?v=dQw4w9WgXcQ
 pnpm test
 ```
 
+### Verify
+- Contract test suite exits successfully.
+
 ## Still Stuck
 
-- Capture failing command and full output.
-- Include `pnpm yit health` and `/api/capabilities` output.
-- Open an issue with repro steps and environment details.
+When opening an issue, include:
+- Failing command and full output
+- `pnpm yit health` output
+- `/api/capabilities` output
+- Environment details (OS, Node, pnpm, Docker versions)

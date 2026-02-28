@@ -12,17 +12,23 @@ Turn the YouTube firehose into structured intelligence you can search, rank,
 and automate.
 </p>
 
+---
+
 ## Value Proposition
 
 | Pain | Promise | Outcome |
 | --- | --- | --- |
 | Content overload + algorithm mismatch + no time. | Turn video firehose into structured text intelligence + priority alerts. | Watch less, know more, and don't miss what matters. |
 
+---
+
 ## Product Preview
 
 | Home | Video Workspace | Global Search |
 | --- | --- | --- |
 | ![Home](docs/assets/screenshots/home.png) | ![Video Workspace](docs/assets/screenshots/video-workspace.png) | ![Global Search](docs/assets/screenshots/global-search.png) |
+
+---
 
 ## Personal Algorithm (CLI / SDK / API)
 
@@ -35,9 +41,11 @@ This project ingests a video once, then gives you synced transcript navigation,
 semantic search, entity extraction, speaker labeling, grounded chat, and an
 operational stack (queues + metrics) you can actually run locally.
 
+---
+
 ## Table of Contents
 
-- [TL;DR](#tldr)
+- [Quickstart (TL;DR)](#quickstart-tldr)
 - [Value Proposition](#value-proposition)
 - [Product Preview](#product-preview)
 - [Personal Algorithm (CLI / SDK / API)](#personal-algorithm-cli--sdk--api)
@@ -60,7 +68,9 @@ operational stack (queues + metrics) you can actually run locally.
 - [Governance And Maintainers](#governance-and-maintainers)
 - [Current Publishing Status](#current-publishing-status)
 
-## TL;DR
+---
+
+## Quickstart (TL;DR)
 
 ### Human quickstart
 
@@ -108,7 +118,12 @@ Browse docs in this repository:
 - [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md)
 - [docs/RUNBOOKS.md](docs/RUNBOOKS.md)
 
+---
+
 ## Local-Only Security Notice
+
+> ⚠️ **Watch out**
+> This project is designed for local/self-hosted usage, not direct public internet exposure.
 
 - Intended use: local/self-hosted usage by the person running it.
 - Not intended: exposing this app directly to the public internet as-is.
@@ -124,6 +139,8 @@ If exposed publicly without additional hardening, you risk:
 If you need internet-facing hosting, add your own authentication, TLS/reverse
 proxy, rate limiting, CORS controls, secret management, and monitoring first.
 
+---
+
 ## What You Can Do
 
 - Resolve YouTube URLs into canonical video records.
@@ -134,6 +151,8 @@ proxy, rate limiting, CORS controls, secret management, and monitoring first.
 - Build context cards (Wikipedia + local DB sources).
 - Run grounded chat with source references.
 - Observe the system with Prometheus-style metrics.
+
+---
 
 ## 2-Minute Quick Start
 
@@ -180,6 +199,8 @@ pnpm seed:demo
 
 Edit the list in `config/demo_videos.txt`.
 
+---
+
 ## Centralized Config Defaults
 
 Ports and local URL defaults live in `.env.example` and are shared by scripts/runtime:
@@ -196,12 +217,16 @@ If your local web port is customized, set CLI base URL accordingly:
 export YIT_BASE_URL="http://localhost:${YIT_WEB_PORT:-3333}"
 ```
 
+---
+
 ## OpenAI Key Sources
 
 - Preferred: set `OPENAI_API_KEY` in local `.env` (server-side).
 - Fallback: use the UI `Settings` modal to save a browser-local key.
 - Precedence: server `.env` key wins; browser key is only used when `.env` key is missing.
 - Risk: browser-saved keys are stored in `localStorage` plaintext for that browser profile.
+
+---
 
 ## Screenshots
 
@@ -211,6 +236,8 @@ Captured with Playwright CLI. Re-generate anytime via `docs/SCREENSHOTS.md`.
 | --- | --- | --- |
 | ![Home](docs/assets/screenshots/home.png) | ![Video Workspace](docs/assets/screenshots/video-workspace.png) | ![Global Search](docs/assets/screenshots/global-search.png) |
 
+---
+
 ## Use Cases
 
 - Research assistant for long interviews and podcasts
@@ -219,6 +246,8 @@ Captured with Playwright CLI. Re-generate anytime via `docs/SCREENSHOTS.md`.
 - Fast QA for "who said what, when" questions
 
 Detailed workflows: [docs/USE_CASES.md](docs/USE_CASES.md)
+
+---
 
 ## Architecture At A Glance
 
@@ -238,6 +267,8 @@ flowchart LR
 ```
 
 Deep dive: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+
+---
 
 ## CLI Quick Hits
 
@@ -261,6 +292,8 @@ pnpm yit chat ask <videoId> "Summarize and cite sources as [S1], [S2]."
 
 CLI guide: [docs/CLI.md](docs/CLI.md)
 
+---
+
 ## API Snapshot
 
 - `POST /api/videos/resolve`
@@ -274,6 +307,8 @@ CLI guide: [docs/CLI.md](docs/CLI.md)
 - `POST /api/videos/:videoId/chat/stream`
 
 API guide: [docs/API.md](docs/API.md)
+
+---
 
 ## Documentation Map
 
@@ -294,10 +329,15 @@ API guide: [docs/API.md](docs/API.md)
 - Contribution guide: [CONTRIBUTING.md](CONTRIBUTING.md)
 - Public release checklist: [PUBLIC_REPO_CHECKLIST.md](PUBLIC_REPO_CHECKLIST.md)
 
+---
+
 ## Docs In Repo
 
 - Main docs folder: [`docs/`](docs)
-- Start at: [docs/README.md](docs/README.md)
+- Start at (repo index): [docs/README.md](docs/README.md)
+- Start at (docs site home): [docs/index.md](docs/index.md)
+
+---
 
 ## Background / Service Mode
 
@@ -318,17 +358,23 @@ pnpm svc:status
 pnpm svc:uninstall
 ```
 
+---
+
 ## Responsible Use
 
 - Treat full transcript text as potentially copyrighted content.
 - Prefer official APIs and proper permissions for production ingestion.
 - Do not commit API keys, transcript dumps, or local runtime artifacts.
 
+---
+
 ## Open Source
 
 - License: [MIT](LICENSE)
 - Community docs: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md), [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md)
 - Planned work: [ROADMAP.md](ROADMAP.md)
+
+---
 
 ## Connect and Support
 
@@ -354,11 +400,15 @@ pnpm svc:uninstall
 - Use Discussions for maintainer and community requests.
 - Keep Patreon disabled in [`.github/FUNDING.yml`](.github/FUNDING.yml) until the official handle exists.
 
+---
+
 ## Governance And Maintainers
 
 - Public contributions use fork + pull request; direct pushes to `main` are blocked.
 - Maintainer accounts are required to use 2FA under org security policy.
 - See [docs/GOVERNANCE.md](docs/GOVERNANCE.md) for contributor and maintainer access policy.
+
+---
 
 ## Current Publishing Status
 

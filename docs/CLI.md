@@ -1,7 +1,14 @@
 # CLI Reference (`yit`)
+Owner: Maintainers
+Status: Stable
+Last updated: 2026-02-28
 
-The CLI uses the same HTTP API as the web app, so it is ideal for scripting,
-smoke tests, and automation.
+## TL;DR
+- Use `yit` for repeatable automation, smoke tests, and CI workflows.
+- CLI talks to the same local API as the web app.
+- Start with `pnpm yit --help` and `pnpm yit capabilities`.
+
+The CLI uses the same HTTP API as the web app, so it is ideal for scripting, smoke tests, and automation.
 
 Run from repo root:
 

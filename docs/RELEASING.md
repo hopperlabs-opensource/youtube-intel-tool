@@ -1,4 +1,12 @@
 # Releasing
+Owner: Maintainers
+Status: Stable
+Last updated: 2026-02-28
+
+## TL;DR
+- Publishable packages are `@yt/contracts`, `@yt/sdk`, and `@yt/cli`.
+- Run `pnpm verify` and `pnpm release:check` before any publish.
+- Use this doc for manual release flow and CI release checks.
 
 This repository includes npm publish scaffolding for:
 

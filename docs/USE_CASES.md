@@ -1,4 +1,12 @@
 # Use Cases
+Owner: Maintainers
+Status: Stable
+Last updated: 2026-02-28
+
+## TL;DR
+- This project is strongest for research, team knowledge retrieval, and media QA workflows.
+- Each use case maps pain point -> workflow -> high-value features.
+- Use this doc to choose rollout order and scope.
 
 These workflows show where the tool is strongest today.
 

@@ -1,4 +1,12 @@
 # Configuration Model
+Owner: Maintainers
+Status: Stable
+Last updated: 2026-02-28
+
+## TL;DR
+- `.env.example` is the tracked source of default local settings.
+- Port variables (`YIT_*_PORT`) are the primary config surface.
+- Advanced overrides (`DATABASE_URL`, `REDIS_URL`, `METRICS_PORT`, `YIT_BASE_URL`) are optional.
 
 This project now treats `.env.example` as the tracked source of local defaults.
 
