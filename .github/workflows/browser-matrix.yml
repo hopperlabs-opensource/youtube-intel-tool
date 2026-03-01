@@ -36,4 +36,4 @@ jobs:
         run: pnpm exec playwright install --with-deps ${{ matrix.browser }}
 
       - name: Run browser e2e checks
-        run: pnpm exec playwright test --config apps/web/e2e/playwright.config.cjs --project=${{ matrix.browser }}
+        run: pnpm exec playwright test --config apps/web/e2e/playwright.config.mjs --project=${{ matrix.browser }}
