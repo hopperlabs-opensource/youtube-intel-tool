@@ -49,7 +49,7 @@ export default defineConfig({
   },
   webServer: {
     command:
-      "NEXT_PUBLIC_YIT_SAFETY_BYPASS_DELAY_MS=1200 YIT_WEB_PORT=3401 WEB_PORT=3401 PORT=3401 pnpm -C apps/web exec next dev -p 3401",
+      "pnpm build:packages && NEXT_PUBLIC_YIT_SAFETY_BYPASS_DELAY_MS=1200 YIT_WEB_PORT=3401 WEB_PORT=3401 PORT=3401 pnpm -C apps/web exec next dev -p 3401",
     cwd: repoRoot,
     url: `${baseURL}/api/health`,
     reuseExistingServer: !process.env.CI,
