@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
+import { DEFAULT_KARAOKE_UI_SETTINGS, loadKaraokeUiSettings, saveKaraokeUiSettings, type KaraokeUiSettings } from "@yt/experience-core";
 import { getApiClient } from "@/lib/api";
 
 export default function SessionPage() {
@@ -21,6 +22,7 @@ export default function SessionPage() {
   const [joinToken, setJoinToken] = useState("");
   const [joinPath, setJoinPath] = useState("");
   const [qrDataUrl, setQrDataUrl] = useState("");
+  const [playUiSettings, setPlayUiSettings] = useState<KaraokeUiSettings>(DEFAULT_KARAOKE_UI_SETTINGS);
 
   const sessionQ = useQuery({
     queryKey: ["karaokeSession", sessionId],
@@ -154,6 +156,11 @@ export default function SessionPage() {
     };
   }, [joinUrl]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    setPlayUiSettings(loadKaraokeUiSettings());
+  }, []);
+
   if (sessionQ.isPending) {
     return (
       <main className="page">
@@ -227,6 +234,36 @@ export default function SessionPage() {
               >
                 Apply Theme
               </button>
+            </div>
+          </label>
+
+          <label style={{ marginTop: 14, display: "block" }}>
+            Play Screen Skin
+            <div className="row" style={{ marginTop: 6 }}>
+              <select
+                value={playUiSettings.themeMode}
+                onChange={(e) => {
+                  const next: KaraokeUiSettings = { ...playUiSettings, themeMode: e.target.value as KaraokeUiSettings["themeMode"] };
+                  setPlayUiSettings(next);
+                  saveKaraokeUiSettings(next);
+                }}
+              >
+                <option value="theme">Theme</option>
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+              </select>
+              <input
+                type="range"
+                min={0.8}
+                max={1.6}
+                step={0.05}
+                value={playUiSettings.lyricScale}
+                onChange={(e) => {
+                  const next: KaraokeUiSettings = { ...playUiSettings, lyricScale: Number(e.target.value) };
+                  setPlayUiSettings(next);
+                  saveKaraokeUiSettings(next);
+                }}
+              />
             </div>
           </label>
 
