@@ -1,0 +1,16 @@
+{
+  "name": "@yt/experience-core",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4"
+  },
+  "scripts": {
+    "lint": "pnpm -w exec eslint packages/experience-core/src --ext .ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  }
+}

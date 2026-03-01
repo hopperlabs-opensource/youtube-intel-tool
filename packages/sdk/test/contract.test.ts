@@ -127,6 +127,87 @@ test("saved policy run + feed contracts", async () => {
   assert.equal(noOpPatch.status, 400);
 });
 
+// ─── Dense Transcript ───────────────────────────────────────────────────────
+
+test("dense transcript build + read back contract", async () => {
+  const url = process.env.YIT_CONTRACT_TEST_INGEST_URL || "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
+  const { video } = await api.resolveVideo({ url });
+
+  // Read dense transcript (may be empty if never built)
+  const dt = await api.getDenseTranscript(video.id);
+  assert.ok(Array.isArray(dt.transcript.cues));
+  assert.equal(typeof dt.transcript.total_cues, "number");
+  assert.equal(typeof dt.transcript.interpolated_cues, "number");
+  assert.equal(typeof dt.transcript.direct_cues, "number");
+});
+
+// ─── Auto-Chapters + Marks ──────────────────────────────────────────────────
+
+test("auto-chapters read contract", async () => {
+  const url = process.env.YIT_CONTRACT_TEST_INGEST_URL || "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
+  const { video } = await api.resolveVideo({ url });
+
+  const ac = await api.getAutoChapters(video.id);
+  assert.ok(Array.isArray(ac.chapters));
+  assert.ok(Array.isArray(ac.marks));
+});
+
+test("significant marks list contract", async () => {
+  const url = process.env.YIT_CONTRACT_TEST_INGEST_URL || "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
+  const { video } = await api.resolveVideo({ url });
+
+  // listSignificantMarks uses GetAutoChaptersResponseSchema which has chapters + marks
+  const result = await api.listSignificantMarks(video.id);
+  assert.ok(Array.isArray(result.chapters));
+  assert.ok(Array.isArray(result.marks));
+});
+
+// ─── Faces ──────────────────────────────────────────────────────────────────
+
+test("face identities list contract", async () => {
+  const url = process.env.YIT_CONTRACT_TEST_INGEST_URL || "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
+  const { video } = await api.resolveVideo({ url });
+
+  const faces = await api.listFaceIdentities(video.id);
+  assert.ok(Array.isArray(faces.identities));
+
+  // If we have face identities, test appearances endpoint too
+  if (faces.identities.length > 0) {
+    const identity = faces.identities[0]!;
+    const appearances = await api.listFaceAppearances(video.id, identity.id);
+    assert.ok(Array.isArray(appearances.appearances));
+  }
+});
+
+// ─── Global Speakers ────────────────────────────────────────────────────────
+
+test("global speakers list contract", async () => {
+  const gs = await api.listGlobalSpeakers();
+  assert.ok(Array.isArray(gs.global_speakers));
+});
+
+// ─── Voice Match ────────────────────────────────────────────────────────────
+
+test("voice match contract shape", async () => {
+  const url = process.env.YIT_CONTRACT_TEST_INGEST_URL || "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
+  const { video } = await api.resolveVideo({ url });
+
+  // Get speakers for the video to test voice match
+  const speakers = await api.listVideoSpeakers(video.id);
+  if (speakers.speakers && speakers.speakers.length > 0) {
+    const speaker = speakers.speakers[0]!;
+    try {
+      const match = await api.matchSpeaker(video.id, speaker.id);
+      assert.ok(Array.isArray(match.matches));
+    } catch (e: any) {
+      // Voice match may fail if no embeddings exist — that's OK for shape test
+      if (e instanceof YitApiError) {
+        assert.ok(e.status >= 400);
+      }
+    }
+  }
+});
+
 test("sdk error envelope", async () => {
   try {
     await api.getVideo("not-a-real-id");

@@ -179,6 +179,51 @@ button:disabled {
   --theme-b: #90a0b5;
 }
 
+.mode-light {
+  --bg: #f5f7fb;
+  --panel: #ffffff;
+  --panel-soft: #edf2f7;
+  --text: #101827;
+  --muted: #4b5563;
+}
+
+.mode-light.page {
+  color: #101827;
+  background: linear-gradient(180deg, #f6f9ff 0%, #eef3fb 100%);
+  border-radius: 16px;
+}
+
+.mode-light .panel {
+  border-color: #d8e0ee;
+  background: linear-gradient(180deg, #ffffff 0%, #f7f9fc 100%);
+}
+
+.mode-light input,
+.mode-light select,
+.mode-light button.secondary,
+.mode-light textarea {
+  color: #0f172a;
+  background: #ffffff;
+  border-color: #c9d5e7;
+}
+
+.mode-light .karaoke-lyrics {
+  background: #f9fbff;
+  border-color: #d8e0ef;
+}
+
+.mode-light .karaoke-line {
+  color: #1f2937;
+}
+
+.mode-dark {
+  --bg: #0b0e13;
+  --panel: #141a23;
+  --panel-soft: #18212d;
+  --text: #f8fafc;
+  --muted: #94a3b8;
+}
+
 .karaoke-stage {
   border-radius: 16px;
   border: 1px solid #364154;

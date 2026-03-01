@@ -1,0 +1,66 @@
+import { NextResponse } from "next/server";
+import {
+  createKaraokePlaylist,
+  getPool,
+  initMetrics,
+  listKaraokePlaylists,
+} from "@yt/core";
+import {
+  CreateKaraokePlaylistRequestSchema,
+  CreateKaraokePlaylistResponseSchema,
+  ListKaraokePlaylistsResponseSchema,
+} from "@yt/contracts";
+import { jsonError } from "@/lib/server/api";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+export async function GET(req: Request) {
+  const metrics = initMetrics();
+  try {
+    const url = new URL(req.url);
+    const limit = url.searchParams.get("limit");
+    const offset = url.searchParams.get("offset");
+
+    const pool = getPool();
+    const client = await pool.connect();
+    try {
+      const playlists = await listKaraokePlaylists(client, {
+        limit: limit ? Number(limit) : undefined,
+        offset: offset ? Number(offset) : undefined,
+      });
+      metrics.httpRequestsTotal.inc({ route: "/api/karaoke/playlists", method: "GET", status: "200" });
+      return NextResponse.json(ListKaraokePlaylistsResponseSchema.parse({ playlists }));
+    } finally {
+      client.release();
+    }
+  } catch (err: unknown) {
+    metrics.httpRequestsTotal.inc({ route: "/api/karaoke/playlists", method: "GET", status: "400" });
+    const msg = err instanceof Error ? err.message : String(err);
+    return jsonError("invalid_request", msg, { status: 400 });
+  }
+}
+
+export async function POST(req: Request) {
+  const metrics = initMetrics();
+  try {
+    const body = CreateKaraokePlaylistRequestSchema.parse(await req.json().catch(() => ({})));
+
+    const pool = getPool();
+    const client = await pool.connect();
+    try {
+      const playlist = await createKaraokePlaylist(client, {
+        name: body.name,
+        description: body.description,
+      });
+      metrics.httpRequestsTotal.inc({ route: "/api/karaoke/playlists", method: "POST", status: "200" });
+      return NextResponse.json(CreateKaraokePlaylistResponseSchema.parse({ playlist }));
+    } finally {
+      client.release();
+    }
+  } catch (err: unknown) {
+    metrics.httpRequestsTotal.inc({ route: "/api/karaoke/playlists", method: "POST", status: "400" });
+    const msg = err instanceof Error ? err.message : String(err);
+    return jsonError("invalid_request", msg, { status: 400 });
+  }
+}

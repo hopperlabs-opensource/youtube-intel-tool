@@ -215,6 +215,19 @@ Policy/feed error semantics:
 - `POST /api/karaoke/sessions/:sessionId/scores/events`
 - `GET /api/karaoke/sessions/:sessionId/leaderboard`
 - `GET /api/karaoke/themes`
+- `GET /api/karaoke/playlists`
+- `POST /api/karaoke/playlists`
+- `GET /api/karaoke/playlists/:playlistId`
+- `PATCH /api/karaoke/playlists/:playlistId`
+- `DELETE /api/karaoke/playlists/:playlistId`
+- `POST /api/karaoke/playlists/:playlistId/items`
+- `PATCH /api/karaoke/playlists/:playlistId/items/:itemId`
+- `DELETE /api/karaoke/playlists/:playlistId/items/:itemId`
+- `POST /api/karaoke/sessions/:sessionId/queue/from-playlist`
+- `POST /api/karaoke/sessions/:sessionId/guest-token`
+- `POST /api/karaoke/join/:token/requests`
+- `GET /api/karaoke/sessions/:sessionId/guest-requests`
+- `PATCH /api/karaoke/sessions/:sessionId/guest-requests/:requestId`
 
 Resolve and queue example:
 
@@ -239,6 +252,41 @@ SESSION_ID="$(
 curl -s -X POST "$BASE_URL/api/karaoke/sessions/$SESSION_ID/queue" \
   -H 'content-type: application/json' \
   -d "{\"track_id\":\"$TRACK_ID\",\"requested_by\":\"Host\"}" | jq
+
+# 4) create playlist + queue into session
+PLAYLIST_ID="$(
+  curl -s -X POST "$BASE_URL/api/karaoke/playlists" \
+    -H 'content-type: application/json' \
+    -d '{"name":"Warmup","description":"Demo set"}' \
+  | jq -r '.playlist.id'
+)"
+
+curl -s -X POST "$BASE_URL/api/karaoke/playlists/$PLAYLIST_ID/items" \
+  -H 'content-type: application/json' \
+  -d "{\"track_id\":\"$TRACK_ID\"}" | jq
+
+curl -s -X POST "$BASE_URL/api/karaoke/sessions/$SESSION_ID/queue/from-playlist" \
+  -H 'content-type: application/json' \
+  -d "{\"playlist_id\":\"$PLAYLIST_ID\",\"requested_by\":\"Host\"}" | jq
+
+# 5) guest join token + request moderation
+JOIN_TOKEN="$(
+  curl -s -X POST "$BASE_URL/api/karaoke/sessions/$SESSION_ID/guest-token" \
+    -H 'content-type: application/json' \
+    -d '{"ttl_minutes":240}' \
+  | jq -r '.token'
+)"
+
+REQ_ID="$(
+  curl -s -X POST "$BASE_URL/api/karaoke/join/$JOIN_TOKEN/requests" \
+    -H 'content-type: application/json' \
+    -d "{\"track_id\":\"$TRACK_ID\",\"guest_name\":\"Alex\"}" \
+  | jq -r '.request.id'
+)"
+
+curl -s -X PATCH "$BASE_URL/api/karaoke/sessions/$SESSION_ID/guest-requests/$REQ_ID" \
+  -H 'content-type: application/json' \
+  -d '{"action":"approve","requested_by":"Host"}' | jq
 ```
 
 ## YouTube Discovery (yt-dlp)

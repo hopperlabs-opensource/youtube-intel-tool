@@ -36,6 +36,7 @@ export type IngestVisualJobData = {
   extraction?: Partial<FrameExtractionConfig>;
   vision: VisionConfig;
   force?: boolean;
+  faces?: boolean;
   trace_id?: string;
 };
 
@@ -299,6 +300,41 @@ export async function runIngestVisual(jobId: string, data: IngestVisualJobData) 
       });
     }
 
+    // ── Optional: Enqueue face detection ─────────────────────────────────
+    let facesEnqueued = false;
+    if (data.faces !== false) {
+      try {
+        const { Queue } = await import("bullmq");
+        const { QUEUE_NAME, createJob } = await import("@yt/core");
+        const redisUrl = new URL(process.env.REDIS_URL || "redis://localhost:6379");
+        const queue = new Queue(QUEUE_NAME, {
+          connection: {
+            host: redisUrl.hostname,
+            port: Number(redisUrl.port) || 6379,
+            password: redisUrl.password || undefined,
+          },
+        });
+        try {
+          const faceJob = await createJob(client, {
+            type: "ingest_faces",
+            status: "queued",
+            input_json: { videoId: data.videoId, force: data.force },
+          });
+          await queue.add("ingest_faces", { videoId: data.videoId, force: data.force }, { jobId: faceJob.id });
+          facesEnqueued = true;
+          await addJobLog(client, jobId, { message: `Enqueued ingest_faces job: ${faceJob.id}` });
+        } finally {
+          await queue.close();
+        }
+      } catch (e: any) {
+        await addJobLog(client, jobId, {
+          level: "warn",
+          message: "Failed to enqueue face detection (non-blocking)",
+          data_json: { error: String(e?.message || e) },
+        });
+      }
+    }
+
     // ── Finalize ─────────────────────────────────────────────────────────
     const totalTokens = frameAnalyses.reduce(
       (sum, a) => sum + (a.promptTokens ?? 0) + (a.completionTokens ?? 0),
@@ -338,6 +374,7 @@ export async function runIngestVisual(jobId: string, data: IngestVisualJobData) 
         total_tokens: totalTokens,
         vision_provider: data.vision.provider,
         vision_model: data.vision.model,
+        faces_enqueued: facesEnqueued,
         trace_id: data.trace_id ?? null,
       },
     });

@@ -473,6 +473,41 @@ export async function runIngestVideo(jobId: string, data: IngestJobData) {
       }
     }
 
+    // 4b) Optional: enqueue voice embedding after diarization
+    let voiceEnqueued = false;
+    if (diarize && !diarize.error && diarize.speakers > 0 && stepEnabled(steps, "voice")) {
+      try {
+        const { Queue } = await import("bullmq");
+        const { QUEUE_NAME, createJob } = await import("@yt/core");
+        const redisUrl = new URL(process.env.REDIS_URL || "redis://localhost:6379");
+        const queue = new Queue(QUEUE_NAME, {
+          connection: {
+            host: redisUrl.hostname,
+            port: Number(redisUrl.port) || 6379,
+            password: redisUrl.password || undefined,
+          },
+        });
+        try {
+          const voiceJob = await createJob(client, {
+            type: "ingest_voice",
+            status: "queued",
+            input_json: { videoId: data.videoId },
+          });
+          await queue.add("ingest_voice", { videoId: data.videoId }, { jobId: voiceJob.id });
+          voiceEnqueued = true;
+          await addJobLog(client, jobId, { message: `Enqueued ingest_voice job: ${voiceJob.id}` });
+        } finally {
+          await queue.close();
+        }
+      } catch (e: any) {
+        await addJobLog(client, jobId, {
+          level: "warn",
+          message: "Failed to enqueue voice embedding (non-blocking)",
+          data_json: { error: String(e?.message || e) },
+        });
+      }
+    }
+
     // 5) NER (simple; per cue)
     await addJobLog(client, jobId, { message: "Extracting entity candidates (compromise)" });
     const mentionCandidates: Array<{
@@ -805,6 +840,7 @@ export async function runIngestVideo(jobId: string, data: IngestJobData) {
 	        tags: finalTags ? finalTags.length : null,
 	        chapters: finalChapters ? finalChapters.length : null,
 	        context_items: contextCount,
+	        voice_enqueued: voiceEnqueued,
         trace_id: data.trace_id ?? null,
       },
     });

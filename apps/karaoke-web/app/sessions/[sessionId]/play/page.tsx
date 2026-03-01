@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import type { TranscriptCue } from "@yt/contracts";
+import { DEFAULT_KARAOKE_UI_SETTINGS, loadKaraokeUiSettings, saveKaraokeUiSettings, type KaraokeUiSettings } from "@yt/experience-core";
 import { getApiClient } from "@/lib/api";
 
 function formatMs(ms: number): string {
@@ -25,6 +26,7 @@ export default function SessionPlayPage() {
 
   const [playerName, setPlayerName] = useState("Player 1");
   const [nowMs, setNowMs] = useState(() => Date.now());
+  const [uiSettings, setUiSettings] = useState<KaraokeUiSettings>(DEFAULT_KARAOKE_UI_SETTINGS);
 
   const sessionQ = useQuery({
     queryKey: ["karaokeSession", sessionId],
@@ -112,6 +114,11 @@ export default function SessionPlayPage() {
     }
   }, [activeItem?.id, activeItem?.started_at]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    setUiSettings(loadKaraokeUiSettings());
+  }, []);
+
   const startedAtMs = activeItem?.started_at ? Date.parse(activeItem.started_at) : Number.NaN;
   const clockMs = Number.isFinite(startedAtMs) ? Math.max(0, nowMs - startedAtMs) : 0;
 
@@ -129,6 +136,8 @@ export default function SessionPlayPage() {
   const progressPct = Math.min(100, Math.max(0, (clockMs / totalMs) * 100));
 
   const themeClass = `theme-${session?.theme_id || "gold-stage"}`;
+  const modeClass =
+    uiSettings.themeMode === "light" ? "mode-light" : uiSettings.themeMode === "dark" ? "mode-dark" : "mode-theme";
 
   if (sessionQ.isPending) {
     return (
@@ -148,7 +157,7 @@ export default function SessionPlayPage() {
   }
 
   return (
-    <main className={`page ${themeClass}`}>
+    <main className={`page ${themeClass} ${modeClass}`}>
       <div className="header">
         <div className="brand">
           <span className="badge">Play</span>
@@ -172,6 +181,53 @@ export default function SessionPlayPage() {
             <span className="pill">Clock: {formatMs(clockMs)}</span>
           </div>
 
+          <div className="row" style={{ marginTop: 10 }}>
+            <label className="muted" style={{ fontSize: 12 }}>
+              Skin mode
+            </label>
+            <select
+              value={uiSettings.themeMode}
+              onChange={(e) => {
+                const next: KaraokeUiSettings = { ...uiSettings, themeMode: e.target.value as KaraokeUiSettings["themeMode"] };
+                setUiSettings(next);
+                saveKaraokeUiSettings(next);
+              }}
+              style={{ maxWidth: 140 }}
+            >
+              <option value="theme">Theme</option>
+              <option value="light">Light</option>
+              <option value="dark">Dark</option>
+            </select>
+            <label className="muted" style={{ fontSize: 12 }}>
+              Lyric scale
+            </label>
+            <input
+              type="range"
+              min={0.8}
+              max={1.6}
+              step={0.05}
+              value={uiSettings.lyricScale}
+              onChange={(e) => {
+                const next: KaraokeUiSettings = { ...uiSettings, lyricScale: Number(e.target.value) };
+                setUiSettings(next);
+                saveKaraokeUiSettings(next);
+              }}
+              style={{ maxWidth: 120 }}
+            />
+            <label className="muted" style={{ fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
+              <input
+                type="checkbox"
+                checked={uiSettings.hideUpcomingTitles}
+                onChange={(e) => {
+                  const next: KaraokeUiSettings = { ...uiSettings, hideUpcomingTitles: e.target.checked };
+                  setUiSettings(next);
+                  saveKaraokeUiSettings(next);
+                }}
+              />
+              Hide up-next titles
+            </label>
+          </div>
+
           <div style={{ marginTop: 10 }}>
             <div style={{ fontSize: 19, fontWeight: 700 }}>
               {activeTrack?.title || (activeItem ? activeItem.track_id : "No active track")}
@@ -192,7 +248,11 @@ export default function SessionPlayPage() {
               <p className="muted">No cues yet. This track may still be ingesting transcript data.</p>
             ) : (
               cues.map((cue, idx) => (
-                <div key={cue.id} className={`karaoke-line ${idx === activeCueIndex ? "active" : ""}`}>
+                <div
+                  key={cue.id}
+                  className={`karaoke-line ${idx === activeCueIndex ? "active" : ""}`}
+                  style={{ fontSize: `${Math.round(18 * uiSettings.lyricScale)}px` }}
+                >
                   <span className="muted" style={{ marginRight: 8 }}>
                     {formatMs(cue.start_ms)}
                   </span>
@@ -262,7 +322,11 @@ export default function SessionPlayPage() {
             >
               {startRound.isPending ? "Starting..." : activeItem ? "Round In Progress" : "Start Next Round"}
             </button>
-            {nextQueuedItem ? <span className="muted">Up next: {nextQueuedItem.requested_by}</span> : null}
+            {nextQueuedItem ? (
+              <span className="muted">
+                Up next: {uiSettings.hideUpcomingTitles ? "Hidden" : nextQueuedItem.requested_by}
+              </span>
+            ) : null}
           </div>
 
           {activeTrack?.provider_video_id ? (

@@ -19,6 +19,10 @@ export default function KaraokeHomePage() {
   const [themeId, setThemeId] = useState("gold-stage");
   const [openSessionId, setOpenSessionId] = useState("");
 
+  const [newPlaylistName, setNewPlaylistName] = useState("Party Starters");
+  const [newPlaylistDescription, setNewPlaylistDescription] = useState("Crowd-friendly warmup songs");
+  const [activePlaylistId, setActivePlaylistId] = useState("");
+
   const tracksQ = useQuery({
     queryKey: ["karaokeTracks", query],
     queryFn: async () =>
@@ -32,6 +36,17 @@ export default function KaraokeHomePage() {
   const themesQ = useQuery({
     queryKey: ["karaokeThemes"],
     queryFn: async () => api.listKaraokeThemes(),
+  });
+
+  const playlistsQ = useQuery({
+    queryKey: ["karaokePlaylists"],
+    queryFn: async () => api.listKaraokePlaylists({ limit: 200 }),
+  });
+
+  const playlistQ = useQuery({
+    queryKey: ["karaokePlaylist", activePlaylistId],
+    queryFn: async () => api.getKaraokePlaylist(activePlaylistId),
+    enabled: Boolean(activePlaylistId),
   });
 
   const resolveTrack = useMutation({
@@ -53,6 +68,38 @@ export default function KaraokeHomePage() {
     },
     onSuccess: (data) => {
       router.push(`/sessions/${data.session.id}`);
+    },
+  });
+
+  const createPlaylist = useMutation({
+    mutationFn: async () =>
+      api.createKaraokePlaylist({
+        name: newPlaylistName.trim(),
+        description: newPlaylistDescription.trim() || null,
+      }),
+    onSuccess: async (data) => {
+      setActivePlaylistId(data.playlist.id);
+      await qc.invalidateQueries({ queryKey: ["karaokePlaylists"] });
+    },
+  });
+
+  const addPlaylistItem = useMutation({
+    mutationFn: async (trackId: string) => {
+      if (!activePlaylistId) throw new Error("select a playlist first");
+      return api.addKaraokePlaylistItem(activePlaylistId, { track_id: trackId });
+    },
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["karaokePlaylist", activePlaylistId] });
+    },
+  });
+
+  const removePlaylistItem = useMutation({
+    mutationFn: async (itemId: string) => {
+      if (!activePlaylistId) throw new Error("select a playlist first");
+      return api.deleteKaraokePlaylistItem(activePlaylistId, itemId);
+    },
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["karaokePlaylist", activePlaylistId] });
     },
   });
 
@@ -110,6 +157,7 @@ export default function KaraokeHomePage() {
                   <th>Track</th>
                   <th>State</th>
                   <th>Cues</th>
+                  <th>Playlist</th>
                 </tr>
               </thead>
               <tbody>
@@ -132,6 +180,15 @@ export default function KaraokeHomePage() {
                       <span className="pill">{t.ready_state}</span>
                     </td>
                     <td>{t.cue_count}</td>
+                    <td>
+                      <button
+                        className="secondary"
+                        disabled={!activePlaylistId || addPlaylistItem.isPending}
+                        onClick={() => addPlaylistItem.mutate(t.id)}
+                      >
+                        Add
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -185,6 +242,75 @@ export default function KaraokeHomePage() {
           </p>
         </section>
       </div>
+
+      <section className="panel" style={{ marginTop: 14 }}>
+        <h2>Playlists</h2>
+        <p className="muted">Build reusable queue templates and seed sessions quickly.</p>
+
+        <div className="grid two" style={{ gridTemplateColumns: "1fr 1.4fr" }}>
+          <div>
+            <label>
+              Playlist name
+              <input value={newPlaylistName} onChange={(e) => setNewPlaylistName(e.target.value)} />
+            </label>
+            <label>
+              Description
+              <textarea value={newPlaylistDescription} onChange={(e) => setNewPlaylistDescription(e.target.value)} rows={3} />
+            </label>
+            <div className="row" style={{ marginTop: 8 }}>
+              <button
+                disabled={createPlaylist.isPending || !newPlaylistName.trim()}
+                onClick={() => createPlaylist.mutate()}
+              >
+                {createPlaylist.isPending ? "Creating..." : "Create Playlist"}
+              </button>
+            </div>
+
+            <div style={{ marginTop: 10 }}>
+              <label>
+                Active playlist
+                <select value={activePlaylistId} onChange={(e) => setActivePlaylistId(e.target.value)}>
+                  <option value="">Select playlist</option>
+                  {(playlistsQ.data?.playlists || []).map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          </div>
+
+          <div>
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Pos</th>
+                  <th>Track ID</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(playlistQ.data?.items || []).map((item) => (
+                  <tr key={item.id}>
+                    <td>{item.position}</td>
+                    <td>{item.track_id}</td>
+                    <td>
+                      <button
+                        className="secondary"
+                        disabled={removePlaylistItem.isPending}
+                        onClick={() => removePlaylistItem.mutate(item.id)}
+                      >
+                        Remove
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
     </main>
   );
 }

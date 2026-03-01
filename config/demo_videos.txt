@@ -5,3 +5,7 @@
 https://www.youtube.com/watch?v=dQw4w9WgXcQ
 https://www.youtube.com/watch?v=jNQXAC9IVRw
 https://www.youtube.com/watch?v=M7lc1UVf-VE
+
+# Multi-person test video for face/voice contract tests (2+ speakers, scene changes)
+# Used via YIT_CONTRACT_TEST_MULTIPERSON_URL env var
+https://www.youtube.com/watch?v=UF8uR6Z6KLc

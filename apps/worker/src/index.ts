@@ -5,6 +5,8 @@ import { runIngestVideo } from "./jobs/ingest_video";
 import { runIngestVisual } from "./jobs/ingest_visual";
 import { runBuildDenseTranscript } from "./jobs/build_dense_transcript";
 import { runDetectChapters } from "./jobs/detect_chapters";
+import { runIngestFaces } from "./jobs/ingest_faces";
+import { runIngestVoice } from "./jobs/ingest_voice";
 
 const metrics = initMetrics();
 
@@ -61,6 +63,20 @@ const worker = new Worker(
         await runDetectChapters(String(job.id), job.data as any);
         metrics.jobsTotal.inc({ type: "detect_chapters", status: "completed" });
         metrics.jobDurationMs.observe({ type: "detect_chapters", status: "completed" }, Date.now() - startedAt);
+        return { ok: true };
+      }
+
+      if (job.name === "ingest_faces") {
+        await runIngestFaces(String(job.id), job.data as any);
+        metrics.jobsTotal.inc({ type: "ingest_faces", status: "completed" });
+        metrics.jobDurationMs.observe({ type: "ingest_faces", status: "completed" }, Date.now() - startedAt);
+        return { ok: true };
+      }
+
+      if (job.name === "ingest_voice") {
+        await runIngestVoice(String(job.id), job.data as any);
+        metrics.jobsTotal.inc({ type: "ingest_voice", status: "completed" });
+        metrics.jobDurationMs.observe({ type: "ingest_voice", status: "completed" }, Date.now() - startedAt);
         return { ok: true };
       }
 

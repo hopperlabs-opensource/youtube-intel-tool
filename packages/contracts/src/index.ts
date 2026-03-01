@@ -990,6 +990,18 @@ export const KaraokeThemeSchema = z.object({
   name: z.string().min(1),
   description: z.string().min(1),
   class_name: z.string().min(1),
+  palette: z
+    .object({
+      primary: z.string().min(1),
+      accent: z.string().min(1),
+      background: z.string().min(1),
+      surface: z.string().min(1),
+      text: z.string().min(1),
+    })
+    .nullable()
+    .optional()
+    .default(null),
+  skin_hint: z.string().min(1).nullable().optional().default(null),
 });
 export type KaraokeTheme = z.infer<typeof KaraokeThemeSchema>;
 
@@ -1110,6 +1122,155 @@ export const ListKaraokeThemesResponseSchema = z.object({
   themes: z.array(KaraokeThemeSchema),
 });
 export type ListKaraokeThemesResponse = z.infer<typeof ListKaraokeThemesResponseSchema>;
+
+export const KaraokePlaylistSchema = z.object({
+  id: IdSchema,
+  name: z.string().min(1),
+  description: z.string().nullable(),
+  created_at: IsoDateTimeSchema,
+  updated_at: IsoDateTimeSchema,
+});
+export type KaraokePlaylist = z.infer<typeof KaraokePlaylistSchema>;
+
+export const KaraokePlaylistItemSchema = z.object({
+  id: IdSchema,
+  playlist_id: IdSchema,
+  track_id: IdSchema,
+  position: z.number().int().nonnegative(),
+  added_at: IsoDateTimeSchema,
+});
+export type KaraokePlaylistItem = z.infer<typeof KaraokePlaylistItemSchema>;
+
+export const CreateKaraokePlaylistRequestSchema = z.object({
+  name: z.string().trim().min(1),
+  description: z.string().trim().max(2_000).optional().nullable(),
+});
+export type CreateKaraokePlaylistRequest = z.infer<typeof CreateKaraokePlaylistRequestSchema>;
+
+export const CreateKaraokePlaylistResponseSchema = z.object({
+  playlist: KaraokePlaylistSchema,
+});
+export type CreateKaraokePlaylistResponse = z.infer<typeof CreateKaraokePlaylistResponseSchema>;
+
+export const ListKaraokePlaylistsResponseSchema = z.object({
+  playlists: z.array(KaraokePlaylistSchema),
+});
+export type ListKaraokePlaylistsResponse = z.infer<typeof ListKaraokePlaylistsResponseSchema>;
+
+export const GetKaraokePlaylistResponseSchema = z.object({
+  playlist: KaraokePlaylistSchema,
+  items: z.array(KaraokePlaylistItemSchema),
+});
+export type GetKaraokePlaylistResponse = z.infer<typeof GetKaraokePlaylistResponseSchema>;
+
+export const UpdateKaraokePlaylistRequestSchema = z.object({
+  name: z.string().trim().min(1).optional(),
+  description: z.string().trim().max(2_000).optional().nullable(),
+});
+export type UpdateKaraokePlaylistRequest = z.infer<typeof UpdateKaraokePlaylistRequestSchema>;
+
+export const UpdateKaraokePlaylistResponseSchema = z.object({
+  playlist: KaraokePlaylistSchema,
+});
+export type UpdateKaraokePlaylistResponse = z.infer<typeof UpdateKaraokePlaylistResponseSchema>;
+
+export const DeleteKaraokePlaylistResponseSchema = z.object({
+  ok: z.literal(true),
+});
+export type DeleteKaraokePlaylistResponse = z.infer<typeof DeleteKaraokePlaylistResponseSchema>;
+
+export const AddKaraokePlaylistItemRequestSchema = z.object({
+  track_id: IdSchema,
+  position: z.number().int().nonnegative().optional(),
+});
+export type AddKaraokePlaylistItemRequest = z.infer<typeof AddKaraokePlaylistItemRequestSchema>;
+
+export const AddKaraokePlaylistItemResponseSchema = z.object({
+  item: KaraokePlaylistItemSchema,
+});
+export type AddKaraokePlaylistItemResponse = z.infer<typeof AddKaraokePlaylistItemResponseSchema>;
+
+export const UpdateKaraokePlaylistItemRequestSchema = z.object({
+  position: z.number().int().nonnegative(),
+});
+export type UpdateKaraokePlaylistItemRequest = z.infer<typeof UpdateKaraokePlaylistItemRequestSchema>;
+
+export const UpdateKaraokePlaylistItemResponseSchema = z.object({
+  item: KaraokePlaylistItemSchema,
+  items: z.array(KaraokePlaylistItemSchema),
+});
+export type UpdateKaraokePlaylistItemResponse = z.infer<typeof UpdateKaraokePlaylistItemResponseSchema>;
+
+export const DeleteKaraokePlaylistItemResponseSchema = z.object({
+  ok: z.literal(true),
+  items: z.array(KaraokePlaylistItemSchema),
+});
+export type DeleteKaraokePlaylistItemResponse = z.infer<typeof DeleteKaraokePlaylistItemResponseSchema>;
+
+export const QueueFromKaraokePlaylistRequestSchema = z.object({
+  playlist_id: IdSchema,
+  requested_by: z.string().trim().min(1).default("playlist"),
+});
+export type QueueFromKaraokePlaylistRequest = z.infer<typeof QueueFromKaraokePlaylistRequestSchema>;
+
+export const QueueFromKaraokePlaylistResponseSchema = z.object({
+  added: z.array(KaraokeQueueItemSchema),
+});
+export type QueueFromKaraokePlaylistResponse = z.infer<typeof QueueFromKaraokePlaylistResponseSchema>;
+
+export const KaraokeGuestRequestStatusSchema = z.enum(["pending", "approved", "rejected", "queued"]);
+export type KaraokeGuestRequestStatus = z.infer<typeof KaraokeGuestRequestStatusSchema>;
+
+export const KaraokeGuestRequestSchema = z.object({
+  id: IdSchema,
+  session_id: IdSchema,
+  track_id: IdSchema,
+  guest_name: z.string().min(1),
+  status: KaraokeGuestRequestStatusSchema,
+  created_at: IsoDateTimeSchema,
+  handled_at: IsoDateTimeSchema.nullable(),
+});
+export type KaraokeGuestRequest = z.infer<typeof KaraokeGuestRequestSchema>;
+
+export const CreateKaraokeGuestTokenRequestSchema = z.object({
+  ttl_minutes: z.number().int().positive().max(24 * 60).optional().default(240),
+});
+export type CreateKaraokeGuestTokenRequest = z.infer<typeof CreateKaraokeGuestTokenRequestSchema>;
+
+export const CreateKaraokeGuestTokenResponseSchema = z.object({
+  token: z.string().min(16),
+  expires_at: IsoDateTimeSchema,
+  join_path: z.string().min(1),
+});
+export type CreateKaraokeGuestTokenResponse = z.infer<typeof CreateKaraokeGuestTokenResponseSchema>;
+
+export const CreateKaraokeGuestRequestRequestSchema = z.object({
+  track_id: IdSchema,
+  guest_name: z.string().trim().min(1).max(120),
+});
+export type CreateKaraokeGuestRequestRequest = z.infer<typeof CreateKaraokeGuestRequestRequestSchema>;
+
+export const CreateKaraokeGuestRequestResponseSchema = z.object({
+  request: KaraokeGuestRequestSchema,
+});
+export type CreateKaraokeGuestRequestResponse = z.infer<typeof CreateKaraokeGuestRequestResponseSchema>;
+
+export const ListKaraokeGuestRequestsResponseSchema = z.object({
+  requests: z.array(KaraokeGuestRequestSchema),
+});
+export type ListKaraokeGuestRequestsResponse = z.infer<typeof ListKaraokeGuestRequestsResponseSchema>;
+
+export const UpdateKaraokeGuestRequestRequestSchema = z.object({
+  action: z.enum(["approve", "reject"]),
+  requested_by: z.string().trim().min(1).optional().default("host"),
+});
+export type UpdateKaraokeGuestRequestRequest = z.infer<typeof UpdateKaraokeGuestRequestRequestSchema>;
+
+export const UpdateKaraokeGuestRequestResponseSchema = z.object({
+  request: KaraokeGuestRequestSchema,
+  queue_item: KaraokeQueueItemSchema.nullable(),
+});
+export type UpdateKaraokeGuestRequestResponse = z.infer<typeof UpdateKaraokeGuestRequestResponseSchema>;
 
 // ─── Visual Intelligence (Action Transcripts) ───────────────────────────────
 
