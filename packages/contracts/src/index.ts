@@ -177,6 +177,27 @@ export const ContextItemSchema = z.object({
 });
 export type ContextItem = z.infer<typeof ContextItemSchema>;
 
+// ─── Unified LLM Configuration (early — used by IngestVideo/IngestVisual) ───
+
+export const TextProviderSchema = z.enum([
+  "claude-cli", "gemini-cli", "codex-cli",
+  "claude", "openai", "gemini",
+]);
+export type TextProvider = z.infer<typeof TextProviderSchema>;
+
+export const LlmConfigSchema = z.object({
+  textProvider: TextProviderSchema.optional(),
+  textModel: z.string().optional(),
+  visionProvider: z.lazy(() => VisionProviderSchema).optional(),
+  visionModel: z.string().optional(),
+  temperature: z.number().default(0.2),
+  maxTokensPerCall: z.number().int().default(4096),
+  preferLocal: z.boolean().default(true),
+  maxTotalTokens: z.number().int().positive().optional(),
+  maxCostUsd: z.number().positive().optional(),
+});
+export type LlmConfig = z.infer<typeof LlmConfigSchema>;
+
 // Endpoint schemas (request/response)
 export const ResolveVideoRequestSchema = z.object({
   url: z.string().url(),
@@ -192,6 +213,7 @@ export const GetVideoResponseSchema = z.object({
 export const IngestVideoRequestSchema = z.object({
   language: z.string().min(1).default("en"),
   steps: z.array(z.string()).optional(),
+  llmConfig: LlmConfigSchema.optional(),
 });
 export const IngestVideoResponseSchema = z.object({
   job: JobSchema,
@@ -1204,7 +1226,7 @@ export const FrameExtractionConfigSchema = z.object({
 });
 export type FrameExtractionConfig = z.infer<typeof FrameExtractionConfigSchema>;
 
-export const SearchSourceTypeSchema = z.enum(["transcript", "visual", "all"]);
+export const SearchSourceTypeSchema = z.enum(["transcript", "visual", "dense_visual", "all"]);
 export type SearchSourceType = z.infer<typeof SearchSourceTypeSchema>;
 
 export const EmbeddingSourceTypeSchema = z.enum(["transcript", "visual"]);
@@ -1236,6 +1258,7 @@ export const IngestVisualRequestSchema = z.object({
   extraction: FrameExtractionConfigSchema.optional(),
   vision: VisionConfigSchema,
   force: z.boolean().default(false),
+  llmConfig: LlmConfigSchema.optional(),
 });
 export type IngestVisualRequest = z.infer<typeof IngestVisualRequestSchema>;
 
@@ -1350,3 +1373,313 @@ export const GetNarrativeSynthesisResponseSchema = z.object({
   narrative: NarrativeSynthesisSchema,
 });
 export type GetNarrativeSynthesisResponse = z.infer<typeof GetNarrativeSynthesisResponseSchema>;
+
+// ─── Unified LLM Configuration (continued) ──────────────────────────────────
+
+export const ResolvedLlmConfigSchema = z.object({
+  textProvider: TextProviderSchema,
+  textModel: z.string(),
+  visionProvider: VisionProviderSchema,
+  visionModel: z.string(),
+  temperature: z.number(),
+  maxTokensPerCall: z.number().int(),
+  preferLocal: z.boolean(),
+  maxTotalTokens: z.number().int().positive().optional(),
+  maxCostUsd: z.number().positive().optional(),
+});
+export type ResolvedLlmConfig = z.infer<typeof ResolvedLlmConfigSchema>;
+
+export const LlmProviderDetectionSchema = z.object({
+  provider: z.string().min(1),
+  type: z.enum(["api", "cli", "local"]),
+  available: z.boolean(),
+  free: z.boolean(),
+  supportsText: z.boolean(),
+  supportsVision: z.boolean(),
+});
+export type LlmProviderDetection = z.infer<typeof LlmProviderDetectionSchema>;
+
+// ─── Dense Action Transcript ─────────────────────────────────────────────────
+
+export const DenseActionCueSchema = z.object({
+  id: IdSchema,
+  video_id: IdSchema,
+  start_ms: MsSchema,
+  end_ms: MsSchema,
+  description: z.string().min(1),
+  interpolated: z.boolean(),
+  scene_type: z.string().nullable().default(null),
+  source_frame_id: IdSchema.nullable().default(null),
+  confidence: z.number().nullable().default(null),
+  metadata_json: z.unknown().default({}),
+  created_at: IsoDateTimeSchema,
+});
+export type DenseActionCue = z.infer<typeof DenseActionCueSchema>;
+
+export const DenseActionTranscriptSchema = z.object({
+  video_id: IdSchema,
+  cues: z.array(DenseActionCueSchema),
+  total_cues: z.number().int().nonnegative(),
+  interpolated_cues: z.number().int().nonnegative(),
+  direct_cues: z.number().int().nonnegative(),
+});
+export type DenseActionTranscript = z.infer<typeof DenseActionTranscriptSchema>;
+
+export const BuildDenseTranscriptRequestSchema = z.object({
+  force: z.boolean().default(false),
+  llmConfig: LlmConfigSchema.optional(),
+});
+export type BuildDenseTranscriptRequest = z.infer<typeof BuildDenseTranscriptRequestSchema>;
+
+export const BuildDenseTranscriptResponseSchema = z.object({
+  job: JobSchema,
+});
+export type BuildDenseTranscriptResponse = z.infer<typeof BuildDenseTranscriptResponseSchema>;
+
+export const GetDenseTranscriptResponseSchema = z.object({
+  transcript: DenseActionTranscriptSchema,
+});
+export type GetDenseTranscriptResponse = z.infer<typeof GetDenseTranscriptResponseSchema>;
+
+// ─── Auto-Chapters + Significant Marks ───────────────────────────────────────
+
+export const SignificantMarkTypeSchema = z.enum([
+  "slide_change", "demo_start", "key_statement", "topic_shift",
+  "speaker_change", "visual_transition", "text_appears", "text_disappears",
+]);
+export type SignificantMarkType = z.infer<typeof SignificantMarkTypeSchema>;
+
+export const SignificantMarkSchema = z.object({
+  id: IdSchema,
+  video_id: IdSchema,
+  timestamp_ms: MsSchema,
+  mark_type: SignificantMarkTypeSchema,
+  confidence: z.number().min(0).max(1),
+  description: z.string().nullable().default(null),
+  metadata_json: z.unknown().default({}),
+  chapter_id: IdSchema.nullable().default(null),
+  created_at: IsoDateTimeSchema,
+});
+export type SignificantMark = z.infer<typeof SignificantMarkSchema>;
+
+export const ChapterSignalSchema = z.enum([
+  "visual_transition", "ocr_change", "topic_shift", "speaker_change", "phash_jump",
+]);
+export type ChapterSignal = z.infer<typeof ChapterSignalSchema>;
+
+export const AutoChapterSchema = z.object({
+  id: IdSchema,
+  video_id: IdSchema,
+  transcript_id: IdSchema.nullable().default(null),
+  start_ms: MsSchema,
+  end_ms: MsSchema,
+  title: z.string().min(1),
+  source: z.string().min(1),
+  signals: z.array(ChapterSignalSchema).default([]),
+  confidence: z.number().nullable().default(null),
+  created_at: IsoDateTimeSchema,
+});
+export type AutoChapter = z.infer<typeof AutoChapterSchema>;
+
+export const DetectAutoChaptersRequestSchema = z.object({
+  force: z.boolean().default(false),
+  min_signals: z.number().int().min(1).default(2),
+  window_ms: z.number().int().min(500).default(3000),
+  llmConfig: LlmConfigSchema.optional(),
+});
+export type DetectAutoChaptersRequest = z.infer<typeof DetectAutoChaptersRequestSchema>;
+
+export const DetectAutoChaptersResponseSchema = z.object({
+  job: JobSchema,
+});
+export type DetectAutoChaptersResponse = z.infer<typeof DetectAutoChaptersResponseSchema>;
+
+export const GetAutoChaptersResponseSchema = z.object({
+  chapters: z.array(AutoChapterSchema),
+  marks: z.array(SignificantMarkSchema),
+});
+export type GetAutoChaptersResponse = z.infer<typeof GetAutoChaptersResponseSchema>;
+
+// ─── Face Indexing ───────────────────────────────────────────────────────────
+
+export const BboxSchema = z.object({
+  x: z.number(),
+  y: z.number(),
+  w: z.number(),
+  h: z.number(),
+});
+export type Bbox = z.infer<typeof BboxSchema>;
+
+export const FaceDetectionSchema = z.object({
+  id: IdSchema,
+  video_id: IdSchema,
+  frame_id: IdSchema,
+  bbox_json: BboxSchema,
+  det_score: z.number(),
+  identity_id: IdSchema.nullable().default(null),
+  created_at: IsoDateTimeSchema,
+});
+export type FaceDetection = z.infer<typeof FaceDetectionSchema>;
+
+export const FaceIdentitySchema = z.object({
+  id: IdSchema,
+  video_id: IdSchema,
+  label: z.string().min(1),
+  display_name: z.string().nullable().default(null),
+  representative_frame_id: IdSchema.nullable().default(null),
+  speaker_id: IdSchema.nullable().default(null),
+  created_at: IsoDateTimeSchema,
+});
+export type FaceIdentity = z.infer<typeof FaceIdentitySchema>;
+
+export const FaceAppearanceSchema = z.object({
+  id: IdSchema,
+  video_id: IdSchema,
+  identity_id: IdSchema,
+  start_ms: MsSchema,
+  end_ms: MsSchema,
+  frame_count: z.number().int().min(1).default(1),
+  avg_det_score: z.number().nullable().default(null),
+  created_at: IsoDateTimeSchema,
+});
+export type FaceAppearance = z.infer<typeof FaceAppearanceSchema>;
+
+export const IngestFacesRequestSchema = z.object({
+  det_threshold: z.number().min(0).max(1).default(0.5),
+  cluster_threshold: z.number().min(0).max(1).default(0.68),
+  force: z.boolean().default(false),
+});
+export type IngestFacesRequest = z.infer<typeof IngestFacesRequestSchema>;
+
+export const IngestFacesResponseSchema = z.object({
+  job: JobSchema,
+});
+export type IngestFacesResponse = z.infer<typeof IngestFacesResponseSchema>;
+
+export const ListFaceIdentitiesResponseSchema = z.object({
+  identities: z.array(FaceIdentitySchema),
+});
+export type ListFaceIdentitiesResponse = z.infer<typeof ListFaceIdentitiesResponseSchema>;
+
+export const ListFaceAppearancesResponseSchema = z.object({
+  appearances: z.array(FaceAppearanceSchema),
+});
+export type ListFaceAppearancesResponse = z.infer<typeof ListFaceAppearancesResponseSchema>;
+
+export const ListFaceDetectionsResponseSchema = z.object({
+  detections: z.array(FaceDetectionSchema),
+});
+export type ListFaceDetectionsResponse = z.infer<typeof ListFaceDetectionsResponseSchema>;
+
+export const UpdateFaceIdentityRequestSchema = z.object({
+  display_name: z.string().min(1),
+});
+export type UpdateFaceIdentityRequest = z.infer<typeof UpdateFaceIdentityRequestSchema>;
+
+export const UpdateFaceIdentityResponseSchema = z.object({
+  identity: FaceIdentitySchema,
+});
+export type UpdateFaceIdentityResponse = z.infer<typeof UpdateFaceIdentityResponseSchema>;
+
+// ─── Voice Fingerprinting / Cross-Video Speaker Recognition ──────────────────
+
+export const SpeakerEmbeddingSchema = z.object({
+  id: IdSchema,
+  speaker_id: IdSchema,
+  video_id: IdSchema,
+  model_id: z.string().min(1),
+  segment_count: z.number().int().min(1).default(1),
+  created_at: IsoDateTimeSchema,
+});
+export type SpeakerEmbedding = z.infer<typeof SpeakerEmbeddingSchema>;
+
+export const GlobalSpeakerSchema = z.object({
+  id: IdSchema,
+  display_name: z.string().min(1),
+  face_identity_id: IdSchema.nullable().default(null),
+  created_at: IsoDateTimeSchema,
+  updated_at: IsoDateTimeSchema,
+});
+export type GlobalSpeaker = z.infer<typeof GlobalSpeakerSchema>;
+
+export const GlobalSpeakerLinkSchema = z.object({
+  id: IdSchema,
+  global_speaker_id: IdSchema,
+  speaker_id: IdSchema,
+  confidence: z.number().nullable().default(null),
+  source: z.string().min(1).default("auto"),
+  created_at: IsoDateTimeSchema,
+});
+export type GlobalSpeakerLink = z.infer<typeof GlobalSpeakerLinkSchema>;
+
+export const MatchSpeakerResponseSchema = z.object({
+  matches: z.array(
+    z.object({
+      global_speaker_id: IdSchema,
+      display_name: z.string(),
+      confidence: z.number(),
+      videos: z.array(
+        z.object({
+          video_id: IdSchema,
+          speaker_id: IdSchema,
+          title: z.string().nullable(),
+        }),
+      ),
+    }),
+  ),
+});
+export type MatchSpeakerResponse = z.infer<typeof MatchSpeakerResponseSchema>;
+
+export const CreateGlobalSpeakerRequestSchema = z.object({
+  display_name: z.string().min(1),
+  speaker_id: IdSchema,
+  video_id: IdSchema,
+});
+export type CreateGlobalSpeakerRequest = z.infer<typeof CreateGlobalSpeakerRequestSchema>;
+
+export const CreateGlobalSpeakerResponseSchema = z.object({
+  global_speaker: GlobalSpeakerSchema,
+  link: GlobalSpeakerLinkSchema,
+});
+export type CreateGlobalSpeakerResponse = z.infer<typeof CreateGlobalSpeakerResponseSchema>;
+
+export const ListGlobalSpeakersResponseSchema = z.object({
+  global_speakers: z.array(GlobalSpeakerSchema),
+});
+export type ListGlobalSpeakersResponse = z.infer<typeof ListGlobalSpeakersResponseSchema>;
+
+export const GetGlobalSpeakerResponseSchema = z.object({
+  global_speaker: GlobalSpeakerSchema,
+  links: z.array(GlobalSpeakerLinkSchema),
+});
+export type GetGlobalSpeakerResponse = z.infer<typeof GetGlobalSpeakerResponseSchema>;
+
+export const UpdateGlobalSpeakerRequestSchema = z.object({
+  display_name: z.string().min(1).optional(),
+});
+export type UpdateGlobalSpeakerRequest = z.infer<typeof UpdateGlobalSpeakerRequestSchema>;
+
+export const UpdateGlobalSpeakerResponseSchema = z.object({
+  global_speaker: GlobalSpeakerSchema,
+});
+export type UpdateGlobalSpeakerResponse = z.infer<typeof UpdateGlobalSpeakerResponseSchema>;
+
+export const IngestVoiceRequestSchema = z.object({
+  force: z.boolean().default(false),
+});
+export type IngestVoiceRequest = z.infer<typeof IngestVoiceRequestSchema>;
+
+export const IngestVoiceResponseSchema = z.object({
+  job: JobSchema,
+});
+export type IngestVoiceResponse = z.infer<typeof IngestVoiceResponseSchema>;
+
+export const ListSignificantMarksResponseSchema = z.object({
+  marks: z.array(SignificantMarkSchema),
+});
+export type ListSignificantMarksResponse = z.infer<typeof ListSignificantMarksResponseSchema>;
+
+export const GetSpeakerVoiceResponseSchema = z.object({
+  embedding: SpeakerEmbeddingSchema.nullable(),
+});
+export type GetSpeakerVoiceResponse = z.infer<typeof GetSpeakerVoiceResponseSchema>;

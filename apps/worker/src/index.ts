@@ -3,6 +3,8 @@ import { Worker, QueueEvents } from "bullmq";
 import { getYitDefault, getYitDefaultNumber, initMetrics, logger, QUEUE_NAME } from "@yt/core";
 import { runIngestVideo } from "./jobs/ingest_video";
 import { runIngestVisual } from "./jobs/ingest_visual";
+import { runBuildDenseTranscript } from "./jobs/build_dense_transcript";
+import { runDetectChapters } from "./jobs/detect_chapters";
 
 const metrics = initMetrics();
 
@@ -45,6 +47,20 @@ const worker = new Worker(
         await runIngestVisual(String(job.id), job.data as any);
         metrics.jobsTotal.inc({ type: "ingest_visual", status: "completed" });
         metrics.jobDurationMs.observe({ type: "ingest_visual", status: "completed" }, Date.now() - startedAt);
+        return { ok: true };
+      }
+
+      if (job.name === "build_dense_transcript") {
+        await runBuildDenseTranscript(String(job.id), job.data as any);
+        metrics.jobsTotal.inc({ type: "build_dense_transcript", status: "completed" });
+        metrics.jobDurationMs.observe({ type: "build_dense_transcript", status: "completed" }, Date.now() - startedAt);
+        return { ok: true };
+      }
+
+      if (job.name === "detect_chapters") {
+        await runDetectChapters(String(job.id), job.data as any);
+        metrics.jobsTotal.inc({ type: "detect_chapters", status: "completed" });
+        metrics.jobDurationMs.observe({ type: "detect_chapters", status: "completed" }, Date.now() - startedAt);
         return { ok: true };
       }
 

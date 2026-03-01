@@ -256,6 +256,38 @@ button:disabled {
   margin-top: 8px;
 }
 
+.safety-note {
+  margin-top: 10px;
+  border: 1px solid #4a5568;
+  border-radius: 10px;
+  padding: 8px 10px;
+  color: #cbd5e1;
+  font-size: 12px;
+}
+
+.safety-fallback {
+  margin-top: 10px;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  padding: 8px 10px;
+  color: #cbd5e1;
+}
+
+.safety-fallback summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.safety-fallback p {
+  margin: 8px 0;
+}
+
+.safety-bypass {
+  display: block;
+  margin-top: 8px;
+}
+
 @keyframes pulse {
   from {
     transform: translateX(0px);

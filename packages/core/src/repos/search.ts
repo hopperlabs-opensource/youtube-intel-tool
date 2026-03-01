@@ -298,6 +298,10 @@ export async function searchCuesByVideoUnified(
     return searchFrameAnalysesByVideo(client, videoId, query, { limit });
   }
 
+  if (sourceType === "dense_visual") {
+    return searchDenseActionCuesByVideo(client, videoId, query, { limit });
+  }
+
   if (sourceType === "transcript") {
     return searchCuesByVideo(client, videoId, query, { limit, language });
   }
@@ -351,10 +355,30 @@ export async function searchCuesByVideoUnified(
       WHERE fa.video_id = $1
         AND ((q.q <> ''::tsquery AND fa.tsv @@ q.q)
           OR (q.q = ''::tsquery AND (fa.description ILIKE ('%' || $2 || '%') OR fa.text_overlay ILIKE ('%' || $2 || '%'))))
+    ),
+    dense_visual_hits AS (
+      SELECT
+        atc.id::text as cue_id,
+        NULL::text as chunk_id,
+        atc.start_ms,
+        atc.end_ms,
+        CASE
+          WHEN q.q = ''::tsquery THEN 0.01
+          ELSE ts_rank_cd(atc.tsv, q.q)
+        END as score,
+        atc.description as snippet,
+        'dense_visual' as source_type
+      FROM action_transcript_cues atc
+      JOIN q ON true
+      WHERE atc.video_id = $1
+        AND ((q.q <> ''::tsquery AND atc.tsv @@ q.q)
+          OR (q.q = ''::tsquery AND atc.description ILIKE ('%' || $2 || '%')))
     )
     SELECT * FROM transcript_hits
     UNION ALL
     SELECT * FROM visual_hits
+    UNION ALL
+    SELECT * FROM dense_visual_hits
     ORDER BY score DESC
     LIMIT $4
     `,
@@ -393,6 +417,44 @@ async function searchFrameAnalysesByVideo(
     WHERE fa.video_id = $1
       AND ((q.q <> ''::tsquery AND fa.tsv @@ q.q)
         OR (q.q = ''::tsquery AND (fa.description ILIKE ('%' || $2 || '%') OR fa.text_overlay ILIKE ('%' || $2 || '%'))))
+    ORDER BY score DESC
+    LIMIT $3
+    `,
+    [videoId, query, limit]
+  );
+  return res.rows.map((r) => parseSearchHitRow(r));
+}
+
+/**
+ * Keyword search over action_transcript_cues only.
+ */
+async function searchDenseActionCuesByVideo(
+  client: pg.PoolClient,
+  videoId: string,
+  query: string,
+  opts?: { limit?: number }
+): Promise<SearchHit[]> {
+  const limit = Math.min(opts?.limit ?? 20, 50);
+  const res = await client.query(
+    `
+    WITH q AS (
+      SELECT websearch_to_tsquery('english', $2) as q
+    )
+    SELECT
+      atc.id::text as cue_id,
+      atc.start_ms,
+      atc.end_ms,
+      CASE
+        WHEN q.q = ''::tsquery THEN 0.01
+        ELSE ts_rank_cd(atc.tsv, q.q)
+      END as score,
+      atc.description as snippet,
+      'dense_visual' as source_type
+    FROM action_transcript_cues atc
+    JOIN q ON true
+    WHERE atc.video_id = $1
+      AND ((q.q <> ''::tsquery AND atc.tsv @@ q.q)
+        OR (q.q = ''::tsquery AND atc.description ILIKE ('%' || $2 || '%')))
     ORDER BY score DESC
     LIMIT $3
     `,

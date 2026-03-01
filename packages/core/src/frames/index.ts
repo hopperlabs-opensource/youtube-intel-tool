@@ -8,3 +8,4 @@ export * from "./timestamps";
 export * from "./storage";
 export * from "./cache";
 export * from "./video-download";
+export * from "./dense-transcript";

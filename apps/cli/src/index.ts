@@ -76,6 +76,25 @@ import {
   GetFrameAnalysisResponseSchema,
   CostEstimateSchema,
   GetNarrativeSynthesisResponseSchema,
+  BuildDenseTranscriptRequestSchema,
+  BuildDenseTranscriptResponseSchema,
+  GetDenseTranscriptResponseSchema,
+  DetectAutoChaptersRequestSchema,
+  DetectAutoChaptersResponseSchema,
+  GetAutoChaptersResponseSchema,
+  ListSignificantMarksResponseSchema,
+  ListFaceIdentitiesResponseSchema,
+  ListFaceAppearancesResponseSchema,
+  UpdateFaceIdentityRequestSchema,
+  UpdateFaceIdentityResponseSchema,
+  MatchSpeakerResponseSchema,
+  ListGlobalSpeakersResponseSchema,
+  CreateGlobalSpeakerRequestSchema,
+  CreateGlobalSpeakerResponseSchema,
+  GetGlobalSpeakerResponseSchema,
+  UpdateGlobalSpeakerRequestSchema,
+  UpdateGlobalSpeakerResponseSchema,
+  GetSpeakerVoiceResponseSchema,
 } from "@yt/contracts";
 import { apiJson, apiText, HttpError, makeApiClient } from "./http.js";
 import { formatMs, printTable, truncate } from "./format.js";
@@ -2395,6 +2414,519 @@ function formatSrtTime(ms: number): string {
   const pad3 = (n: number) => String(n).padStart(3, "0");
   return `${pad2(h)}:${pad2(m)}:${pad2(s)},${pad3(millis)}`;
 }
+
+// ─── Dense Action Transcript Commands ────────────────────────────────────────
+
+visual
+  .command("dense-transcript <videoId>")
+  .description("Show or build the dense second-by-second action transcript")
+  .option("--build", "Trigger building the dense transcript", false)
+  .option("--format <f>", "Output format: table|json|vtt", "table")
+  .option("--force", "Force rebuild even if exists", false)
+  .action(async (videoId: string, cmd: { build: boolean; format: string; force: boolean }) => {
+    try {
+      const opts = program.opts<{ baseUrl?: string; json: boolean }>();
+      const client = makeApiClient({ baseUrl: opts.baseUrl });
+      videoId = await resolveVideoId(client, videoId);
+
+      if (cmd.build) {
+        const body = BuildDenseTranscriptRequestSchema.parse({ force: cmd.force });
+        const { data } = await apiJson({
+          client,
+          method: "POST",
+          path: `/api/videos/${videoId}/visual/dense-transcript`,
+          body,
+          schema: BuildDenseTranscriptResponseSchema,
+        });
+        if (opts.json) return void console.log(JSON.stringify(data, null, 2));
+        console.log(`dense transcript build job queued: ${data.job.id}`);
+        console.log(`track with: yit job ${data.job.id} --follow`);
+        return;
+      }
+
+      const { data } = await apiJson({
+        client,
+        method: "GET",
+        path: `/api/videos/${videoId}/visual/dense-transcript`,
+        schema: GetDenseTranscriptResponseSchema,
+      });
+
+      if (opts.json || cmd.format === "json") {
+        return void console.log(JSON.stringify(data, null, 2));
+      }
+
+      if (cmd.format === "vtt") {
+        console.log("WEBVTT\n");
+        for (const cue of data.transcript.cues) {
+          const startVtt = formatSrtTime(cue.start_ms).replace(",", ".");
+          const endVtt = formatSrtTime(cue.end_ms).replace(",", ".");
+          console.log(`${startVtt} --> ${endVtt}`);
+          console.log(cue.description);
+          console.log();
+        }
+        return;
+      }
+
+      // table format
+      console.log(`Dense Transcript (${data.transcript.total_cues} cues: ${data.transcript.direct_cues} direct, ${data.transcript.interpolated_cues} interpolated)\n`);
+      const rows = data.transcript.cues.map((c) => ({
+        time: formatMs(c.start_ms),
+        type: c.interpolated ? "interp" : "direct",
+        scene: c.scene_type ?? "",
+        description: truncate(c.description, 60),
+      }));
+      printTable(rows);
+    } catch (err) {
+      handleErr(err);
+    }
+  });
+
+// ─── Auto-Chapters + Marks Commands ──────────────────────────────────────────
+
+const autoChapters = program.command("auto-chapters").description("Multi-signal auto-detected chapters");
+
+autoChapters
+  .command("show <videoId>")
+  .description("Show auto-detected chapters for a video")
+  .action(async (videoId: string) => {
+    try {
+      const opts = program.opts<{ baseUrl?: string; json: boolean }>();
+      const client = makeApiClient({ baseUrl: opts.baseUrl });
+      videoId = await resolveVideoId(client, videoId);
+
+      const { data } = await apiJson({
+        client,
+        method: "GET",
+        path: `/api/videos/${videoId}/auto-chapters`,
+        schema: GetAutoChaptersResponseSchema,
+      });
+
+      if (opts.json) return void console.log(JSON.stringify(data, null, 2));
+
+      console.log(`Auto-Chapters (${data.chapters.length} chapters, ${data.marks.length} marks)\n`);
+      for (const ch of data.chapters) {
+        const signals = ch.signals.length ? ` [${ch.signals.join(", ")}]` : "";
+        const conf = ch.confidence != null ? ` (${(ch.confidence * 100).toFixed(0)}%)` : "";
+        console.log(`  ${formatMs(ch.start_ms)} - ${formatMs(ch.end_ms)}  ${ch.title}${signals}${conf}`);
+      }
+    } catch (err) {
+      handleErr(err);
+    }
+  });
+
+autoChapters
+  .command("detect <videoId>")
+  .description("Trigger auto-chapter detection for a video")
+  .option("--min-signals <n>", "Minimum signals for boundary", "2")
+  .option("--window-ms <n>", "Signal window in ms", "3000")
+  .option("--force", "Force re-detection", false)
+  .action(async (videoId: string, cmd: { minSignals: string; windowMs: string; force: boolean }) => {
+    try {
+      const opts = program.opts<{ baseUrl?: string; json: boolean }>();
+      const client = makeApiClient({ baseUrl: opts.baseUrl });
+      videoId = await resolveVideoId(client, videoId);
+
+      const body = DetectAutoChaptersRequestSchema.parse({
+        force: cmd.force,
+        min_signals: asInt(cmd.minSignals, 2),
+        window_ms: asInt(cmd.windowMs, 3000),
+      });
+      const { data } = await apiJson({
+        client,
+        method: "POST",
+        path: `/api/videos/${videoId}/auto-chapters`,
+        body,
+        schema: DetectAutoChaptersResponseSchema,
+      });
+      if (opts.json) return void console.log(JSON.stringify(data, null, 2));
+      console.log(`auto-chapter detection job queued: ${data.job.id}`);
+      console.log(`track with: yit job ${data.job.id} --follow`);
+    } catch (err) {
+      handleErr(err);
+    }
+  });
+
+const marks = program.command("marks").description("Significant marks within a video");
+
+marks
+  .command("list <videoId>")
+  .description("List significant marks for a video")
+  .option("--type <type>", "Filter by mark type (e.g. slide_change, speaker_change)")
+  .option("--limit <n>", "Limit results", "200")
+  .action(async (videoId: string, cmd: { type?: string; limit: string }) => {
+    try {
+      const opts = program.opts<{ baseUrl?: string; json: boolean }>();
+      const client = makeApiClient({ baseUrl: opts.baseUrl });
+      videoId = await resolveVideoId(client, videoId);
+
+      const query: Record<string, string | number | boolean | null | undefined> = { limit: asInt(cmd.limit, 200) };
+      if (cmd.type) query.type = cmd.type;
+
+      const { data } = await apiJson({
+        client,
+        method: "GET",
+        path: `/api/videos/${videoId}/marks`,
+        query,
+        schema: ListSignificantMarksResponseSchema,
+      });
+
+      if (opts.json) return void console.log(JSON.stringify(data, null, 2));
+
+      const rows = data.marks.map((m) => ({
+        time: formatMs(m.timestamp_ms),
+        type: m.mark_type,
+        confidence: (m.confidence * 100).toFixed(0) + "%",
+        description: truncate(m.description ?? "", 50),
+      }));
+      printTable(rows);
+    } catch (err) {
+      handleErr(err);
+    }
+  });
+
+// ─── Face Indexing Commands ──────────────────────────────────────────────────
+
+const faces = program.command("faces").description("Face identity operations");
+
+faces
+  .command("list <videoId>")
+  .description("List face identities for a video")
+  .action(async (videoId: string) => {
+    try {
+      const opts = program.opts<{ baseUrl?: string; json: boolean }>();
+      const client = makeApiClient({ baseUrl: opts.baseUrl });
+      videoId = await resolveVideoId(client, videoId);
+
+      const { data } = await apiJson({
+        client,
+        method: "GET",
+        path: `/api/videos/${videoId}/faces`,
+        schema: ListFaceIdentitiesResponseSchema,
+      });
+
+      if (opts.json) return void console.log(JSON.stringify(data, null, 2));
+
+      const rows = data.identities.map((f) => ({
+        id: f.id,
+        label: f.label,
+        display_name: f.display_name ?? "",
+        speaker: f.speaker_id ?? "",
+      }));
+      printTable(rows);
+    } catch (err) {
+      handleErr(err);
+    }
+  });
+
+faces
+  .command("appearances <videoId> <identityId>")
+  .description("Show timeline of face appearances")
+  .action(async (videoId: string, identityId: string) => {
+    try {
+      const opts = program.opts<{ baseUrl?: string; json: boolean }>();
+      const client = makeApiClient({ baseUrl: opts.baseUrl });
+      videoId = await resolveVideoId(client, videoId);
+
+      const { data } = await apiJson({
+        client,
+        method: "GET",
+        path: `/api/videos/${videoId}/faces/${identityId}/appearances`,
+        schema: ListFaceAppearancesResponseSchema,
+      });
+
+      if (opts.json) return void console.log(JSON.stringify(data, null, 2));
+
+      const rows = data.appearances.map((a) => ({
+        start: formatMs(a.start_ms),
+        end: formatMs(a.end_ms),
+        frames: String(a.frame_count),
+        det_score: a.avg_det_score != null ? a.avg_det_score.toFixed(2) : "n/a",
+      }));
+      printTable(rows);
+    } catch (err) {
+      handleErr(err);
+    }
+  });
+
+faces
+  .command("rename <videoId> <identityId> <name>")
+  .description("Set a display name for a face identity")
+  .action(async (videoId: string, identityId: string, name: string) => {
+    try {
+      const opts = program.opts<{ baseUrl?: string; json: boolean }>();
+      const client = makeApiClient({ baseUrl: opts.baseUrl });
+      videoId = await resolveVideoId(client, videoId);
+
+      const body = UpdateFaceIdentityRequestSchema.parse({ display_name: name });
+      const { data } = await apiJson({
+        client,
+        method: "PATCH",
+        path: `/api/videos/${videoId}/faces/${identityId}`,
+        body,
+        schema: UpdateFaceIdentityResponseSchema,
+      });
+
+      if (opts.json) return void console.log(JSON.stringify(data, null, 2));
+      console.log(`renamed: ${data.identity.label} -> ${data.identity.display_name}`);
+    } catch (err) {
+      handleErr(err);
+    }
+  });
+
+// ─── Voice Fingerprinting Commands ───────────────────────────────────────────
+
+const voice = program.command("voice").description("Voice fingerprinting and cross-video speaker recognition");
+
+voice
+  .command("info <videoId> <speakerId>")
+  .description("Show voice embedding info for a speaker")
+  .action(async (videoId: string, speakerId: string) => {
+    try {
+      const opts = program.opts<{ baseUrl?: string; json: boolean }>();
+      const client = makeApiClient({ baseUrl: opts.baseUrl });
+      videoId = await resolveVideoId(client, videoId);
+
+      const { data } = await apiJson({
+        client,
+        method: "GET",
+        path: `/api/videos/${videoId}/speakers/${speakerId}/voice`,
+        schema: GetSpeakerVoiceResponseSchema,
+      });
+
+      if (opts.json) return void console.log(JSON.stringify(data, null, 2));
+
+      if (data.embedding) {
+        console.log(`speaker:        ${data.embedding.speaker_id}`);
+        console.log(`model:          ${data.embedding.model_id}`);
+        console.log(`segments:       ${data.embedding.segment_count}`);
+        console.log(`created:        ${data.embedding.created_at}`);
+      } else {
+        console.log("No voice embedding found for this speaker.");
+        console.log("Run voice embedding extraction first.");
+      }
+    } catch (err) {
+      handleErr(err);
+    }
+  });
+
+voice
+  .command("match <videoId> <speakerId>")
+  .description("Find cross-video matches for a speaker's voice")
+  .action(async (videoId: string, speakerId: string) => {
+    try {
+      const opts = program.opts<{ baseUrl?: string; json: boolean }>();
+      const client = makeApiClient({ baseUrl: opts.baseUrl });
+      videoId = await resolveVideoId(client, videoId);
+
+      const { data } = await apiJson({
+        client,
+        method: "POST",
+        path: `/api/videos/${videoId}/speakers/${speakerId}/match`,
+        schema: MatchSpeakerResponseSchema,
+      });
+
+      if (opts.json) return void console.log(JSON.stringify(data, null, 2));
+
+      if (data.matches.length === 0) {
+        console.log("No cross-video matches found.");
+        return;
+      }
+
+      for (const match of data.matches) {
+        console.log(`\n  ${match.display_name}  confidence: ${(match.confidence * 100).toFixed(1)}%`);
+        for (const v of match.videos) {
+          console.log(`    video: ${v.video_id}  speaker: ${v.speaker_id}${v.title ? `  "${v.title}"` : ""}`);
+        }
+      }
+    } catch (err) {
+      handleErr(err);
+    }
+  });
+
+// ─── Global Speakers Commands ────────────────────────────────────────────────
+
+const globalSpeakers = program.command("global-speakers").description("Cross-video global speaker identities");
+
+globalSpeakers
+  .command("list")
+  .description("List all global speakers")
+  .action(async () => {
+    try {
+      const opts = program.opts<{ baseUrl?: string; json: boolean }>();
+      const client = makeApiClient({ baseUrl: opts.baseUrl });
+
+      const { data } = await apiJson({
+        client,
+        method: "GET",
+        path: "/api/global-speakers",
+        schema: ListGlobalSpeakersResponseSchema,
+      });
+
+      if (opts.json) return void console.log(JSON.stringify(data, null, 2));
+
+      if (data.global_speakers.length === 0) {
+        console.log("No global speakers found.");
+        return;
+      }
+
+      const rows = data.global_speakers.map((gs) => ({
+        id: gs.id,
+        display_name: gs.display_name,
+        created: gs.created_at,
+      }));
+      printTable(rows);
+    } catch (err) {
+      handleErr(err);
+    }
+  });
+
+globalSpeakers
+  .command("create <speakerId> <name>")
+  .description("Create a global speaker from a per-video speaker")
+  .requiredOption("--video <videoId>", "Video ID of the source speaker")
+  .action(async (speakerId: string, name: string, cmd: { video: string }) => {
+    try {
+      const opts = program.opts<{ baseUrl?: string; json: boolean }>();
+      const client = makeApiClient({ baseUrl: opts.baseUrl });
+
+      const body = CreateGlobalSpeakerRequestSchema.parse({
+        display_name: name,
+        speaker_id: speakerId,
+        video_id: cmd.video,
+      });
+      const { data } = await apiJson({
+        client,
+        method: "POST",
+        path: "/api/global-speakers",
+        body,
+        schema: CreateGlobalSpeakerResponseSchema,
+      });
+
+      if (opts.json) return void console.log(JSON.stringify(data, null, 2));
+      console.log(`global speaker: ${data.global_speaker.id}  "${data.global_speaker.display_name}"`);
+      console.log(`linked: ${data.link.speaker_id} -> ${data.link.global_speaker_id}`);
+    } catch (err) {
+      handleErr(err);
+    }
+  });
+
+globalSpeakers
+  .command("show <id>")
+  .description("Show a global speaker with linked per-video speakers")
+  .action(async (id: string) => {
+    try {
+      const opts = program.opts<{ baseUrl?: string; json: boolean }>();
+      const client = makeApiClient({ baseUrl: opts.baseUrl });
+
+      const { data } = await apiJson({
+        client,
+        method: "GET",
+        path: `/api/global-speakers/${id}`,
+        schema: GetGlobalSpeakerResponseSchema,
+      });
+
+      if (opts.json) return void console.log(JSON.stringify(data, null, 2));
+
+      console.log(`${data.global_speaker.id}  "${data.global_speaker.display_name}"`);
+      if (data.links.length === 0) {
+        console.log("  No linked speakers.");
+      } else {
+        console.log("  Linked speakers:");
+        for (const link of data.links) {
+          const conf = link.confidence != null ? ` (${(link.confidence * 100).toFixed(0)}%)` : "";
+          console.log(`    ${link.speaker_id}  source: ${link.source}${conf}`);
+        }
+      }
+    } catch (err) {
+      handleErr(err);
+    }
+  });
+
+globalSpeakers
+  .command("rename <id> <name>")
+  .description("Update a global speaker's display name")
+  .action(async (id: string, name: string) => {
+    try {
+      const opts = program.opts<{ baseUrl?: string; json: boolean }>();
+      const client = makeApiClient({ baseUrl: opts.baseUrl });
+
+      const body = UpdateGlobalSpeakerRequestSchema.parse({ display_name: name });
+      const { data } = await apiJson({
+        client,
+        method: "PATCH",
+        path: `/api/global-speakers/${id}`,
+        body,
+        schema: UpdateGlobalSpeakerResponseSchema,
+      });
+
+      if (opts.json) return void console.log(JSON.stringify(data, null, 2));
+      console.log(`updated: ${data.global_speaker.id}  "${data.global_speaker.display_name}"`);
+    } catch (err) {
+      handleErr(err);
+    }
+  });
+
+// ─── Config Commands ─────────────────────────────────────────────────────────
+
+const config = program.command("config").description("LLM and provider configuration");
+
+config
+  .command("show")
+  .description("Display the resolved LLM configuration")
+  .action(async () => {
+    try {
+      const { resolveTextConfig } = await import("@yt/core");
+      const opts = program.opts<{ json: boolean }>();
+      const resolved = resolveTextConfig();
+
+      if (opts.json) {
+        console.log(JSON.stringify(resolved, null, 2));
+        return;
+      }
+
+      console.log("Resolved LLM Configuration:\n");
+      console.log(`  text_provider:       ${resolved.textProvider}`);
+      console.log(`  text_model:          ${resolved.textModel}`);
+      console.log(`  vision_provider:     ${resolved.visionProvider}`);
+      console.log(`  vision_model:        ${resolved.visionModel}`);
+      console.log(`  temperature:         ${resolved.temperature}`);
+      console.log(`  max_tokens_per_call: ${resolved.maxTokensPerCall}`);
+      console.log(`  prefer_local:        ${resolved.preferLocal}`);
+      if (resolved.maxTotalTokens != null) console.log(`  max_total_tokens:    ${resolved.maxTotalTokens}`);
+      if (resolved.maxCostUsd != null) console.log(`  max_cost_usd:        $${resolved.maxCostUsd}`);
+    } catch (err) {
+      handleErr(err);
+    }
+  });
+
+config
+  .command("providers")
+  .description("List all available LLM providers with status")
+  .action(async () => {
+    try {
+      const { detectAllProviders } = await import("@yt/core");
+      const opts = program.opts<{ json: boolean }>();
+      const providers = detectAllProviders();
+
+      if (opts.json) {
+        console.log(JSON.stringify(providers, null, 2));
+        return;
+      }
+
+      console.log("Available LLM Providers:\n");
+      for (const p of providers) {
+        const status = p.available ? "available" : "not found";
+        const cost = p.free ? "FREE" : "paid (API key)";
+        const mark = p.available ? "+" : "-";
+        const text = p.supportsText ? "text" : "";
+        const vision = p.supportsVision ? "vision" : "";
+        const caps = [text, vision].filter(Boolean).join("+") || "none";
+        console.log(`  [${mark}] ${p.provider.padEnd(12)} ${p.type.padEnd(6)} ${cost.padEnd(16)} ${caps.padEnd(12)} ${status}`);
+      }
+    } catch (err) {
+      handleErr(err);
+    }
+  });
 
 const karaoke = program.command("karaoke").description("Karaoke sessions, queue, and scoring");
 const karaokeTrack = karaoke.command("track").description("Karaoke track catalog");

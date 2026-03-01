@@ -7,6 +7,7 @@ import { getChunksByIds } from "../repos/chunks";
 import { searchCuesByVideo, searchChunksByVideoSemantic, searchFrameChunksByVideoSemantic, searchCuesByVideoUnified } from "../repos/search";
 import { getLatestTranscriptForVideo } from "../repos/transcripts";
 import { getFrameAnalysesInWindow } from "../repos/frames";
+import { getDenseActionCuesInWindow } from "../repos/dense-transcript";
 
 function formatHms(ms: number): string {
   const totalSeconds = Math.floor(ms / 1000);
@@ -221,7 +222,47 @@ export async function buildRagForVideoChat(
     }
   }
 
-  // 6) Visual semantic search.
+  // 6) Dense visual narration in the time window.
+  try {
+    const denseCues = await getDenseActionCuesInWindow(client, opts.videoId, windowStart, windowEnd);
+    for (const dc of denseCues) {
+      addSource({
+        type: "vis",
+        id: dc.id,
+        start_ms: dc.start_ms,
+        end_ms: dc.end_ms,
+        snippet: cleanSnippet(dc.description, 300),
+      });
+    }
+  } catch {
+    // Dense transcript may not exist yet; continue gracefully.
+  }
+
+  // 7) Dense visual keyword search.
+  if (opts.keyword_k > 0) {
+    try {
+      const denseKeywordHits = await searchCuesByVideoUnified(
+        client,
+        opts.videoId,
+        opts.query,
+        { limit: Math.min(opts.keyword_k, 6), sourceType: "dense_visual" as any },
+      );
+      for (const h of denseKeywordHits) {
+        addSource({
+          type: "vis-kw",
+          id: h.cue_id,
+          start_ms: h.start_ms,
+          end_ms: h.end_ms,
+          score: h.score,
+          snippet: cleanSnippet(h.snippet, 300),
+        });
+      }
+    } catch {
+      // Dense visual search may not be available yet.
+    }
+  }
+
+  // 8) Visual semantic search.
   if (opts.semantic_k > 0 && !embeddingError) {
     try {
       const embedder = createEmbedderFromEnv(opts.embedding_env ?? process.env);
