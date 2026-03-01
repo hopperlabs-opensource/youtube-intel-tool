@@ -1,15 +1,25 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import {
+  SAFETY_ACK_VERSION,
+  SAFETY_ACK_COOKIE_NAME,
+  SAFETY_ACK_COOKIE_VALUE,
+  SAFETY_ACK_KEY,
+} from "@/lib/safety_ack";
 
-const ACK_VERSION = 1;
-const ACK_KEY = `yit:safety_notice_ack_v${ACK_VERSION}`;
-const ACK_COOKIE_NAME = `yit_safety_ack_v${ACK_VERSION}`;
-const ACK_COOKIE_VALUE = "1";
+const ACK_VERSION = SAFETY_ACK_VERSION;
+const ACK_KEY = SAFETY_ACK_KEY;
+const ACK_COOKIE_NAME = SAFETY_ACK_COOKIE_NAME;
+const ACK_COOKIE_VALUE = SAFETY_ACK_COOKIE_VALUE;
 
 type StorageSupport = {
   localStorage: boolean;
   cookies: boolean;
+};
+
+type SafetyNoticeGateProps = {
+  initialAccepted: boolean;
 };
 
 function readAckFromCookie(): boolean {
@@ -87,8 +97,8 @@ function detectStorageSupport(): StorageSupport {
   return { localStorage: localStorageOk, cookies: cookiesOk };
 }
 
-export function SafetyNoticeGate() {
-  const [accepted, setAccepted] = useState(() => loadAck());
+export function SafetyNoticeGate({ initialAccepted }: SafetyNoticeGateProps) {
+  const [accepted, setAccepted] = useState(() => initialAccepted || loadAck());
   const [localOnlyChecked, setLocalOnlyChecked] = useState(false);
   const [riskChecked, setRiskChecked] = useState(false);
   const [storageSupport] = useState<StorageSupport>(() => detectStorageSupport());
@@ -177,6 +187,24 @@ export function SafetyNoticeGate() {
             I Understand and Accept
           </button>
         </div>
+
+        <details className="mt-3 rounded-lg border border-zinc-200 bg-zinc-50 p-3 text-xs text-zinc-700">
+          <summary className="cursor-pointer font-medium text-zinc-800">
+            Button stuck in Brave/extension-heavy browsers?
+          </summary>
+          <p className="mt-2">
+            Use fallback accept to set the same acknowledgement cookie and reload this page without relying on React
+            hydration.
+          </p>
+          <form method="post" action="/api/safety-ack" className="mt-2">
+            <button
+              type="submit"
+              className="rounded-md border border-zinc-300 bg-white px-2.5 py-1.5 text-xs font-medium text-zinc-800 hover:bg-zinc-100"
+            >
+              Accept via Fallback Reload
+            </button>
+          </form>
+        </details>
 
         {showBypass ? (
           <div className="mt-3 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs text-zinc-700">

@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { cookies } from "next/headers";
 import "./globals.css";
 import Providers from "./providers";
+import { SAFETY_ACK_COOKIE_NAME, SAFETY_ACK_COOKIE_VALUE } from "@/lib/safety_ack";
 
 const HYDRATION_WATCHDOG_MS = 7000;
 const HYDRATION_WATCHDOG_SCRIPT = `
@@ -39,11 +41,14 @@ export const metadata: Metadata = {
   description: "Transcript + entities + context + search",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookieStore = await cookies();
+  const initialSafetyAccepted = cookieStore.get(SAFETY_ACK_COOKIE_NAME)?.value === SAFETY_ACK_COOKIE_VALUE;
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body
@@ -77,7 +82,7 @@ export default function RootLayout({
           Browser protections may be blocking app scripts. If controls appear stuck, allow scripts for localhost
           (Brave Shields/extensions), then hard refresh.
         </div>
-        <Providers>{children}</Providers>
+        <Providers initialSafetyAccepted={initialSafetyAccepted}>{children}</Providers>
       </body>
     </html>
   );

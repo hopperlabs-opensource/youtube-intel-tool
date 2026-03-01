@@ -41,3 +41,20 @@ test("fallback bypass appears and allows continuing", async ({ page }) => {
   await expect(page.getByRole("button", { name: "I Understand and Accept" })).toBeHidden();
   await expect(page.getByRole("heading", { name: "Safety Gate Check" })).toBeVisible();
 });
+
+test("fallback accept works when JavaScript is disabled", async ({ browser }) => {
+  const context = await browser.newContext({ javaScriptEnabled: false });
+  const page = await context.newPage();
+
+  await context.clearCookies();
+  await page.goto("/safety-check");
+  await expect(page.getByText("Local-Only Security Notice")).toBeVisible();
+
+  await page.locator("summary").click();
+  await page.getByRole("button", { name: "Accept via Fallback Reload" }).click();
+  await page.waitForLoadState("domcontentloaded");
+  await page.goto("/safety-check");
+
+  await expect(page.getByText("Local-Only Security Notice")).toHaveCount(0);
+  await context.close();
+});
