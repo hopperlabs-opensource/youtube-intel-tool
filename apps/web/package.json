@@ -13,6 +13,7 @@
     "@tanstack/react-virtual": "^3.13.19",
     "@yt/contracts": "workspace:*",
     "@yt/core": "workspace:*",
+    "@yt/experience-core": "workspace:*",
     "@yt/sdk": "workspace:*",
     "bullmq": "^5.70.1",
     "clsx": "^2.1.1",

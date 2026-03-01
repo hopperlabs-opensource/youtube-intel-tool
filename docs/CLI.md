@@ -138,6 +138,17 @@ pnpm yit karaoke queue add --session <sessionId> --track <trackId> --player Host
 pnpm yit karaoke round start --session <sessionId> --item <queueItemId>
 pnpm yit karaoke score add --session <sessionId> --item <queueItemId> --player Alice --cue <cueId> --expected 12000 --actual 12120
 pnpm yit karaoke leaderboard --session <sessionId>
+
+# playlist workflow
+pnpm yit karaoke playlist create --name "Warmup Set" --description "Openers"
+pnpm yit karaoke playlist add-item --playlist <playlistId> --track <trackId>
+pnpm yit karaoke playlist queue --session <sessionId> --playlist <playlistId> --requested-by Host
+
+# guest join + moderation
+pnpm yit karaoke guest token --session <sessionId> --ttl 240
+pnpm yit karaoke guest request-add --token <token> --track <trackId> --name "Sam"
+pnpm yit karaoke guest request-list --session <sessionId>
+pnpm yit karaoke guest request-handle --session <sessionId> --request <requestId> --action approve
 ```
 
 ## Ingest Flags

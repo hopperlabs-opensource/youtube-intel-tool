@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { getApiClient } from "@/lib/api";
 
 export default function SessionPage() {
@@ -16,12 +17,23 @@ export default function SessionPage() {
   const [queueTrackId, setQueueTrackId] = useState("");
   const [url, setUrl] = useState("");
   const [theme, setTheme] = useState("");
+  const [playlistId, setPlaylistId] = useState("");
+  const [joinToken, setJoinToken] = useState("");
+  const [joinPath, setJoinPath] = useState("");
+  const [qrDataUrl, setQrDataUrl] = useState("");
 
   const sessionQ = useQuery({
     queryKey: ["karaokeSession", sessionId],
     queryFn: async () => api.getKaraokeSession(sessionId),
     enabled: Boolean(sessionId),
     refetchInterval: 2000,
+  });
+
+  const guestRequestsQ = useQuery({
+    queryKey: ["karaokeGuestRequests", sessionId],
+    queryFn: async () => api.listKaraokeGuestRequests(sessionId),
+    enabled: Boolean(sessionId),
+    refetchInterval: 2500,
   });
 
   const themesQ = useQuery({
@@ -32,6 +44,11 @@ export default function SessionPage() {
   const tracksQ = useQuery({
     queryKey: ["karaokeTracks", "sessionPage"],
     queryFn: async () => api.listKaraokeTracks({ limit: 200, sort: "updated_desc" }),
+  });
+
+  const playlistsQ = useQuery({
+    queryKey: ["karaokePlaylists"],
+    queryFn: async () => api.listKaraokePlaylists({ limit: 200 }),
   });
 
   const tracksById = useMemo(() => {
@@ -45,6 +62,7 @@ export default function SessionPage() {
   const refreshSession = async () => {
     await qc.invalidateQueries({ queryKey: ["karaokeSession", sessionId] });
     await qc.invalidateQueries({ queryKey: ["karaokeTracks"] });
+    await qc.invalidateQueries({ queryKey: ["karaokeGuestRequests", sessionId] });
   };
 
   const addQueue = useMutation({
@@ -52,6 +70,25 @@ export default function SessionPage() {
     onSuccess: async () => {
       setQueueTrackId("");
       await refreshSession();
+    },
+  });
+
+  const queuePlaylist = useMutation({
+    mutationFn: async () => {
+      if (!playlistId) throw new Error("select playlist");
+      return api.queueKaraokePlaylistToSession(sessionId, {
+        playlist_id: playlistId,
+        requested_by: requestedBy,
+      });
+    },
+    onSuccess: refreshSession,
+  });
+
+  const createJoinToken = useMutation({
+    mutationFn: async () => api.createKaraokeGuestToken(sessionId, { ttl_minutes: 240 }),
+    onSuccess: (data) => {
+      setJoinToken(data.token);
+      setJoinPath(data.join_path);
     },
   });
 
@@ -82,9 +119,40 @@ export default function SessionPage() {
     onSuccess: refreshSession,
   });
 
+  const handleGuestRequest = useMutation({
+    mutationFn: async (payload: { requestId: string; action: "approve" | "reject" }) =>
+      api.updateKaraokeGuestRequest(sessionId, payload.requestId, {
+        action: payload.action,
+        requested_by: requestedBy,
+      }),
+    onSuccess: refreshSession,
+  });
+
   const session = sessionQ.data?.session;
   const queue = sessionQ.data?.queue || [];
   const leaderboard = sessionQ.data?.leaderboard || [];
+  const guestRequests = guestRequestsQ.data?.requests || [];
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const joinUrl = joinPath && origin ? `${origin}${joinPath}` : "";
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!joinUrl) {
+      setQrDataUrl("");
+      return;
+    }
+    void import("qrcode")
+      .then((mod) => mod.toDataURL(joinUrl, { width: 240, margin: 1 }))
+      .then((url) => {
+        if (!cancelled) setQrDataUrl(url);
+      })
+      .catch(() => {
+        if (!cancelled) setQrDataUrl("");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [joinUrl]);
 
   if (sessionQ.isPending) {
     return (
@@ -185,6 +253,23 @@ export default function SessionPage() {
           </label>
 
           <label style={{ marginTop: 14, display: "block" }}>
+            Queue Playlist
+            <div className="row" style={{ marginTop: 6 }}>
+              <select value={playlistId} onChange={(e) => setPlaylistId(e.target.value)}>
+                <option value="">Select playlist</option>
+                {(playlistsQ.data?.playlists || []).map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+              <button disabled={!playlistId || queuePlaylist.isPending} onClick={() => queuePlaylist.mutate()}>
+                Queue Playlist
+              </button>
+            </div>
+          </label>
+
+          <label style={{ marginTop: 14, display: "block" }}>
             Add by YouTube URL and Queue
             <div className="row" style={{ marginTop: 6 }}>
               <input
@@ -200,31 +285,103 @@ export default function SessionPage() {
         </section>
 
         <section className="panel">
-          <h2>Leaderboard</h2>
+          <h2>Guest Join</h2>
+          <p className="muted">Generate a local join token. Guests can request songs; host approves/rejects.</p>
+          <div className="row">
+            <button disabled={createJoinToken.isPending} onClick={() => createJoinToken.mutate()}>
+              {createJoinToken.isPending ? "Generating..." : "Generate Join Link"}
+            </button>
+          </div>
+          {joinToken ? (
+            <div style={{ marginTop: 10 }}>
+              <div className="muted" style={{ fontSize: 12 }}>
+                Token
+              </div>
+              <code>{joinToken}</code>
+              {joinUrl ? (
+                <>
+                  <div className="muted" style={{ fontSize: 12, marginTop: 8 }}>
+                    Join URL
+                  </div>
+                  <a href={joinUrl} target="_blank" rel="noreferrer">
+                    {joinUrl}
+                  </a>
+                  {qrDataUrl ? (
+                    <div style={{ marginTop: 10 }}>
+                      <Image src={qrDataUrl} alt="Guest join QR code" width={180} height={180} unoptimized />
+                    </div>
+                  ) : null}
+                </>
+              ) : null}
+            </div>
+          ) : null}
+
+          <h3 style={{ marginTop: 14 }}>Guest Requests</h3>
           <table className="table">
             <thead>
               <tr>
-                <th>Player</th>
-                <th>Points</th>
-                <th>Rounds</th>
-                <th>Avg Error</th>
-                <th>Streak</th>
+                <th>Guest</th>
+                <th>Track</th>
+                <th>Status</th>
+                <th>Action</th>
               </tr>
             </thead>
             <tbody>
-              {leaderboard.map((entry) => (
-                <tr key={entry.player_name}>
-                  <td>{entry.player_name}</td>
-                  <td>{entry.total_points}</td>
-                  <td>{entry.rounds_played}</td>
-                  <td>{entry.avg_timing_error_ms}ms</td>
-                  <td>{entry.streak_best}</td>
+              {guestRequests.map((entry) => (
+                <tr key={entry.id}>
+                  <td>{entry.guest_name}</td>
+                  <td>{tracksById.get(entry.track_id)?.title || entry.track_id}</td>
+                  <td>{entry.status}</td>
+                  <td>
+                    <div className="row">
+                      <button
+                        className="secondary"
+                        disabled={entry.status !== "pending" || handleGuestRequest.isPending}
+                        onClick={() => handleGuestRequest.mutate({ requestId: entry.id, action: "approve" })}
+                      >
+                        Approve
+                      </button>
+                      <button
+                        className="secondary"
+                        disabled={entry.status !== "pending" || handleGuestRequest.isPending}
+                        onClick={() => handleGuestRequest.mutate({ requestId: entry.id, action: "reject" })}
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </section>
       </div>
+
+      <section className="panel" style={{ marginTop: 14 }}>
+        <h2>Leaderboard</h2>
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Player</th>
+              <th>Points</th>
+              <th>Rounds</th>
+              <th>Avg Error</th>
+              <th>Streak</th>
+            </tr>
+          </thead>
+          <tbody>
+            {leaderboard.map((entry) => (
+              <tr key={entry.player_name}>
+                <td>{entry.player_name}</td>
+                <td>{entry.total_points}</td>
+                <td>{entry.rounds_played}</td>
+                <td>{entry.avg_timing_error_ms}ms</td>
+                <td>{entry.streak_best}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
 
       <section className="panel" style={{ marginTop: 14 }}>
         <h2>Queue</h2>

@@ -10,6 +10,7 @@ import {
   CreatePolicyResponseSchema,
   FeedJsonResponseSchema,
   GetKaraokeLeaderboardResponseSchema,
+  GetKaraokePlaylistResponseSchema,
   GetKaraokeSessionResponseSchema,
   GetKaraokeTrackResponseSchema,
   GetChatTurnResponseSchema,
@@ -45,6 +46,26 @@ import {
   JobStreamEventSchema,
   KaraokeResolveTrackRequestSchema,
   KaraokeResolveTrackResponseSchema,
+  CreateKaraokePlaylistRequestSchema,
+  CreateKaraokePlaylistResponseSchema,
+  ListKaraokePlaylistsResponseSchema,
+  UpdateKaraokePlaylistRequestSchema,
+  UpdateKaraokePlaylistResponseSchema,
+  DeleteKaraokePlaylistResponseSchema,
+  AddKaraokePlaylistItemRequestSchema,
+  AddKaraokePlaylistItemResponseSchema,
+  UpdateKaraokePlaylistItemRequestSchema,
+  UpdateKaraokePlaylistItemResponseSchema,
+  DeleteKaraokePlaylistItemResponseSchema,
+  QueueFromKaraokePlaylistRequestSchema,
+  QueueFromKaraokePlaylistResponseSchema,
+  CreateKaraokeGuestTokenRequestSchema,
+  CreateKaraokeGuestTokenResponseSchema,
+  CreateKaraokeGuestRequestRequestSchema,
+  CreateKaraokeGuestRequestResponseSchema,
+  ListKaraokeGuestRequestsResponseSchema,
+  UpdateKaraokeGuestRequestRequestSchema,
+  UpdateKaraokeGuestRequestResponseSchema,
   ResolveVideoRequestSchema,
   ResolveVideoResponseSchema,
   ListKaraokeThemesResponseSchema,
@@ -217,15 +238,16 @@ export function createYitClient(opts: { baseUrl: string; fetch?: FetchLike; head
   }
 
   async function sendJson<T>(
-    method: "POST" | "PATCH",
+    method: "POST" | "PATCH" | "DELETE",
     path: string,
     body: unknown,
     schema: z.ZodType<T>,
   ): Promise<T> {
+    const hasBody = body !== undefined;
     const res = await request(path, {
       method,
-      headers: { "content-type": "application/json", accept: "application/json" },
-      body: JSON.stringify(body),
+      headers: hasBody ? { "content-type": "application/json", accept: "application/json" } : { accept: "application/json" },
+      body: hasBody ? JSON.stringify(body) : undefined,
     });
     if (!res.ok) return readError(res);
     return schema.parse(await res.json());
@@ -388,6 +410,32 @@ export function createYitClient(opts: { baseUrl: string; fetch?: FetchLike; head
     getKaraokeLeaderboard: (sessionId: string) =>
       getJson(`/api/karaoke/sessions/${sessionId}/leaderboard`, GetKaraokeLeaderboardResponseSchema),
     listKaraokeThemes: () => getJson("/api/karaoke/themes", ListKaraokeThemesResponseSchema),
+    createKaraokePlaylist: (req: unknown) =>
+      sendJson("POST", "/api/karaoke/playlists", CreateKaraokePlaylistRequestSchema.parse(req), CreateKaraokePlaylistResponseSchema),
+    listKaraokePlaylists: (opts?: { limit?: number; offset?: number }) =>
+      getJson("/api/karaoke/playlists", ListKaraokePlaylistsResponseSchema, opts),
+    getKaraokePlaylist: (playlistId: string) =>
+      getJson(`/api/karaoke/playlists/${playlistId}`, GetKaraokePlaylistResponseSchema),
+    updateKaraokePlaylist: (playlistId: string, req: unknown) =>
+      sendJson("PATCH", `/api/karaoke/playlists/${playlistId}`, UpdateKaraokePlaylistRequestSchema.parse(req), UpdateKaraokePlaylistResponseSchema),
+    deleteKaraokePlaylist: (playlistId: string) =>
+      sendJson("DELETE", `/api/karaoke/playlists/${playlistId}`, undefined, DeleteKaraokePlaylistResponseSchema),
+    addKaraokePlaylistItem: (playlistId: string, req: unknown) =>
+      sendJson("POST", `/api/karaoke/playlists/${playlistId}/items`, AddKaraokePlaylistItemRequestSchema.parse(req), AddKaraokePlaylistItemResponseSchema),
+    updateKaraokePlaylistItem: (playlistId: string, itemId: string, req: unknown) =>
+      sendJson("PATCH", `/api/karaoke/playlists/${playlistId}/items/${itemId}`, UpdateKaraokePlaylistItemRequestSchema.parse(req), UpdateKaraokePlaylistItemResponseSchema),
+    deleteKaraokePlaylistItem: (playlistId: string, itemId: string) =>
+      sendJson("DELETE", `/api/karaoke/playlists/${playlistId}/items/${itemId}`, undefined, DeleteKaraokePlaylistItemResponseSchema),
+    queueKaraokePlaylistToSession: (sessionId: string, req: unknown) =>
+      sendJson("POST", `/api/karaoke/sessions/${sessionId}/queue/from-playlist`, QueueFromKaraokePlaylistRequestSchema.parse(req), QueueFromKaraokePlaylistResponseSchema),
+    createKaraokeGuestToken: (sessionId: string, req?: unknown) =>
+      sendJson("POST", `/api/karaoke/sessions/${sessionId}/guest-token`, CreateKaraokeGuestTokenRequestSchema.parse(req ?? {}), CreateKaraokeGuestTokenResponseSchema),
+    createKaraokeGuestRequest: (token: string, req: unknown) =>
+      sendJson("POST", `/api/karaoke/join/${token}/requests`, CreateKaraokeGuestRequestRequestSchema.parse(req), CreateKaraokeGuestRequestResponseSchema),
+    listKaraokeGuestRequests: (sessionId: string) =>
+      getJson(`/api/karaoke/sessions/${sessionId}/guest-requests`, ListKaraokeGuestRequestsResponseSchema),
+    updateKaraokeGuestRequest: (sessionId: string, requestId: string, req: unknown) =>
+      sendJson("PATCH", `/api/karaoke/sessions/${sessionId}/guest-requests/${requestId}`, UpdateKaraokeGuestRequestRequestSchema.parse(req), UpdateKaraokeGuestRequestResponseSchema),
 
     youtubeSearch: (req: unknown) =>
       sendJson("POST", "/api/youtube/search", YouTubeSearchRequestSchema.parse(req), YouTubeSearchResponseSchema),

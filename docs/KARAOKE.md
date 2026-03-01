@@ -16,6 +16,9 @@ Last updated: 2026-03-01
 - Track catalog from YouTube URLs
 - Session creation with themes
 - Queue operations (`play`, `skip`, `complete`, reorder)
+- Playlist CRUD and playlist-to-session queue seeding
+- Guest join links (token-based) with moderated request approval/rejection
+- Local skin controls (`theme` / `light` / `dark`) and lyric scale preferences
 - Round start and beat scoring events
 - Leaderboard aggregation
 
@@ -52,6 +55,12 @@ pnpm bg:down
 - API endpoints are under `/api/karaoke/*` (see `docs/API.md`).
 - CLI command namespace is `yit karaoke ...` (see `docs/CLI.md`).
 - SDK methods are available on `createYitClient()` in `@yt/sdk`.
+
+### New Karaoke API Groups
+- `/api/karaoke/playlists*` for playlist CRUD and items.
+- `/api/karaoke/sessions/:sessionId/queue/from-playlist` for bulk queue seeding.
+- `/api/karaoke/sessions/:sessionId/guest-token` for local guest join links.
+- `/api/karaoke/join/:token/requests` and `/api/karaoke/sessions/:sessionId/guest-requests*` for moderation flow.
 
 ## Notes
 

@@ -74,7 +74,7 @@ async function parseError(res: Response): Promise<HttpError> {
 
 export async function apiJson<TSchema extends z.ZodTypeAny>(opts: {
   client: ApiClient;
-  method: "GET" | "POST" | "PATCH";
+  method: "GET" | "POST" | "PATCH" | "DELETE";
   path: string;
   query?: Record<string, string | number | boolean | null | undefined>;
   body?: unknown;
@@ -86,14 +86,15 @@ export async function apiJson<TSchema extends z.ZodTypeAny>(opts: {
     url.searchParams.set(k, String(v));
   }
 
+  const hasBody = opts.body !== undefined;
   const res = await fetch(url, {
     method: opts.method,
     headers: {
       accept: "application/json",
-      "content-type": "application/json",
+      ...(hasBody ? { "content-type": "application/json" } : {}),
       ...(opts.client.headers ?? {}),
     },
-    body: opts.body === undefined ? undefined : JSON.stringify(opts.body),
+    body: hasBody ? JSON.stringify(opts.body) : undefined,
   });
 
   if (!res.ok) throw await parseError(res);

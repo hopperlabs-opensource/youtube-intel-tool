@@ -2,113 +2,30 @@
 
 import { useEffect, useState } from "react";
 import {
-  SAFETY_ACK_VERSION,
-  SAFETY_ACK_COOKIE_NAME,
-  SAFETY_ACK_COOKIE_VALUE,
-  SAFETY_ACK_KEY,
-} from "@/lib/safety_ack";
-
-const ACK_VERSION = SAFETY_ACK_VERSION;
-const ACK_KEY = SAFETY_ACK_KEY;
-const ACK_COOKIE_NAME = SAFETY_ACK_COOKIE_NAME;
-const ACK_COOKIE_VALUE = SAFETY_ACK_COOKIE_VALUE;
-
-type StorageSupport = {
-  localStorage: boolean;
-  cookies: boolean;
-};
+  computeSafetyBypassDelayMs,
+  detectSafetyStorageSupport,
+  loadSafetyAck,
+  saveSafetyAck,
+  type SafetyStorageSupport,
+} from "@yt/experience-core";
 
 type SafetyNoticeGateProps = {
   initialAccepted: boolean;
 };
 
-function readAckFromCookie(): boolean {
-  if (typeof document === "undefined") return false;
-  try {
-    const needle = `${ACK_COOKIE_NAME}=${ACK_COOKIE_VALUE}`;
-    return document.cookie
-      .split(";")
-      .map((part) => part.trim())
-      .some((part) => part === needle);
-  } catch {
-    return false;
-  }
-}
-
-function loadAck(): boolean {
-  const cookieAck = readAckFromCookie();
-  if (typeof window === "undefined") return cookieAck;
-  try {
-    const raw = localStorage.getItem(ACK_KEY);
-    if (!raw) return cookieAck;
-    const parsed = JSON.parse(raw) as { accepted?: boolean } | null;
-    return Boolean(parsed?.accepted) || cookieAck;
-  } catch {
-    return cookieAck;
-  }
-}
-
-function saveAck(): void {
-  const payload = JSON.stringify({
-    accepted: true,
-    accepted_at: new Date().toISOString(),
-    version: ACK_VERSION,
-  });
-
-  if (typeof window === "undefined") return;
-
-  try {
-    localStorage.setItem(ACK_KEY, payload);
-  } catch {
-    // Ignore localStorage failures and continue with cookie fallback.
-  }
-
-  try {
-    document.cookie = `${ACK_COOKIE_NAME}=${ACK_COOKIE_VALUE}; Max-Age=31536000; Path=/; SameSite=Lax`;
-  } catch {
-    // Ignore cookie write failures.
-  }
-}
-
-function detectStorageSupport(): StorageSupport {
-  if (typeof window === "undefined") return { localStorage: false, cookies: false };
-
-  let localStorageOk = false;
-  let cookiesOk = false;
-
-  try {
-    const probeKey = `${ACK_KEY}:probe`;
-    localStorage.setItem(probeKey, "1");
-    localStorage.removeItem(probeKey);
-    localStorageOk = true;
-  } catch {
-    localStorageOk = false;
-  }
-
-  try {
-    const probeName = "yit_safety_probe";
-    document.cookie = `${probeName}=1; Max-Age=60; Path=/; SameSite=Lax`;
-    cookiesOk = document.cookie.includes(`${probeName}=1`);
-    document.cookie = `${probeName}=; Max-Age=0; Path=/; SameSite=Lax`;
-  } catch {
-    cookiesOk = false;
-  }
-
-  return { localStorage: localStorageOk, cookies: cookiesOk };
-}
-
 export function SafetyNoticeGate({ initialAccepted }: SafetyNoticeGateProps) {
-  const [accepted, setAccepted] = useState(() => initialAccepted || loadAck());
+  const [accepted, setAccepted] = useState(() => initialAccepted || (typeof window !== "undefined" ? loadSafetyAck() : false));
   const [localOnlyChecked, setLocalOnlyChecked] = useState(false);
   const [riskChecked, setRiskChecked] = useState(false);
-  const [storageSupport] = useState<StorageSupport>(() => detectStorageSupport());
+  const [storageSupport] = useState<SafetyStorageSupport>(() =>
+    typeof window !== "undefined" ? detectSafetyStorageSupport() : { localStorage: false, cookies: false }
+  );
   const [showBypass, setShowBypass] = useState(false);
 
   const canAccept = localOnlyChecked && riskChecked;
 
   useEffect(() => {
-    const configuredDelay = Number(process.env.NEXT_PUBLIC_YIT_SAFETY_BYPASS_DELAY_MS ?? "8000");
-    const bypassDelayMs = Number.isFinite(configuredDelay) ? Math.max(2000, Math.floor(configuredDelay)) : 8000;
+    const bypassDelayMs = computeSafetyBypassDelayMs(process.env.NEXT_PUBLIC_YIT_SAFETY_BYPASS_DELAY_MS);
     const timer = window.setTimeout(() => setShowBypass(true), bypassDelayMs);
 
     return () => window.clearTimeout(timer);
@@ -180,7 +97,7 @@ export function SafetyNoticeGate({ initialAccepted }: SafetyNoticeGateProps) {
             className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
             disabled={!canAccept}
             onClick={() => {
-              saveAck();
+              saveSafetyAck();
               setAccepted(true);
             }}
           >

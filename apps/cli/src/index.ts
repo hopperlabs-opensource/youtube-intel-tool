@@ -6,6 +6,27 @@ import {
   CapabilitiesResponseSchema,
   CreateKaraokeSessionRequestSchema,
   CreateKaraokeSessionResponseSchema,
+  CreateKaraokePlaylistRequestSchema,
+  CreateKaraokePlaylistResponseSchema,
+  ListKaraokePlaylistsResponseSchema,
+  GetKaraokePlaylistResponseSchema,
+  UpdateKaraokePlaylistRequestSchema,
+  UpdateKaraokePlaylistResponseSchema,
+  DeleteKaraokePlaylistResponseSchema,
+  AddKaraokePlaylistItemRequestSchema,
+  AddKaraokePlaylistItemResponseSchema,
+  UpdateKaraokePlaylistItemRequestSchema,
+  UpdateKaraokePlaylistItemResponseSchema,
+  DeleteKaraokePlaylistItemResponseSchema,
+  QueueFromKaraokePlaylistRequestSchema,
+  QueueFromKaraokePlaylistResponseSchema,
+  CreateKaraokeGuestTokenRequestSchema,
+  CreateKaraokeGuestTokenResponseSchema,
+  CreateKaraokeGuestRequestRequestSchema,
+  CreateKaraokeGuestRequestResponseSchema,
+  ListKaraokeGuestRequestsResponseSchema,
+  UpdateKaraokeGuestRequestRequestSchema,
+  UpdateKaraokeGuestRequestResponseSchema,
   CreatePolicyRequestSchema,
   CreatePolicyResponseSchema,
   FeedJsonResponseSchema,
@@ -2934,6 +2955,8 @@ const karaokeSession = karaoke.command("session").description("Karaoke sessions"
 const karaokeQueue = karaoke.command("queue").description("Karaoke queue operations");
 const karaokeRound = karaoke.command("round").description("Karaoke round operations");
 const karaokeScore = karaoke.command("score").description("Karaoke scoring operations");
+const karaokePlaylist = karaoke.command("playlist").description("Karaoke playlists");
+const karaokeGuest = karaoke.command("guest").description("Karaoke guest join and moderation");
 
 karaokeTrack
   .command("add")
@@ -3341,6 +3364,352 @@ karaoke
           streak_best: e.streak_best,
         }))
       );
+    } catch (err) {
+      handleErr(err);
+    }
+  });
+
+karaokePlaylist
+  .command("create")
+  .description("Create a karaoke playlist")
+  .requiredOption("--name <name>", "Playlist name")
+  .option("--description <text>", "Playlist description")
+  .action(async (cmd: { name: string; description?: string }) => {
+    try {
+      const opts = program.opts<{ baseUrl?: string; json: boolean }>();
+      const client = makeApiClient({ baseUrl: opts.baseUrl });
+      const body = CreateKaraokePlaylistRequestSchema.parse({ name: cmd.name, description: cmd.description });
+      const { data } = await apiJson({
+        client,
+        method: "POST",
+        path: "/api/karaoke/playlists",
+        body,
+        schema: CreateKaraokePlaylistResponseSchema,
+      });
+      if (opts.json) return void console.log(JSON.stringify(data, null, 2));
+      console.log(`playlist: ${data.playlist.id}  ${data.playlist.name}`);
+    } catch (err) {
+      handleErr(err);
+    }
+  });
+
+karaokePlaylist
+  .command("list")
+  .description("List karaoke playlists")
+  .option("--limit <n>", "Limit", "50")
+  .option("--offset <n>", "Offset", "0")
+  .action(async (cmd: { limit: string; offset: string }) => {
+    try {
+      const opts = program.opts<{ baseUrl?: string; json: boolean }>();
+      const client = makeApiClient({ baseUrl: opts.baseUrl });
+      const { data } = await apiJson({
+        client,
+        method: "GET",
+        path: "/api/karaoke/playlists",
+        query: { limit: asInt(cmd.limit, 50), offset: asInt(cmd.offset, 0) },
+        schema: ListKaraokePlaylistsResponseSchema,
+      });
+      if (opts.json) return void console.log(JSON.stringify(data, null, 2));
+      printTable(
+        data.playlists.map((p) => ({
+          id: p.id,
+          name: p.name,
+          description: truncate(p.description || "", 56),
+          updated_at: p.updated_at,
+        }))
+      );
+    } catch (err) {
+      handleErr(err);
+    }
+  });
+
+karaokePlaylist
+  .command("show")
+  .description("Get one playlist with items")
+  .requiredOption("--id <playlistId>", "Playlist ID")
+  .action(async (cmd: { id: string }) => {
+    try {
+      const opts = program.opts<{ baseUrl?: string; json: boolean }>();
+      const client = makeApiClient({ baseUrl: opts.baseUrl });
+      const { data } = await apiJson({
+        client,
+        method: "GET",
+        path: `/api/karaoke/playlists/${cmd.id}`,
+        schema: GetKaraokePlaylistResponseSchema,
+      });
+      if (opts.json) return void console.log(JSON.stringify(data, null, 2));
+      console.log(`playlist: ${data.playlist.name} (${data.playlist.id}) items=${data.items.length}`);
+      printTable(
+        data.items.map((i) => ({
+          pos: i.position,
+          item_id: i.id,
+          track_id: i.track_id,
+        }))
+      );
+    } catch (err) {
+      handleErr(err);
+    }
+  });
+
+karaokePlaylist
+  .command("update")
+  .description("Update playlist metadata")
+  .requiredOption("--id <playlistId>", "Playlist ID")
+  .option("--name <name>", "Playlist name")
+  .option("--description <text>", "Playlist description")
+  .option("--clear-description", "Clear description", false)
+  .action(async (cmd: { id: string; name?: string; description?: string; clearDescription?: boolean }) => {
+    try {
+      const opts = program.opts<{ baseUrl?: string; json: boolean }>();
+      const client = makeApiClient({ baseUrl: opts.baseUrl });
+      const body = UpdateKaraokePlaylistRequestSchema.parse({
+        name: cmd.name,
+        description: cmd.clearDescription ? null : cmd.description,
+      });
+      const { data } = await apiJson({
+        client,
+        method: "PATCH",
+        path: `/api/karaoke/playlists/${cmd.id}`,
+        body,
+        schema: UpdateKaraokePlaylistResponseSchema,
+      });
+      if (opts.json) return void console.log(JSON.stringify(data, null, 2));
+      console.log(`playlist: ${data.playlist.id}  ${data.playlist.name}`);
+    } catch (err) {
+      handleErr(err);
+    }
+  });
+
+karaokePlaylist
+  .command("delete")
+  .description("Delete a playlist")
+  .requiredOption("--id <playlistId>", "Playlist ID")
+  .action(async (cmd: { id: string }) => {
+    try {
+      const opts = program.opts<{ baseUrl?: string; json: boolean }>();
+      const client = makeApiClient({ baseUrl: opts.baseUrl });
+      const { data } = await apiJson({
+        client,
+        method: "DELETE",
+        path: `/api/karaoke/playlists/${cmd.id}`,
+        schema: DeleteKaraokePlaylistResponseSchema,
+      });
+      if (opts.json) return void console.log(JSON.stringify(data, null, 2));
+      if (!data.ok) throw new Error("playlist delete failed");
+      console.log(`deleted: ${cmd.id}`);
+    } catch (err) {
+      handleErr(err);
+    }
+  });
+
+karaokePlaylist
+  .command("add-item")
+  .description("Add track to playlist")
+  .requiredOption("--playlist <playlistId>", "Playlist ID")
+  .requiredOption("--track <trackId>", "Track ID")
+  .option("--position <n>", "Position")
+  .action(async (cmd: { playlist: string; track: string; position?: string }) => {
+    try {
+      const opts = program.opts<{ baseUrl?: string; json: boolean }>();
+      const client = makeApiClient({ baseUrl: opts.baseUrl });
+      const body = AddKaraokePlaylistItemRequestSchema.parse({
+        track_id: cmd.track,
+        position: cmd.position !== undefined ? asInt(cmd.position, 0) : undefined,
+      });
+      const { data } = await apiJson({
+        client,
+        method: "POST",
+        path: `/api/karaoke/playlists/${cmd.playlist}/items`,
+        body,
+        schema: AddKaraokePlaylistItemResponseSchema,
+      });
+      if (opts.json) return void console.log(JSON.stringify(data, null, 2));
+      console.log(`item: ${data.item.id}  pos=${data.item.position}`);
+    } catch (err) {
+      handleErr(err);
+    }
+  });
+
+karaokePlaylist
+  .command("move-item")
+  .description("Move one playlist item")
+  .requiredOption("--playlist <playlistId>", "Playlist ID")
+  .requiredOption("--item <itemId>", "Playlist item ID")
+  .requiredOption("--position <n>", "Position")
+  .action(async (cmd: { playlist: string; item: string; position: string }) => {
+    try {
+      const opts = program.opts<{ baseUrl?: string; json: boolean }>();
+      const client = makeApiClient({ baseUrl: opts.baseUrl });
+      const body = UpdateKaraokePlaylistItemRequestSchema.parse({ position: asInt(cmd.position, 0) });
+      const { data } = await apiJson({
+        client,
+        method: "PATCH",
+        path: `/api/karaoke/playlists/${cmd.playlist}/items/${cmd.item}`,
+        body,
+        schema: UpdateKaraokePlaylistItemResponseSchema,
+      });
+      if (opts.json) return void console.log(JSON.stringify(data, null, 2));
+      console.log(`item: ${data.item.id}  pos=${data.item.position}  total=${data.items.length}`);
+    } catch (err) {
+      handleErr(err);
+    }
+  });
+
+karaokePlaylist
+  .command("remove-item")
+  .description("Remove one playlist item")
+  .requiredOption("--playlist <playlistId>", "Playlist ID")
+  .requiredOption("--item <itemId>", "Playlist item ID")
+  .action(async (cmd: { playlist: string; item: string }) => {
+    try {
+      const opts = program.opts<{ baseUrl?: string; json: boolean }>();
+      const client = makeApiClient({ baseUrl: opts.baseUrl });
+      const { data } = await apiJson({
+        client,
+        method: "DELETE",
+        path: `/api/karaoke/playlists/${cmd.playlist}/items/${cmd.item}`,
+        schema: DeleteKaraokePlaylistItemResponseSchema,
+      });
+      if (opts.json) return void console.log(JSON.stringify(data, null, 2));
+      console.log(`removed: ${cmd.item}  remaining=${data.items.length}`);
+    } catch (err) {
+      handleErr(err);
+    }
+  });
+
+karaokePlaylist
+  .command("queue")
+  .description("Queue all tracks from a playlist into a session")
+  .requiredOption("--session <sessionId>", "Session ID")
+  .requiredOption("--playlist <playlistId>", "Playlist ID")
+  .option("--requested-by <name>", "Requested-by label", "playlist")
+  .action(async (cmd: { session: string; playlist: string; requestedBy: string }) => {
+    try {
+      const opts = program.opts<{ baseUrl?: string; json: boolean }>();
+      const client = makeApiClient({ baseUrl: opts.baseUrl });
+      const body = QueueFromKaraokePlaylistRequestSchema.parse({
+        playlist_id: cmd.playlist,
+        requested_by: cmd.requestedBy,
+      });
+      const { data } = await apiJson({
+        client,
+        method: "POST",
+        path: `/api/karaoke/sessions/${cmd.session}/queue/from-playlist`,
+        body,
+        schema: QueueFromKaraokePlaylistResponseSchema,
+      });
+      if (opts.json) return void console.log(JSON.stringify(data, null, 2));
+      console.log(`queued: ${data.added.length} tracks`);
+    } catch (err) {
+      handleErr(err);
+    }
+  });
+
+karaokeGuest
+  .command("token")
+  .description("Create a guest join token for a session")
+  .requiredOption("--session <sessionId>", "Session ID")
+  .option("--ttl <minutes>", "TTL in minutes", "240")
+  .action(async (cmd: { session: string; ttl: string }) => {
+    try {
+      const opts = program.opts<{ baseUrl?: string; json: boolean }>();
+      const client = makeApiClient({ baseUrl: opts.baseUrl });
+      const body = CreateKaraokeGuestTokenRequestSchema.parse({ ttl_minutes: asInt(cmd.ttl, 240) });
+      const { data } = await apiJson({
+        client,
+        method: "POST",
+        path: `/api/karaoke/sessions/${cmd.session}/guest-token`,
+        body,
+        schema: CreateKaraokeGuestTokenResponseSchema,
+      });
+      if (opts.json) return void console.log(JSON.stringify(data, null, 2));
+      console.log(`token: ${data.token}`);
+      console.log(`join_path: ${data.join_path}`);
+      console.log(`expires_at: ${data.expires_at}`);
+    } catch (err) {
+      handleErr(err);
+    }
+  });
+
+karaokeGuest
+  .command("request-add")
+  .description("Submit one guest song request via join token")
+  .requiredOption("--token <token>", "Guest token")
+  .requiredOption("--track <trackId>", "Track ID")
+  .requiredOption("--name <guestName>", "Guest name")
+  .action(async (cmd: { token: string; track: string; name: string }) => {
+    try {
+      const opts = program.opts<{ baseUrl?: string; json: boolean }>();
+      const client = makeApiClient({ baseUrl: opts.baseUrl });
+      const body = CreateKaraokeGuestRequestRequestSchema.parse({ track_id: cmd.track, guest_name: cmd.name });
+      const { data } = await apiJson({
+        client,
+        method: "POST",
+        path: `/api/karaoke/join/${cmd.token}/requests`,
+        body,
+        schema: CreateKaraokeGuestRequestResponseSchema,
+      });
+      if (opts.json) return void console.log(JSON.stringify(data, null, 2));
+      console.log(`request: ${data.request.id}  status=${data.request.status}`);
+    } catch (err) {
+      handleErr(err);
+    }
+  });
+
+karaokeGuest
+  .command("request-list")
+  .description("List guest requests for a session")
+  .requiredOption("--session <sessionId>", "Session ID")
+  .action(async (cmd: { session: string }) => {
+    try {
+      const opts = program.opts<{ baseUrl?: string; json: boolean }>();
+      const client = makeApiClient({ baseUrl: opts.baseUrl });
+      const { data } = await apiJson({
+        client,
+        method: "GET",
+        path: `/api/karaoke/sessions/${cmd.session}/guest-requests`,
+        schema: ListKaraokeGuestRequestsResponseSchema,
+      });
+      if (opts.json) return void console.log(JSON.stringify(data, null, 2));
+      printTable(
+        data.requests.map((r) => ({
+          id: r.id,
+          guest: r.guest_name,
+          track_id: r.track_id,
+          status: r.status,
+          created_at: r.created_at,
+        }))
+      );
+    } catch (err) {
+      handleErr(err);
+    }
+  });
+
+karaokeGuest
+  .command("request-handle")
+  .description("Approve or reject a guest request")
+  .requiredOption("--session <sessionId>", "Session ID")
+  .requiredOption("--request <requestId>", "Guest request ID")
+  .requiredOption("--action <action>", "approve|reject")
+  .option("--requested-by <name>", "Requested-by label when approving", "guest")
+  .action(async (cmd: { session: string; request: string; action: string; requestedBy: string }) => {
+    try {
+      const opts = program.opts<{ baseUrl?: string; json: boolean }>();
+      const client = makeApiClient({ baseUrl: opts.baseUrl });
+      const body = UpdateKaraokeGuestRequestRequestSchema.parse({
+        action: cmd.action,
+        requested_by: cmd.requestedBy,
+      });
+      const { data } = await apiJson({
+        client,
+        method: "PATCH",
+        path: `/api/karaoke/sessions/${cmd.session}/guest-requests/${cmd.request}`,
+        body,
+        schema: UpdateKaraokeGuestRequestResponseSchema,
+      });
+      if (opts.json) return void console.log(JSON.stringify(data, null, 2));
+      const queued = data.queue_item ? ` queue_item=${data.queue_item.id}` : "";
+      console.log(`request: ${data.request.id}  status=${data.request.status}${queued}`);
     } catch (err) {
       handleErr(err);
     }

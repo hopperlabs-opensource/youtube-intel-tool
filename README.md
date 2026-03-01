@@ -167,6 +167,7 @@ proxy, rate limiting, CORS controls, secret management, and monitoring first.
 - Build context cards (Wikipedia + local DB sources).
 - Run grounded chat with source references.
 - Run local karaoke sessions with queue + beat-scoring from transcript cues.
+- Build playlists, bulk-queue sessions from playlists, and moderate guest requests via local join links.
 - Observe the system with Prometheus-style metrics.
 
 ---
@@ -316,6 +317,8 @@ pnpm yit chat ask <videoId> "Summarize and cite sources as [S1], [S2]."
 pnpm yit karaoke track add --url "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
 pnpm yit karaoke session create --name "Friday Night" --theme gold-stage
 pnpm yit karaoke queue add --session <sessionId> --track <trackId> --player Host
+pnpm yit karaoke playlist create --name "Warmup Set"
+pnpm yit karaoke guest token --session <sessionId>
 pnpm yit karaoke leaderboard --session <sessionId>
 ```
 
@@ -343,6 +346,8 @@ CLI guide: [docs/CLI.md](docs/CLI.md)
 - `POST /api/karaoke/sessions`
 - `POST /api/karaoke/sessions/:sessionId/queue`
 - `POST /api/karaoke/sessions/:sessionId/scores/events`
+- `GET|POST /api/karaoke/playlists`
+- `POST /api/karaoke/sessions/:sessionId/guest-token`
 
 API guide: [docs/API.md](docs/API.md)
 
