@@ -2,6 +2,8 @@ export * from "./extract";
 export * from "./analyze";
 export * from "./chunk";
 export * from "./synthesize";
+export * from "./dedup";
+export * from "./quality";
 export * from "./timestamps";
 export * from "./storage";
 export * from "./cache";

@@ -1,7 +1,7 @@
 import fs from "fs/promises";
 import type { TranscriptCue } from "@yt/contracts";
 import type { VisionProviderAdapter, VisionResponse } from "../vision/types";
-import { buildFrameAnalysisPrompt } from "../vision/prompt";
+import { buildFrameAnalysisPrompt, type PromptTemplate } from "../vision/prompt";
 import { withRetry, type RetryOpts } from "../vision/retry";
 import type { ExtractedFrame } from "./extract";
 
@@ -40,6 +40,8 @@ export interface AnalyzeFramesOpts {
   retry?: RetryOpts;
   /** Token budget — stop analyzing after this many total tokens consumed */
   tokenBudget?: number;
+  /** Prompt template to use (default: "describe") */
+  promptTemplate?: PromptTemplate;
 }
 
 function formatHms(ms: number): string {
@@ -107,6 +109,7 @@ export async function analyzeFrames(opts: AnalyzeFramesOpts): Promise<FrameAnaly
     concurrency = 3,
     retry: retryOpts,
     tokenBudget,
+    promptTemplate,
   } = opts;
 
   const results: FrameAnalysis[] = [];
@@ -133,6 +136,7 @@ export async function analyzeFrames(opts: AnalyzeFramesOpts): Promise<FrameAnaly
       previousContext: prevCtx,
       transcriptContext,
       timestamp: formatHms(frame.timestampMs),
+      template: promptTemplate,
     });
 
     // Read image as base64

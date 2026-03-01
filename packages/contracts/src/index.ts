@@ -1169,8 +1169,14 @@ export const FrameChunkRowSchema = z.object({
 });
 export type FrameChunkRow = z.infer<typeof FrameChunkRowSchema>;
 
-export const VisionProviderSchema = z.enum(["claude", "openai", "gemini", "ollama"]);
+export const VisionProviderSchema = z.enum([
+  "claude", "openai", "gemini", "ollama",
+  "claude-cli", "gemini-cli", "codex-cli",
+]);
 export type VisionProvider = z.infer<typeof VisionProviderSchema>;
+
+export const PromptTemplateSchema = z.enum(["describe", "caption", "ocr", "slide", "audit"]);
+export type PromptTemplate = z.infer<typeof PromptTemplateSchema>;
 
 export const VisionConfigSchema = z.object({
   provider: VisionProviderSchema,
@@ -1180,6 +1186,7 @@ export const VisionConfigSchema = z.object({
   maxTokensPerFrame: z.number().int().min(50).max(4096).default(512),
   temperature: z.number().min(0).max(2).default(0.2),
   contextCarryover: z.boolean().default(true),
+  promptTemplate: PromptTemplateSchema.default("describe"),
 });
 export type VisionConfig = z.infer<typeof VisionConfigSchema>;
 

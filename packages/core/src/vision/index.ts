@@ -7,3 +7,6 @@ export { createClaudeVisionProvider } from "./providers/claude";
 export { createOpenAIVisionProvider } from "./providers/openai";
 export { createGeminiVisionProvider } from "./providers/gemini";
 export { createOllamaVisionProvider } from "./providers/ollama";
+export { createClaudeCliVisionProvider } from "./providers/claude-cli";
+export { createGeminiCliVisionProvider } from "./providers/gemini-cli";
+export { createCodexCliVisionProvider } from "./providers/codex-cli";

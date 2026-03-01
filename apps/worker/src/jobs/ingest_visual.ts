@@ -15,6 +15,9 @@ import {
   createFrameStore,
   buildVisualCacheKey,
   createVisionProvider,
+  deduplicateFrames,
+  applyQualityGates,
+  computeQualityReport,
 } from "@yt/core";
 import {
   insertFrames,
@@ -117,7 +120,18 @@ export async function runIngestVisual(jobId: string, data: IngestVisualJobData) 
       data_json: { frames: extractedFrames.length },
     });
 
-    // Insert frame metadata
+    // ── Step 2b: Deduplicate frames (perceptual hash) ────────────────────
+    const dedupResult = deduplicateFrames(extractedFrames);
+    const framesToAnalyze = dedupResult.unique;
+
+    if (dedupResult.duplicates.length > 0) {
+      await addJobLog(client, jobId, {
+        message: `Dedup: ${dedupResult.duplicates.length} duplicate frames filtered, ${framesToAnalyze.length} unique frames`,
+        data_json: { unique: framesToAnalyze.length, duplicates: dedupResult.duplicates.length },
+      });
+    }
+
+    // Insert frame metadata (all frames, including duplicates — for reference)
     await insertFrames(
       client,
       video.id,
@@ -163,7 +177,7 @@ export async function runIngestVisual(jobId: string, data: IngestVisualJobData) 
     }
 
     const frameAnalyses = await analyzeFrames({
-      frames: extractedFrames,
+      frames: framesToAnalyze,
       provider: visionProvider,
       transcriptCues,
       contextCarryover: data.vision.contextCarryover ?? true,
@@ -190,6 +204,22 @@ export async function runIngestVisual(jobId: string, data: IngestVisualJobData) 
       message: `Analyzed ${frameAnalyses.length} frames`,
       data_json: { analyzed: frameAnalyses.length },
     });
+
+    // ── Step 3b: Quality gates ───────────────────────────────────────────
+    const qualityResult = applyQualityGates(frameAnalyses);
+    const qualityReport = computeQualityReport(qualityResult.scores);
+
+    await addJobLog(client, jobId, {
+      message: `Quality: avg=${qualityReport.averageScore}, high=${qualityReport.highQuality}, med=${qualityReport.mediumQuality}, low=${qualityReport.lowQuality}`,
+      data_json: {
+        quality: qualityReport,
+        passed: qualityResult.passed.length,
+        failed: qualityResult.failed.length,
+      },
+    });
+
+    // Use all analyses (don't filter by quality gate — store everything, let search rank by quality)
+    // Quality scores are logged for observability and future filtering
 
     // Insert frame analyses with frame UUIDs
     await insertFrameAnalyses(

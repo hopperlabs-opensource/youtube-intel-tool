@@ -2022,16 +2022,20 @@ const visual = program.command("visual").description("Visual intelligence (actio
 visual
   .command("ingest <videoId>")
   .description("Run visual intelligence pipeline on a video")
-  .option("--provider <p>", "Vision provider: claude|openai|gemini|ollama", "claude")
+  .option("--provider <p>", "Vision provider: claude|openai|gemini|ollama|claude-cli|gemini-cli|codex-cli|auto")
   .option("--model <m>", "Vision model name")
+  .option("--prefer-local", "Prefer free local/CLI providers over paid API providers", false)
+  .option("--prompt-template <t>", "Prompt template: describe|caption|ocr|slide|audit", "describe")
   .option("--strategy <s>", "Extraction strategy: scene_detect|uniform|keyframe", "scene_detect")
   .option("--frames-per-minute <n>", "Frames per minute (uniform strategy)", "2")
   .option("--scene-threshold <n>", "Scene detection threshold 0-1", "0.27")
   .option("--max-frames <n>", "Maximum frames to extract", "200")
   .option("--force", "Force re-processing", false)
   .action(async (videoId: string, cmd: {
-    provider: string;
+    provider?: string;
     model?: string;
+    preferLocal: boolean;
+    promptTemplate: string;
     strategy: string;
     framesPerMinute: string;
     sceneThreshold: string;
@@ -2043,6 +2047,28 @@ visual
       const client = makeApiClient({ baseUrl: opts.baseUrl });
       videoId = await resolveVideoId(client, videoId);
 
+      let provider = cmd.provider as string | undefined;
+      let model = cmd.model;
+
+      // Auto-select or prefer-local: resolve provider on the client side and send to API
+      if (!provider || provider === "auto" || cmd.preferLocal) {
+        // Send prefer_local hint to API for server-side auto-selection
+        provider = cmd.preferLocal ? "auto-local" : "claude";
+      }
+
+      if (!model) {
+        const modelDefaults: Record<string, string> = {
+          "claude": "claude-sonnet-4-20250514",
+          "openai": "gpt-4o",
+          "gemini": "gemini-2.0-flash",
+          "ollama": "llava",
+          "claude-cli": "sonnet",
+          "gemini-cli": "gemini-2.0-flash",
+          "codex-cli": "o4-mini",
+        };
+        model = modelDefaults[provider] || "claude-sonnet-4-20250514";
+      }
+
       const body = IngestVisualRequestSchema.parse({
         extraction: {
           strategy: cmd.strategy,
@@ -2051,8 +2077,8 @@ visual
           maxFrames: parseInt(cmd.maxFrames, 10),
         },
         vision: {
-          provider: cmd.provider,
-          model: cmd.model || (cmd.provider === "claude" ? "claude-sonnet-4-20250514" : cmd.provider === "openai" ? "gpt-4o" : cmd.provider === "gemini" ? "gemini-2.0-flash" : "llava"),
+          provider,
+          model,
         },
         force: cmd.force,
       });
@@ -2068,9 +2094,41 @@ visual
       if (opts.json) {
         console.log(JSON.stringify(data, null, 2));
       } else {
-        console.log(`visual ingest job queued: ${data.job.id}`);
+        console.log(`visual ingest job queued: ${data.job.id} (provider: ${provider})`);
         console.log(`track with: yit job ${data.job.id} --follow`);
       }
+    } catch (err) {
+      handleErr(err);
+    }
+  });
+
+visual
+  .command("providers")
+  .description("List available vision providers (API, CLI, local)")
+  .action(async () => {
+    try {
+      const { detectAvailableProviders } = await import("@yt/core");
+      const opts = program.opts<{ json: boolean }>();
+      const providers = detectAvailableProviders();
+
+      if (opts.json) {
+        console.log(JSON.stringify(providers, null, 2));
+        return;
+      }
+
+      console.log("Available Vision Providers:\n");
+      for (const p of providers) {
+        const status = p.available ? "available" : "not found";
+        const cost = p.free ? "FREE" : "paid (API key)";
+        const mark = p.available ? "+" : "-";
+        console.log(`  [${mark}] ${p.provider.padEnd(12)} ${p.type.padEnd(6)} ${cost.padEnd(16)} ${status}`);
+      }
+
+      const recommended = providers.find((p) => p.free && p.available);
+      if (recommended) {
+        console.log(`\nRecommended (free): --provider ${recommended.provider}`);
+      }
+      console.log("\nUse --prefer-local with 'visual ingest' to auto-select free providers.");
     } catch (err) {
       handleErr(err);
     }
