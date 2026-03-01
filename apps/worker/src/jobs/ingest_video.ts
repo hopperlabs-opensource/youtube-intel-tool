@@ -28,6 +28,8 @@ import {
   runClaudeCliStructured,
   runCodexCliStructured,
   runGeminiCliStructured,
+  resolveTextConfig,
+  createTextLlm,
 } from "@yt/core";
 import { extractEntitiesFromText } from "@yt/core";
 import {
@@ -36,6 +38,7 @@ import {
   type CliEnrichmentEntity,
   type CliChapter,
   type EntityType,
+  type LlmConfig,
 } from "@yt/contracts";
 import { fetchTranscriptBestEffort } from "../providers/transcript";
 import { diarizeYouTubeBestEffort } from "../providers/diarize";
@@ -46,6 +49,7 @@ type IngestJobData = {
   language: string;
   trace_id?: string;
   steps?: string[] | null;
+  llmConfig?: LlmConfig;
 };
 
 function normalizeStepName(s: string): string {
@@ -575,36 +579,16 @@ export async function runIngestVideo(jobId: string, data: IngestJobData) {
       let cliSpawnMs: number | null = null;
       try {
         let structured: unknown;
-        if (cliProvider === "claude") {
-          const prompt = `${buildCliPrompt()}\n\nINPUT JSON:\n${JSON.stringify(input)}`;
-          const res = await runClaudeCliStructured({
-            prompt,
-            schema: buildClaudeJsonSchema(),
-            model: cliModel,
-            timeoutMs: cliTimeoutMs,
-          });
-          structured = res.structured;
-          cliSpawnMs = res.durationMs;
-        } else if (cliProvider === "codex") {
-          const prompt = `${buildCliPrompt()}\n\nINPUT JSON:\n${JSON.stringify(input)}`;
-          const res = await runCodexCliStructured({
-            prompt,
-            schema: buildClaudeJsonSchema(),
-            model: cliModel,
-            timeoutMs: cliTimeoutMs,
-          });
-          structured = res.structured;
-          cliSpawnMs = res.durationMs;
-        } else {
-          const res = await runGeminiCliStructured({
-            prompt: buildCliPrompt(),
-            input: JSON.stringify(input),
-            model: cliModel,
-            timeoutMs: cliTimeoutMs,
-          });
-          structured = res.structured;
-          cliSpawnMs = res.durationMs;
-        }
+        // Use unified LLM config if available, otherwise fall back to legacy env vars
+        const llmConfig = resolveTextConfig(data.llmConfig);
+        const textLlm = createTextLlm(llmConfig);
+        const enrichRes = await textLlm.callStructured(buildCliPrompt(), {
+          schema: buildClaudeJsonSchema(),
+          input: JSON.stringify(input),
+          timeoutMs: cliTimeoutMs,
+        });
+        structured = enrichRes.structured;
+        cliSpawnMs = enrichRes.durationMs;
 
         const parsed = CliEnrichmentOutputSchema.parse(structured);
         const sanitized = sanitizeCliOutput(parsed, { transcriptEndMs });

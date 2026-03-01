@@ -83,6 +83,24 @@ import {
   ListFrameChunksResponseSchema,
   CostEstimateSchema,
   GetNarrativeSynthesisResponseSchema,
+  BuildDenseTranscriptRequestSchema,
+  BuildDenseTranscriptResponseSchema,
+  GetDenseTranscriptResponseSchema,
+  DetectAutoChaptersRequestSchema,
+  DetectAutoChaptersResponseSchema,
+  GetAutoChaptersResponseSchema,
+  ListFaceIdentitiesResponseSchema,
+  UpdateFaceIdentityRequestSchema,
+  UpdateFaceIdentityResponseSchema,
+  ListFaceAppearancesResponseSchema,
+  ListFaceDetectionsResponseSchema,
+  MatchSpeakerResponseSchema,
+  ListGlobalSpeakersResponseSchema,
+  CreateGlobalSpeakerRequestSchema,
+  CreateGlobalSpeakerResponseSchema,
+  GetGlobalSpeakerResponseSchema,
+  UpdateGlobalSpeakerRequestSchema,
+  UpdateGlobalSpeakerResponseSchema,
 } from "@yt/contracts";
 import type { z } from "zod";
 
@@ -401,5 +419,43 @@ export function createYitClient(opts: { baseUrl: string; fetch?: FetchLike; head
     },
     getNarrative: (videoId: string) =>
       getJson(`/api/videos/${videoId}/visual/narrative`, GetNarrativeSynthesisResponseSchema),
+
+    // Dense Action Transcript
+    getDenseTranscript: (videoId: string) =>
+      getJson(`/api/videos/${videoId}/visual/dense-transcript`, GetDenseTranscriptResponseSchema),
+    buildDenseTranscript: (videoId: string, req?: unknown) =>
+      sendJson("POST", `/api/videos/${videoId}/visual/dense-transcript`, BuildDenseTranscriptRequestSchema.parse(req ?? {}), BuildDenseTranscriptResponseSchema),
+
+    // Auto-Chapters + Marks
+    getAutoChapters: (videoId: string) =>
+      getJson(`/api/videos/${videoId}/auto-chapters`, GetAutoChaptersResponseSchema),
+    detectAutoChapters: (videoId: string, req?: unknown) =>
+      sendJson("POST", `/api/videos/${videoId}/auto-chapters`, DetectAutoChaptersRequestSchema.parse(req ?? {}), DetectAutoChaptersResponseSchema),
+    listSignificantMarks: (videoId: string, opts?: { type?: string }) =>
+      getJson(`/api/videos/${videoId}/marks`, GetAutoChaptersResponseSchema, opts),
+
+    // Face Indexing
+    listFaceIdentities: (videoId: string) =>
+      getJson(`/api/videos/${videoId}/faces`, ListFaceIdentitiesResponseSchema),
+    updateFaceIdentity: (videoId: string, identityId: string, req: unknown) =>
+      sendJson("PATCH", `/api/videos/${videoId}/faces/${identityId}`, UpdateFaceIdentityRequestSchema.parse(req), UpdateFaceIdentityResponseSchema),
+    listFaceAppearances: (videoId: string, identityId: string) =>
+      getJson(`/api/videos/${videoId}/faces/${identityId}/appearances`, ListFaceAppearancesResponseSchema),
+    listFaceDetections: (videoId: string, opts?: { identityId?: string }) =>
+      getJson(`/api/videos/${videoId}/faces/${opts?.identityId ?? "_"}/detections`, ListFaceDetectionsResponseSchema),
+
+    // Voice Fingerprinting
+    matchSpeaker: (videoId: string, speakerId: string) =>
+      sendJson("POST", `/api/videos/${videoId}/speakers/${speakerId}/match`, {}, MatchSpeakerResponseSchema),
+
+    // Global Speakers
+    listGlobalSpeakers: () =>
+      getJson("/api/global-speakers", ListGlobalSpeakersResponseSchema),
+    createGlobalSpeaker: (req: unknown) =>
+      sendJson("POST", "/api/global-speakers", CreateGlobalSpeakerRequestSchema.parse(req), CreateGlobalSpeakerResponseSchema),
+    getGlobalSpeaker: (id: string) =>
+      getJson(`/api/global-speakers/${id}`, GetGlobalSpeakerResponseSchema),
+    updateGlobalSpeaker: (id: string, req: unknown) =>
+      sendJson("PATCH", `/api/global-speakers/${id}`, UpdateGlobalSpeakerRequestSchema.parse(req), UpdateGlobalSpeakerResponseSchema),
   };
 }

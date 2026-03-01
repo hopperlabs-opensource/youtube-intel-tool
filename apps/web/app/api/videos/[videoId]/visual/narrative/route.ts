@@ -4,13 +4,11 @@ import type { FrameAnalysis } from "@yt/core";
 import { getFrameAnalysesByVideo, getVisualJobMeta } from "@yt/core";
 import { getLatestTranscriptForVideo, listCuesByTranscript } from "@yt/core";
 import { synthesizeNarrative } from "@yt/core";
-import { createVisionProvider } from "@yt/core";
+import { resolveTextConfig, createTextLlm } from "@yt/core";
 import {
   GetNarrativeSynthesisResponseSchema,
   SceneTypeSchema,
-  VisionProviderSchema,
   type TranscriptCue,
-  type VisionConfig,
 } from "@yt/contracts";
 import { jsonError } from "@/lib/server/api";
 
@@ -65,32 +63,16 @@ export async function GET(_req: Request, ctx: { params: Promise<{ videoId: strin
         };
       });
 
-      // Create a text-only LLM call via the vision provider
-      const providerId = VisionProviderSchema.parse(meta.vision_provider);
-      const visionConfig: VisionConfig = {
-        provider: providerId,
-        model: meta.vision_model,
-        maxTokensPerFrame: 512,
-        temperature: 0.2,
-        contextCarryover: true,
-      };
-
-      const provider = createVisionProvider(visionConfig);
+      // Create a text-only LLM call via the unified LLM adapter
+      const llmConfig = resolveTextConfig();
+      const textLlm = createTextLlm(llmConfig);
 
       const narrative = await synthesizeNarrative({
         analyses: frameAnalyses,
         transcriptCues,
         llmCall: async (prompt: string) => {
-          // Use the vision provider's model but with a transparent 1x1 image
-          // since we only need text generation. The prompt is the main input.
-          const res = await provider.analyze({
-            imageBase64: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
-            mimeType: "image/png",
-            prompt,
-            maxTokens: 2048,
-            temperature: 0.3,
-          });
-          return res.description;
+          const res = await textLlm.call(prompt);
+          return res.text;
         },
       });
 
@@ -108,8 +90,8 @@ export async function GET(_req: Request, ctx: { params: Promise<{ videoId: strin
             count: s.count,
             percentage: s.percentage,
           })),
-          provider: meta.vision_provider,
-          model: meta.vision_model,
+          provider: llmConfig.textProvider,
+          model: llmConfig.textModel,
           total_frames: narrative.totalFrames,
         },
       };
