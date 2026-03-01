@@ -103,6 +103,7 @@ export const SearchHitSchema = z.object({
   end_ms: MsSchema,
   score: z.number(),
   snippet: z.string(),
+  source_type: z.enum(["transcript", "visual"]).default("transcript"),
 });
 export type SearchHit = z.infer<typeof SearchHitSchema>;
 
@@ -233,6 +234,7 @@ export const SearchRequestSchema = z.object({
   query: z.string().min(1),
   mode: SearchModeSchema.default("keyword"),
   limit: z.number().int().min(1).max(50).default(20),
+  source_type: z.enum(["transcript", "visual", "all"]).default("all"),
 });
 export const SearchResponseSchema = z.object({
   hits: z.array(SearchHitSchema),
@@ -266,7 +268,7 @@ export type ChatMessage = z.infer<typeof ChatMessageSchema>;
 export const ChatProviderSchema = z.enum(["ollama", "mock", "cli"]);
 export type ChatProvider = z.infer<typeof ChatProviderSchema>;
 
-export const ChatSourceTypeSchema = z.enum(["cue", "chunk"]);
+export const ChatSourceTypeSchema = z.enum(["cue", "chunk", "vis", "vis-kw", "vis-sem"]);
 export type ChatSourceType = z.infer<typeof ChatSourceTypeSchema>;
 
 export const ChatSourceSchema = z.object({
@@ -522,6 +524,192 @@ export const LibrarySearchResponseSchema = z.object({
 });
 export type LibrarySearchResponse = z.infer<typeof LibrarySearchResponseSchema>;
 
+// Saved policies + prioritized feed outputs.
+export const PolicyRunStatusSchema = z.enum(["queued", "running", "completed", "failed"]);
+export type PolicyRunStatus = z.infer<typeof PolicyRunStatusSchema>;
+
+export const PolicyRunTriggerSchema = z.enum(["manual", "cli", "cron", "ci"]);
+export type PolicyRunTrigger = z.infer<typeof PolicyRunTriggerSchema>;
+
+export const PriorityBucketSchema = z.enum(["high", "medium", "low"]);
+export type PriorityBucket = z.infer<typeof PriorityBucketSchema>;
+
+export const PolicyPriorityWeightsSchema = z.object({
+  recency: z.number().min(0).max(1).default(0.3),
+  relevance: z.number().min(0).max(1).default(0.6),
+  channel_boost: z.number().min(0).max(1).default(0.1),
+});
+export type PolicyPriorityWeights = z.infer<typeof PolicyPriorityWeightsSchema>;
+
+export const PolicyPriorityThresholdsSchema = z.object({
+  high: z.number().min(0).max(2).default(0.85),
+  medium: z.number().min(0).max(2).default(0.55),
+});
+export type PolicyPriorityThresholds = z.infer<typeof PolicyPriorityThresholdsSchema>;
+
+export const PriorityConfigSchema = z.object({
+  weights: PolicyPriorityWeightsSchema.default({}),
+  thresholds: PolicyPriorityThresholdsSchema.default({}),
+});
+export type PriorityConfig = z.infer<typeof PriorityConfigSchema>;
+
+export const PolicySearchPayloadSchema = LibrarySearchRequestSchema;
+export type PolicySearchPayload = z.infer<typeof PolicySearchPayloadSchema>;
+
+export const SavedPolicySchema = z.object({
+  id: IdSchema,
+  name: z.string().min(1),
+  description: z.string().nullable(),
+  enabled: z.boolean(),
+  search_payload: PolicySearchPayloadSchema,
+  priority_config: PriorityConfigSchema,
+  feed_token: z.string().min(16),
+  created_at: IsoDateTimeSchema,
+  updated_at: IsoDateTimeSchema,
+});
+export type SavedPolicy = z.infer<typeof SavedPolicySchema>;
+
+export const PolicyRunStatsSchema = z.object({
+  total_hits: z.number().int().nonnegative(),
+  high: z.number().int().nonnegative(),
+  medium: z.number().int().nonnegative(),
+  low: z.number().int().nonnegative(),
+  embedding_error: z.string().nullable().default(null),
+});
+export type PolicyRunStats = z.infer<typeof PolicyRunStatsSchema>;
+
+export const PolicyRunSchema = z.object({
+  id: IdSchema,
+  policy_id: IdSchema,
+  status: PolicyRunStatusSchema,
+  triggered_by: PolicyRunTriggerSchema,
+  error: z.string().nullable(),
+  stats: PolicyRunStatsSchema.nullable(),
+  created_at: IsoDateTimeSchema,
+  started_at: IsoDateTimeSchema.nullable(),
+  finished_at: IsoDateTimeSchema.nullable(),
+});
+export type PolicyRun = z.infer<typeof PolicyRunSchema>;
+
+export const PolicyHitReasonSchema = z.object({
+  base_score: z.number(),
+  normalized_relevance: z.number().min(0).max(1),
+  recency_norm: z.number().min(0).max(1),
+  channel_boost: z.number().min(0).max(1),
+  weights: PolicyPriorityWeightsSchema,
+});
+export type PolicyHitReason = z.infer<typeof PolicyHitReasonSchema>;
+
+export const PolicyHitSchema = z.object({
+  id: IdSchema,
+  run_id: IdSchema,
+  policy_id: IdSchema,
+  video_id: IdSchema,
+  cue_id: IdSchema,
+  start_ms: MsSchema,
+  snippet: z.string().min(1),
+  base_score: z.number(),
+  priority_score: z.number(),
+  priority_bucket: PriorityBucketSchema,
+  reasons: PolicyHitReasonSchema,
+  created_at: IsoDateTimeSchema,
+});
+export type PolicyHit = z.infer<typeof PolicyHitSchema>;
+
+export const CreatePolicyRequestSchema = z.object({
+  name: z.string().trim().min(1),
+  description: z.string().trim().nullable().optional(),
+  enabled: z.boolean().default(true),
+  search_payload: PolicySearchPayloadSchema,
+  priority_config: PriorityConfigSchema.default({}),
+});
+export type CreatePolicyRequest = z.infer<typeof CreatePolicyRequestSchema>;
+
+export const CreatePolicyResponseSchema = z.object({
+  policy: SavedPolicySchema,
+});
+export type CreatePolicyResponse = z.infer<typeof CreatePolicyResponseSchema>;
+
+export const ListPoliciesResponseSchema = z.object({
+  policies: z.array(SavedPolicySchema),
+});
+export type ListPoliciesResponse = z.infer<typeof ListPoliciesResponseSchema>;
+
+export const GetPolicyResponseSchema = z.object({
+  policy: SavedPolicySchema,
+  latest_run: PolicyRunSchema.nullable(),
+});
+export type GetPolicyResponse = z.infer<typeof GetPolicyResponseSchema>;
+
+export const UpdatePolicyRequestSchema = z.object({
+  name: z.string().trim().min(1).optional(),
+  description: z.string().trim().nullable().optional(),
+  enabled: z.boolean().optional(),
+  search_payload: PolicySearchPayloadSchema.optional(),
+  priority_config: PriorityConfigSchema.optional(),
+  rotate_feed_token: z.boolean().default(false),
+});
+export type UpdatePolicyRequest = z.infer<typeof UpdatePolicyRequestSchema>;
+
+export const UpdatePolicyResponseSchema = z.object({
+  policy: SavedPolicySchema,
+});
+export type UpdatePolicyResponse = z.infer<typeof UpdatePolicyResponseSchema>;
+
+export const RunPolicyRequestSchema = z.object({
+  triggered_by: PolicyRunTriggerSchema.default("manual"),
+});
+export type RunPolicyRequest = z.infer<typeof RunPolicyRequestSchema>;
+
+export const RunPolicyResponseSchema = z.object({
+  run: PolicyRunSchema,
+  hits_count: z.number().int().nonnegative(),
+});
+export type RunPolicyResponse = z.infer<typeof RunPolicyResponseSchema>;
+
+export const ListPolicyRunsResponseSchema = z.object({
+  runs: z.array(PolicyRunSchema),
+});
+export type ListPolicyRunsResponse = z.infer<typeof ListPolicyRunsResponseSchema>;
+
+export const ListPolicyHitsResponseSchema = z.object({
+  hits: z.array(PolicyHitSchema),
+});
+export type ListPolicyHitsResponse = z.infer<typeof ListPolicyHitsResponseSchema>;
+
+export const PolicyFeedItemSchema = z.object({
+  hit_id: IdSchema,
+  run_id: IdSchema,
+  video_id: IdSchema,
+  provider_video_id: z.string().min(1),
+  video_url: z.string().url(),
+  title: z.string().nullable(),
+  channel_name: z.string().nullable(),
+  start_ms: MsSchema,
+  snippet: z.string().min(1),
+  priority_score: z.number(),
+  priority_bucket: PriorityBucketSchema,
+  reasons: PolicyHitReasonSchema,
+  run_finished_at: IsoDateTimeSchema,
+});
+export type PolicyFeedItem = z.infer<typeof PolicyFeedItemSchema>;
+
+export const FeedJsonResponseSchema = z.object({
+  policy: z.object({
+    id: IdSchema,
+    name: z.string().min(1),
+  }),
+  run: z
+    .object({
+      id: IdSchema,
+      finished_at: IsoDateTimeSchema,
+    })
+    .nullable(),
+  generated_at: IsoDateTimeSchema,
+  items: z.array(PolicyFeedItemSchema),
+});
+export type FeedJsonResponse = z.infer<typeof FeedJsonResponseSchema>;
+
 // Capabilities (UI feature gating)
 export const CapabilitiesResponseSchema = z.object({
   embeddings: z.object({
@@ -697,3 +885,468 @@ export const ListVideoChaptersResponseSchema = z.object({
   chapters: z.array(VideoChapterSchema),
 });
 export type ListVideoChaptersResponse = z.infer<typeof ListVideoChaptersResponseSchema>;
+
+// Karaoke domain (local party mode)
+export const KaraokeTrackReadyStateSchema = z.enum(["pending", "ready", "failed"]);
+export type KaraokeTrackReadyState = z.infer<typeof KaraokeTrackReadyStateSchema>;
+
+export const KaraokeTrackSchema = z.object({
+  id: IdSchema,
+  video_id: IdSchema,
+  provider_video_id: z.string().min(1),
+  title: z.string().nullable(),
+  channel_name: z.string().nullable(),
+  thumbnail_url: z.string().url().nullable().default(null),
+  duration_ms: MsSchema.nullable(),
+  language: z.string().min(1),
+  ready_state: KaraokeTrackReadyStateSchema,
+  cue_count: z.number().int().nonnegative(),
+  created_at: IsoDateTimeSchema,
+  updated_at: IsoDateTimeSchema,
+});
+export type KaraokeTrack = z.infer<typeof KaraokeTrackSchema>;
+
+export const KaraokeSessionStatusSchema = z.enum(["draft", "active", "paused", "completed"]);
+export type KaraokeSessionStatus = z.infer<typeof KaraokeSessionStatusSchema>;
+
+export const KaraokeSessionHostModeSchema = z.enum(["single_host"]);
+export type KaraokeSessionHostMode = z.infer<typeof KaraokeSessionHostModeSchema>;
+
+export const KaraokeSessionSchema = z.object({
+  id: IdSchema,
+  name: z.string().min(1),
+  status: KaraokeSessionStatusSchema,
+  theme_id: z.string().min(1),
+  host_mode: KaraokeSessionHostModeSchema,
+  created_at: IsoDateTimeSchema,
+  updated_at: IsoDateTimeSchema,
+});
+export type KaraokeSession = z.infer<typeof KaraokeSessionSchema>;
+
+export const KaraokeQueueStatusSchema = z.enum(["queued", "playing", "skipped", "completed"]);
+export type KaraokeQueueStatus = z.infer<typeof KaraokeQueueStatusSchema>;
+
+export const KaraokeQueueItemSchema = z.object({
+  id: IdSchema,
+  session_id: IdSchema,
+  track_id: IdSchema,
+  requested_by: z.string().min(1),
+  position: z.number().int().nonnegative(),
+  status: KaraokeQueueStatusSchema,
+  started_at: IsoDateTimeSchema.nullable(),
+  ended_at: IsoDateTimeSchema.nullable(),
+  created_at: IsoDateTimeSchema,
+  updated_at: IsoDateTimeSchema,
+});
+export type KaraokeQueueItem = z.infer<typeof KaraokeQueueItemSchema>;
+
+export const KaraokeScoreEventSchema = z.object({
+  id: IdSchema,
+  session_id: IdSchema,
+  queue_item_id: IdSchema,
+  player_name: z.string().min(1),
+  cue_id: IdSchema,
+  expected_at_ms: MsSchema,
+  actual_at_ms: MsSchema,
+  timing_error_ms: z.number().int().nonnegative(),
+  awarded_points: z.number().int().nonnegative(),
+  created_at: IsoDateTimeSchema,
+});
+export type KaraokeScoreEvent = z.infer<typeof KaraokeScoreEventSchema>;
+
+export const KaraokeLeaderboardEntrySchema = z.object({
+  player_name: z.string().min(1),
+  total_points: z.number().int().nonnegative(),
+  rounds_played: z.number().int().nonnegative(),
+  avg_timing_error_ms: z.number().int().nonnegative(),
+  streak_best: z.number().int().nonnegative(),
+});
+export type KaraokeLeaderboardEntry = z.infer<typeof KaraokeLeaderboardEntrySchema>;
+
+export const KaraokeThemeSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  description: z.string().min(1),
+  class_name: z.string().min(1),
+});
+export type KaraokeTheme = z.infer<typeof KaraokeThemeSchema>;
+
+export const KaraokeResolveTrackRequestSchema = z.object({
+  url: z.string().url(),
+  language: z.string().min(1).default("en"),
+});
+export type KaraokeResolveTrackRequest = z.infer<typeof KaraokeResolveTrackRequestSchema>;
+
+export const KaraokeResolveTrackResponseSchema = z.object({
+  track: KaraokeTrackSchema,
+  video: VideoSchema,
+  ingest_job: JobSchema.nullable(),
+});
+export type KaraokeResolveTrackResponse = z.infer<typeof KaraokeResolveTrackResponseSchema>;
+
+export const ListKaraokeTracksResponseSchema = z.object({
+  tracks: z.array(KaraokeTrackSchema),
+});
+export type ListKaraokeTracksResponse = z.infer<typeof ListKaraokeTracksResponseSchema>;
+
+export const GetKaraokeTrackResponseSchema = z.object({
+  track: KaraokeTrackSchema,
+});
+export type GetKaraokeTrackResponse = z.infer<typeof GetKaraokeTrackResponseSchema>;
+
+export const CreateKaraokeSessionRequestSchema = z.object({
+  name: z.string().trim().min(1),
+  theme_id: z.string().min(1).default("gold-stage"),
+  host_mode: KaraokeSessionHostModeSchema.default("single_host"),
+  seed_track_ids: z.array(IdSchema).default([]),
+});
+export type CreateKaraokeSessionRequest = z.infer<typeof CreateKaraokeSessionRequestSchema>;
+
+export const CreateKaraokeSessionResponseSchema = z.object({
+  session: KaraokeSessionSchema,
+  queue: z.array(KaraokeQueueItemSchema),
+});
+export type CreateKaraokeSessionResponse = z.infer<typeof CreateKaraokeSessionResponseSchema>;
+
+export const UpdateKaraokeSessionRequestSchema = z.object({
+  name: z.string().trim().min(1).optional(),
+  status: KaraokeSessionStatusSchema.optional(),
+  theme_id: z.string().min(1).optional(),
+});
+export type UpdateKaraokeSessionRequest = z.infer<typeof UpdateKaraokeSessionRequestSchema>;
+
+export const UpdateKaraokeSessionResponseSchema = z.object({
+  session: KaraokeSessionSchema,
+});
+export type UpdateKaraokeSessionResponse = z.infer<typeof UpdateKaraokeSessionResponseSchema>;
+
+export const GetKaraokeSessionResponseSchema = z.object({
+  session: KaraokeSessionSchema,
+  queue: z.array(KaraokeQueueItemSchema),
+  active_item: KaraokeQueueItemSchema.nullable(),
+  leaderboard: z.array(KaraokeLeaderboardEntrySchema),
+});
+export type GetKaraokeSessionResponse = z.infer<typeof GetKaraokeSessionResponseSchema>;
+
+export const AddKaraokeQueueItemRequestSchema = z.object({
+  track_id: IdSchema,
+  requested_by: z.string().trim().min(1),
+});
+export type AddKaraokeQueueItemRequest = z.infer<typeof AddKaraokeQueueItemRequestSchema>;
+
+export const AddKaraokeQueueItemResponseSchema = z.object({
+  item: KaraokeQueueItemSchema,
+});
+export type AddKaraokeQueueItemResponse = z.infer<typeof AddKaraokeQueueItemResponseSchema>;
+
+export const KaraokeQueueActionSchema = z.enum(["play_now", "skip", "complete", "move"]);
+export type KaraokeQueueAction = z.infer<typeof KaraokeQueueActionSchema>;
+
+export const UpdateKaraokeQueueItemRequestSchema = z.object({
+  action: KaraokeQueueActionSchema,
+  new_position: z.number().int().nonnegative().optional(),
+});
+export type UpdateKaraokeQueueItemRequest = z.infer<typeof UpdateKaraokeQueueItemRequestSchema>;
+
+export const UpdateKaraokeQueueItemResponseSchema = z.object({
+  item: KaraokeQueueItemSchema,
+  queue: z.array(KaraokeQueueItemSchema),
+});
+export type UpdateKaraokeQueueItemResponse = z.infer<typeof UpdateKaraokeQueueItemResponseSchema>;
+
+export const StartKaraokeRoundRequestSchema = z.object({
+  queue_item_id: IdSchema,
+});
+export type StartKaraokeRoundRequest = z.infer<typeof StartKaraokeRoundRequestSchema>;
+
+export const StartKaraokeRoundResponseSchema = z.object({
+  item: KaraokeQueueItemSchema,
+});
+export type StartKaraokeRoundResponse = z.infer<typeof StartKaraokeRoundResponseSchema>;
+
+export const RecordKaraokeScoreEventRequestSchema = z.object({
+  queue_item_id: IdSchema,
+  player_name: z.string().trim().min(1),
+  cue_id: IdSchema,
+  expected_at_ms: MsSchema,
+  actual_at_ms: MsSchema,
+});
+export type RecordKaraokeScoreEventRequest = z.infer<typeof RecordKaraokeScoreEventRequestSchema>;
+
+export const RecordKaraokeScoreEventResponseSchema = z.object({
+  event: KaraokeScoreEventSchema,
+  leaderboard: z.array(KaraokeLeaderboardEntrySchema),
+});
+export type RecordKaraokeScoreEventResponse = z.infer<typeof RecordKaraokeScoreEventResponseSchema>;
+
+export const GetKaraokeLeaderboardResponseSchema = z.object({
+  entries: z.array(KaraokeLeaderboardEntrySchema),
+});
+export type GetKaraokeLeaderboardResponse = z.infer<typeof GetKaraokeLeaderboardResponseSchema>;
+
+export const ListKaraokeThemesResponseSchema = z.object({
+  themes: z.array(KaraokeThemeSchema),
+});
+export type ListKaraokeThemesResponse = z.infer<typeof ListKaraokeThemesResponseSchema>;
+
+// ─── Visual Intelligence (Action Transcripts) ───────────────────────────────
+
+export const ExtractionStrategySchema = z.enum(["scene_detect", "uniform", "keyframe"]);
+export type ExtractionStrategy = z.infer<typeof ExtractionStrategySchema>;
+
+export const VideoFrameRowSchema = z.object({
+  id: IdSchema,
+  video_id: IdSchema,
+  frame_index: z.number().int().nonnegative(),
+  timestamp_ms: MsSchema,
+  file_path: z.string().min(1),
+  width: z.number().int().positive().nullable().default(null),
+  height: z.number().int().positive().nullable().default(null),
+  file_size_bytes: z.number().int().nonnegative().nullable().default(null),
+  extraction_method: ExtractionStrategySchema.default("scene_detect"),
+  scene_score: z.number().nullable().default(null),
+  sharpness: z.number().nullable().default(null),
+  is_blank: z.boolean().default(false),
+  created_at: IsoDateTimeSchema,
+});
+export type VideoFrameRow = z.infer<typeof VideoFrameRowSchema>;
+
+export const SceneTypeSchema = z.enum([
+  "presentation",
+  "talking_head",
+  "screencast",
+  "outdoor",
+  "whiteboard",
+  "diagram",
+  "text_heavy",
+  "b_roll",
+  "animation",
+  "other",
+]);
+export type SceneType = z.infer<typeof SceneTypeSchema>;
+
+export const DetectedObjectSchema = z.object({
+  label: z.string().min(1),
+  confidence: z.number().min(0).max(1).optional(),
+  bbox: z
+    .object({
+      x: z.number(),
+      y: z.number(),
+      w: z.number(),
+      h: z.number(),
+    })
+    .optional(),
+});
+export type DetectedObject = z.infer<typeof DetectedObjectSchema>;
+
+export const FrameAnalysisRowSchema = z.object({
+  id: IdSchema,
+  video_id: IdSchema,
+  frame_id: IdSchema,
+  start_ms: MsSchema,
+  end_ms: MsSchema,
+  description: z.string().min(1),
+  objects: z.array(DetectedObjectSchema).default([]),
+  text_overlay: z.string().nullable().default(null),
+  scene_type: SceneTypeSchema.nullable().default(null),
+  provider: z.string().min(1),
+  model: z.string().min(1),
+  prompt_tokens: z.number().int().nonnegative().nullable().default(null),
+  completion_tokens: z.number().int().nonnegative().nullable().default(null),
+  created_at: IsoDateTimeSchema,
+});
+export type FrameAnalysisRow = z.infer<typeof FrameAnalysisRowSchema>;
+
+export const FrameChunkRowSchema = z.object({
+  id: IdSchema,
+  video_id: IdSchema,
+  chunk_index: z.number().int().nonnegative(),
+  start_ms: MsSchema,
+  end_ms: MsSchema,
+  text: z.string().min(1),
+  token_estimate: z.number().int().nonnegative().default(0),
+  created_at: IsoDateTimeSchema,
+});
+export type FrameChunkRow = z.infer<typeof FrameChunkRowSchema>;
+
+export const VisionProviderSchema = z.enum([
+  "claude", "openai", "gemini", "ollama",
+  "claude-cli", "gemini-cli", "codex-cli",
+]);
+export type VisionProvider = z.infer<typeof VisionProviderSchema>;
+
+export const PromptTemplateSchema = z.enum(["describe", "caption", "ocr", "slide", "audit"]);
+export type PromptTemplate = z.infer<typeof PromptTemplateSchema>;
+
+export const VisionConfigSchema = z.object({
+  provider: VisionProviderSchema,
+  model: z.string().min(1),
+  baseUrl: z.string().url().optional(),
+  apiKey: z.string().min(1).optional(),
+  maxTokensPerFrame: z.number().int().min(50).max(4096).default(512),
+  temperature: z.number().min(0).max(2).default(0.2),
+  contextCarryover: z.boolean().default(true),
+  promptTemplate: PromptTemplateSchema.default("describe"),
+});
+export type VisionConfig = z.infer<typeof VisionConfigSchema>;
+
+export const FrameExtractionConfigSchema = z.object({
+  strategy: ExtractionStrategySchema.default("scene_detect"),
+  framesPerMinute: z.number().min(0.1).max(60).default(2),
+  sceneThreshold: z.number().min(0).max(1).default(0.27),
+  adaptiveThreshold: z.boolean().default(false),
+  minSharpness: z.number().min(0).default(15),
+  blankThreshold: z.number().min(0).max(255).default(20),
+  maxFrames: z.number().int().min(1).max(2000).default(200),
+  outputFormat: z.enum(["jpg", "png"]).default("jpg"),
+  outputQuality: z.number().int().min(1).max(100).default(85),
+  maxWidth: z.number().int().min(320).max(3840).default(1280),
+});
+export type FrameExtractionConfig = z.infer<typeof FrameExtractionConfigSchema>;
+
+export const SearchSourceTypeSchema = z.enum(["transcript", "visual", "all"]);
+export type SearchSourceType = z.infer<typeof SearchSourceTypeSchema>;
+
+export const EmbeddingSourceTypeSchema = z.enum(["transcript", "visual"]);
+export type EmbeddingSourceType = z.infer<typeof EmbeddingSourceTypeSchema>;
+
+export const ActionTranscriptCueSchema = z.object({
+  frame_id: IdSchema,
+  timestamp_ms: MsSchema,
+  start_ms: MsSchema,
+  end_ms: MsSchema,
+  description: z.string().min(1),
+  objects: z.array(DetectedObjectSchema).default([]),
+  text_overlay: z.string().nullable().default(null),
+  scene_type: SceneTypeSchema.nullable().default(null),
+});
+export type ActionTranscriptCue = z.infer<typeof ActionTranscriptCueSchema>;
+
+export const ActionTranscriptSchema = z.object({
+  video_id: IdSchema,
+  cues: z.array(ActionTranscriptCueSchema),
+  total_frames: z.number().int().nonnegative(),
+  total_analyzed: z.number().int().nonnegative(),
+  provider: z.string().min(1),
+  model: z.string().min(1),
+});
+export type ActionTranscript = z.infer<typeof ActionTranscriptSchema>;
+
+export const IngestVisualRequestSchema = z.object({
+  extraction: FrameExtractionConfigSchema.optional(),
+  vision: VisionConfigSchema,
+  force: z.boolean().default(false),
+});
+export type IngestVisualRequest = z.infer<typeof IngestVisualRequestSchema>;
+
+export const IngestVisualResponseSchema = z.object({
+  job: JobSchema,
+});
+export type IngestVisualResponse = z.infer<typeof IngestVisualResponseSchema>;
+
+export const VisualStatusSchema = z.object({
+  video_id: IdSchema,
+  has_visual: z.boolean(),
+  frames_extracted: z.number().int().nonnegative(),
+  frames_analyzed: z.number().int().nonnegative(),
+  frame_chunks: z.number().int().nonnegative(),
+  visual_embeddings: z.number().int().nonnegative(),
+  total_tokens_used: z.number().int().nonnegative().nullable(),
+  vision_provider: z.string().nullable(),
+  vision_model: z.string().nullable(),
+  extraction_strategy: z.string().nullable(),
+  completed_at: IsoDateTimeSchema.nullable(),
+});
+export type VisualStatus = z.infer<typeof VisualStatusSchema>;
+
+export const GetVisualStatusResponseSchema = z.object({
+  status: VisualStatusSchema,
+});
+export type GetVisualStatusResponse = z.infer<typeof GetVisualStatusResponseSchema>;
+
+export const ListFramesResponseSchema = z.object({
+  frames: z.array(VideoFrameRowSchema),
+});
+export type ListFramesResponse = z.infer<typeof ListFramesResponseSchema>;
+
+export const GetFrameAnalysisResponseSchema = z.object({
+  frame: VideoFrameRowSchema,
+  analysis: FrameAnalysisRowSchema.nullable(),
+});
+export type GetFrameAnalysisResponse = z.infer<typeof GetFrameAnalysisResponseSchema>;
+
+export const GetActionTranscriptResponseSchema = z.object({
+  transcript: ActionTranscriptSchema,
+});
+export type GetActionTranscriptResponse = z.infer<typeof GetActionTranscriptResponseSchema>;
+
+export const ListFrameChunksResponseSchema = z.object({
+  chunks: z.array(FrameChunkRowSchema),
+});
+export type ListFrameChunksResponse = z.infer<typeof ListFrameChunksResponseSchema>;
+
+export const VisualJobsMetaSchema = z.object({
+  id: IdSchema,
+  video_id: IdSchema,
+  extraction_strategy: z.string().min(1),
+  frames_per_minute: z.number().nullable(),
+  scene_threshold: z.number().nullable(),
+  vision_provider: z.string().min(1),
+  vision_model: z.string().min(1),
+  total_frames_extracted: z.number().int().nonnegative().nullable(),
+  total_frames_analyzed: z.number().int().nonnegative().nullable(),
+  total_tokens_used: z.number().int().nonnegative().nullable(),
+  cache_key: z.string().nullable(),
+  started_at: IsoDateTimeSchema.nullable(),
+  completed_at: IsoDateTimeSchema.nullable(),
+  created_at: IsoDateTimeSchema,
+});
+export type VisualJobsMeta = z.infer<typeof VisualJobsMetaSchema>;
+
+// Cost Estimation & Token Budgets
+export const CostEstimateSchema = z.object({
+  provider: z.string().min(1),
+  model: z.string().min(1),
+  frameCount: z.number().int().nonnegative(),
+  estimatedInputTokens: z.number().int().nonnegative(),
+  estimatedOutputTokens: z.number().int().nonnegative(),
+  estimatedTotalTokens: z.number().int().nonnegative(),
+  estimatedCostUsd: z.number().nonnegative(),
+  isLocal: z.boolean(),
+});
+export type CostEstimate = z.infer<typeof CostEstimateSchema>;
+
+export const TokenBudgetSchema = z.object({
+  maxTotalTokens: z.number().int().positive().optional(),
+  maxCostUsd: z.number().positive().optional(),
+});
+export type TokenBudget = z.infer<typeof TokenBudgetSchema>;
+
+// Narrative Synthesis
+export const NarrativeSynthesisSchema = z.object({
+  video_id: IdSchema,
+  summary: z.string().min(1),
+  key_moments: z.array(
+    z.object({
+      timestamp_ms: MsSchema,
+      description: z.string().min(1),
+    }),
+  ),
+  visual_themes: z.array(z.string().min(1)),
+  scene_breakdown: z.array(
+    z.object({
+      scene_type: SceneTypeSchema,
+      count: z.number().int().nonnegative(),
+      percentage: z.number().min(0).max(100),
+    }),
+  ),
+  provider: z.string().min(1),
+  model: z.string().min(1),
+  total_frames: z.number().int().nonnegative(),
+});
+export type NarrativeSynthesis = z.infer<typeof NarrativeSynthesisSchema>;
+
+export const GetNarrativeSynthesisResponseSchema = z.object({
+  narrative: NarrativeSynthesisSchema,
+});
+export type GetNarrativeSynthesisResponse = z.infer<typeof GetNarrativeSynthesisResponseSchema>;

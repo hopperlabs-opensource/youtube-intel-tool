@@ -40,6 +40,7 @@ cp .env.example .env
 
 Port defaults are centralized in `.env.example`:
 - `YIT_WEB_PORT`
+- `YIT_KARAOKE_PORT`
 - `YIT_WORKER_METRICS_PORT`
 - `YIT_POSTGRES_PORT`
 - `YIT_REDIS_PORT`
@@ -59,8 +60,15 @@ pnpm db:migrate
 pnpm dev
 ```
 
+Karaoke UI (optional, separate shell):
+
+```bash
+pnpm dev:karaoke
+```
+
 ### Verify
 - Web UI: `http://localhost:<YIT_WEB_PORT>` (default `3333`)
+- Karaoke UI: `http://localhost:<YIT_KARAOKE_PORT>` (default `3334`)
 - Web metrics: `http://localhost:<YIT_WEB_PORT>/metrics`
 - Worker metrics: `http://localhost:<YIT_WORKER_METRICS_PORT>/metrics` (default `4010`)
 

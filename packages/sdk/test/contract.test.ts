@@ -36,7 +36,7 @@ test("end-to-end ingest -> query contracts", async () => {
   const url = process.env.YIT_CONTRACT_TEST_INGEST_URL || "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
 
   const { video } = await api.resolveVideo({ url });
-  const { job } = await api.ingestVideo(video.id, { language: "en" });
+  const { job } = await api.ingestVideo(video.id, { language: "en", steps: ["enrich_cli"] });
   await waitJob(job.id);
 
   const transcripts = await api.listTranscripts(video.id);
@@ -72,6 +72,61 @@ test("library repair enqueues jobs", async () => {
   assert.equal(out.jobs.length, 1);
 });
 
+test("saved policy run + feed contracts", async () => {
+  const url = process.env.YIT_CONTRACT_TEST_INGEST_URL || "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
+  const { video } = await api.resolveVideo({ url });
+  const { job } = await api.ingestVideo(video.id, { language: "en", steps: ["enrich_cli"] });
+  await waitJob(job.id);
+
+  const created = await api.createPolicy({
+    name: `contract-policy-${Date.now()}`,
+    description: "sdk contract test policy",
+    enabled: true,
+    search_payload: {
+      query: "never",
+      mode: "keyword",
+      limit: 10,
+      language: "en",
+      scope: { video_ids: [video.id] },
+    },
+    priority_config: {
+      weights: { recency: 0.2, relevance: 0.8, channel_boost: 0 },
+      thresholds: { high: 0.01, medium: 0 },
+    },
+  });
+  assert.ok(created.policy.id.length > 0);
+
+  const ran = await api.runPolicy(created.policy.id, { triggered_by: "cli" });
+  assert.equal(ran.run.policy_id, created.policy.id);
+  assert.ok(ran.hits_count >= 0);
+
+  const runs = await api.listPolicyRuns(created.policy.id, { limit: 5 });
+  assert.ok(runs.runs.length >= 1);
+
+  const hits = await api.listPolicyHits(created.policy.id, { run_id: ran.run.id, limit: 25 });
+  assert.ok(hits.hits.length >= 1);
+
+  const feed = await api.getPolicyFeedJson(created.policy.id, created.policy.feed_token);
+  assert.equal(feed.policy.id, created.policy.id);
+  assert.ok(Array.isArray(feed.items));
+
+  const rss = await api.getPolicyFeedRss(created.policy.id, created.policy.feed_token);
+  assert.ok(rss.includes("<rss"));
+
+  const unauthorizedFeed = await fetch(
+    `${BASE_URL}/api/feeds/${created.policy.id}.json?token=definitely-wrong-token`,
+    { method: "GET" },
+  );
+  assert.equal(unauthorizedFeed.status, 401);
+
+  const noOpPatch = await fetch(`${BASE_URL}/api/policies/${created.policy.id}`, {
+    method: "PATCH",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({}),
+  });
+  assert.equal(noOpPatch.status, 400);
+});
+
 test("sdk error envelope", async () => {
   try {
     await api.getVideo("not-a-real-id");
@@ -81,4 +136,3 @@ test("sdk error envelope", async () => {
     assert.ok(e.status >= 400);
   }
 });
-

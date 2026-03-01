@@ -2,6 +2,7 @@ import http from "http";
 import { Worker, QueueEvents } from "bullmq";
 import { getYitDefault, getYitDefaultNumber, initMetrics, logger, QUEUE_NAME } from "@yt/core";
 import { runIngestVideo } from "./jobs/ingest_video";
+import { runIngestVisual } from "./jobs/ingest_visual";
 
 const metrics = initMetrics();
 
@@ -37,6 +38,13 @@ const worker = new Worker(
         await runIngestVideo(String(job.id), job.data as any);
         metrics.jobsTotal.inc({ type: "ingest_video", status: "completed" });
         metrics.jobDurationMs.observe({ type: "ingest_video", status: "completed" }, Date.now() - startedAt);
+        return { ok: true };
+      }
+
+      if (job.name === "ingest_visual") {
+        await runIngestVisual(String(job.id), job.data as any);
+        metrics.jobsTotal.inc({ type: "ingest_visual", status: "completed" });
+        metrics.jobDurationMs.observe({ type: "ingest_visual", status: "completed" }, Date.now() - startedAt);
         return { ok: true };
       }
 

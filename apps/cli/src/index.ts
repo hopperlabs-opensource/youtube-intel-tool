@@ -4,39 +4,78 @@ import {
   ChatRequestSchema,
   ChatResponseSchema,
   CapabilitiesResponseSchema,
+  CreateKaraokeSessionRequestSchema,
+  CreateKaraokeSessionResponseSchema,
+  CreatePolicyRequestSchema,
+  CreatePolicyResponseSchema,
+  FeedJsonResponseSchema,
+  GetKaraokeLeaderboardResponseSchema,
+  GetKaraokeSessionResponseSchema,
+  GetKaraokeTrackResponseSchema,
   GetContextResponseSchema,
   GetJobResponseSchema,
+  GetPolicyResponseSchema,
   GetVideoResponseSchema,
   IngestVideoRequestSchema,
   IngestVideoResponseSchema,
   LibrarySearchRequestSchema,
   LibrarySearchResponseSchema,
+  ListKaraokeThemesResponseSchema,
+  ListKaraokeTracksResponseSchema,
   ListChatTurnsResponseSchema,
   ListCuesResponseSchema,
   ListEntitiesResponseSchema,
   ListEntityMentionsResponseSchema,
   ListJobLogsResponseSchema,
-	  ListLibraryVideosResponseSchema,
-    ListLibraryChannelsResponseSchema,
-    ListLibraryTopicsResponseSchema,
-    ListLibraryPeopleResponseSchema,
-	  ListSpeakerSegmentsResponseSchema,
-	  ListVideoChaptersResponseSchema,
-	  ListVideoSpeakersResponseSchema,
-	  ListVideoTagsResponseSchema,
-	  ListTranscriptsResponseSchema,
-	  ResolveVideoRequestSchema,
-	  ResolveVideoResponseSchema,
-	  SearchRequestSchema,
-	  SearchResponseSchema,
-	  UpdateVideoSpeakerRequestSchema,
-	  UpdateVideoSpeakerResponseSchema,
-    YouTubeSearchRequestSchema,
-    YouTubeSearchResponseSchema,
-    YouTubeChannelUploadsRequestSchema,
-    YouTubeChannelUploadsResponseSchema,
-    YouTubePlaylistItemsRequestSchema,
-    YouTubePlaylistItemsResponseSchema,
+  ListLibraryChannelsResponseSchema,
+  ListLibraryPeopleResponseSchema,
+  ListLibraryTopicsResponseSchema,
+  ListLibraryVideosResponseSchema,
+  ListPoliciesResponseSchema,
+  ListPolicyHitsResponseSchema,
+  ListPolicyRunsResponseSchema,
+  ListSpeakerSegmentsResponseSchema,
+  ListTranscriptsResponseSchema,
+  ListVideoChaptersResponseSchema,
+  ListVideoSpeakersResponseSchema,
+  ListVideoTagsResponseSchema,
+  ResolveVideoRequestSchema,
+  ResolveVideoResponseSchema,
+  KaraokeResolveTrackRequestSchema,
+  KaraokeResolveTrackResponseSchema,
+  AddKaraokeQueueItemRequestSchema,
+  AddKaraokeQueueItemResponseSchema,
+  UpdateKaraokeQueueItemRequestSchema,
+  UpdateKaraokeQueueItemResponseSchema,
+  StartKaraokeRoundRequestSchema,
+  StartKaraokeRoundResponseSchema,
+  RecordKaraokeScoreEventRequestSchema,
+  RecordKaraokeScoreEventResponseSchema,
+  UpdateKaraokeSessionRequestSchema,
+  UpdateKaraokeSessionResponseSchema,
+  RunPolicyRequestSchema,
+  RunPolicyResponseSchema,
+  SearchRequestSchema,
+  SearchResponseSchema,
+  UpdatePolicyResponseSchema,
+  UpdatePolicyRequestSchema,
+  UpdateVideoSpeakerRequestSchema,
+  UpdateVideoSpeakerResponseSchema,
+  YouTubeChannelUploadsRequestSchema,
+  YouTubeChannelUploadsResponseSchema,
+  YouTubePlaylistItemsRequestSchema,
+  YouTubePlaylistItemsResponseSchema,
+  YouTubeSearchRequestSchema,
+  YouTubeSearchResponseSchema,
+  IngestVisualRequestSchema,
+  IngestVisualResponseSchema,
+  GetVisualStatusResponseSchema,
+  ListFramesResponseSchema,
+  GetActionTranscriptResponseSchema,
+  ListFrameChunksResponseSchema,
+  GetFrameAnalysisResponseSchema,
+  CostEstimateSchema,
+  GetNarrativeSynthesisResponseSchema,
 } from "@yt/contracts";
 import { apiJson, apiText, HttpError, makeApiClient } from "./http.js";
 import { formatMs, printTable, truncate } from "./format.js";
@@ -61,6 +100,12 @@ function asInt(input: string, fallback: number): number {
   return Number.isFinite(n) ? n : fallback;
 }
 
+function asFloat(input: string | undefined, fallback: number): number {
+  if (input === undefined) return fallback;
+  const n = Number(input);
+  return Number.isFinite(n) ? n : fallback;
+}
+
 function parseCsvList(input: string | undefined): string[] {
   if (!input) return [];
   return input
@@ -80,6 +125,22 @@ async function resolveVideoId(client: ReturnType<typeof makeApiClient>, videoIdO
     schema: ResolveVideoResponseSchema,
   });
   return data.video.id;
+}
+
+async function resolvePolicyFeedToken(
+  client: ReturnType<typeof makeApiClient>,
+  policyId: string,
+  explicitToken?: string
+): Promise<string> {
+  const token = explicitToken?.trim();
+  if (token) return token;
+  const { data } = await apiJson({
+    client,
+    method: "GET",
+    path: `/api/policies/${policyId}`,
+    schema: GetPolicyResponseSchema,
+  });
+  return data.policy.feed_token;
 }
 
 function handleErr(err: unknown): never {
@@ -795,6 +856,480 @@ program
     }
   });
 
+const policy = program.command("policy").description("Saved policy operations");
+
+policy
+  .command("list")
+  .description("List saved policies")
+  .option("--limit <n>", "Limit", "100")
+  .option("--offset <n>", "Offset", "0")
+  .action(async (cmd: { limit: string; offset: string }) => {
+    try {
+      const opts = program.opts<{ baseUrl?: string; json: boolean }>();
+      const client = makeApiClient({ baseUrl: opts.baseUrl });
+      const { data } = await apiJson({
+        client,
+        method: "GET",
+        path: "/api/policies",
+        query: { limit: asInt(cmd.limit, 100), offset: asInt(cmd.offset, 0) },
+        schema: ListPoliciesResponseSchema,
+      });
+      if (opts.json) return void console.log(JSON.stringify(data, null, 2));
+      printTable(
+        data.policies.map((p) => ({
+          policy_id: p.id,
+          name: truncate(p.name, 28),
+          enabled: p.enabled ? "yes" : "no",
+          mode: p.search_payload.mode,
+          query: truncate(p.search_payload.query, 30),
+          updated_at: p.updated_at,
+        }))
+      );
+    } catch (err) {
+      handleErr(err);
+    }
+  });
+
+policy
+  .command("create")
+  .description("Create a saved policy")
+  .requiredOption("--name <name>", "Policy name")
+  .requiredOption("--query <query>", "Search query")
+  .option("--description <text>", "Optional description")
+  .option("--mode <mode>", "keyword|semantic|hybrid", "hybrid")
+  .option("--limit <n>", "Result limit (1-50)", "20")
+  .option("--language <code>", "Language", "en")
+  .option("--channels <csv>", "Comma-separated channel names (scope)", "")
+  .option("--topics <csv>", "Comma-separated topics/tags (scope)", "")
+  .option("--people <csv>", "Comma-separated people names (scope)", "")
+  .option("--video-ids <csv>", "Comma-separated video ids (scope)", "")
+  .option("--w-recency <n>", "Weight for recency", "0.3")
+  .option("--w-relevance <n>", "Weight for relevance", "0.6")
+  .option("--w-channel <n>", "Weight for channel boost", "0.1")
+  .option("--high <n>", "High threshold", "0.85")
+  .option("--medium <n>", "Medium threshold", "0.55")
+  .option("--disabled", "Create disabled policy", false)
+  .action(
+    async (cmd: {
+      name: string;
+      query: string;
+      description?: string;
+      mode: string;
+      limit: string;
+      language: string;
+      channels: string;
+      topics: string;
+      people: string;
+      videoIds: string;
+      wRecency: string;
+      wRelevance: string;
+      wChannel: string;
+      high: string;
+      medium: string;
+      disabled: boolean;
+    }) => {
+      try {
+        const opts = program.opts<{ baseUrl?: string; json: boolean }>();
+        const client = makeApiClient({ baseUrl: opts.baseUrl });
+
+        const scope: Record<string, unknown> = {};
+        const channels = parseCsvList(cmd.channels);
+        const topics = parseCsvList(cmd.topics);
+        const people = parseCsvList(cmd.people);
+        const video_ids = parseCsvList(cmd.videoIds);
+        if (channels.length) scope.channel_names = channels;
+        if (topics.length) scope.topics = topics;
+        if (people.length) scope.people = people;
+        if (video_ids.length) scope.video_ids = video_ids;
+
+        const body = CreatePolicyRequestSchema.parse({
+          name: cmd.name,
+          description: cmd.description ?? null,
+          enabled: !cmd.disabled,
+          search_payload: {
+            query: cmd.query,
+            mode: cmd.mode,
+            limit: asInt(cmd.limit, 20),
+            language: cmd.language,
+            scope: Object.keys(scope).length ? scope : undefined,
+          },
+          priority_config: {
+            weights: {
+              recency: asFloat(cmd.wRecency, 0.3),
+              relevance: asFloat(cmd.wRelevance, 0.6),
+              channel_boost: asFloat(cmd.wChannel, 0.1),
+            },
+            thresholds: {
+              high: asFloat(cmd.high, 0.85),
+              medium: asFloat(cmd.medium, 0.55),
+            },
+          },
+        });
+
+        const { data } = await apiJson({
+          client,
+          method: "POST",
+          path: "/api/policies",
+          body,
+          schema: CreatePolicyResponseSchema,
+        });
+        if (opts.json) return void console.log(JSON.stringify(data, null, 2));
+        console.log(`policy: ${data.policy.id}`);
+        console.log(`feed token: ${data.policy.feed_token}`);
+      } catch (err) {
+        handleErr(err);
+      }
+    }
+  );
+
+policy
+  .command("show")
+  .description("Show a single policy")
+  .argument("<policyId>", "Policy ID")
+  .action(async (policyId: string) => {
+    try {
+      const opts = program.opts<{ baseUrl?: string; json: boolean }>();
+      const client = makeApiClient({ baseUrl: opts.baseUrl });
+      const { data } = await apiJson({
+        client,
+        method: "GET",
+        path: `/api/policies/${policyId}`,
+        schema: GetPolicyResponseSchema,
+      });
+      if (opts.json) return void console.log(JSON.stringify(data, null, 2));
+      console.log(`policy_id: ${data.policy.id}`);
+      console.log(`name: ${data.policy.name}`);
+      console.log(`enabled: ${data.policy.enabled ? "yes" : "no"}`);
+      console.log(`query: ${data.policy.search_payload.query}`);
+      console.log(`feed_token: ${data.policy.feed_token}`);
+      if (data.latest_run) {
+        console.log(`latest_run: ${data.latest_run.id} (${data.latest_run.status})`);
+      }
+    } catch (err) {
+      handleErr(err);
+    }
+  });
+
+policy
+  .command("update")
+  .description("Update a policy")
+  .argument("<policyId>", "Policy ID")
+  .option("--name <name>", "Policy name")
+  .option("--description <text>", "Set description text")
+  .option("--clear-description", "Clear description", false)
+  .option("--enabled <bool>", "true|false")
+  .option("--query <query>", "Update search query")
+  .option("--mode <mode>", "keyword|semantic|hybrid")
+  .option("--limit <n>", "Result limit (1-50)")
+  .option("--language <code>", "Language")
+  .option("--channels <csv>", "Comma-separated channel names (scope)", "")
+  .option("--topics <csv>", "Comma-separated topics/tags (scope)", "")
+  .option("--people <csv>", "Comma-separated people names (scope)", "")
+  .option("--video-ids <csv>", "Comma-separated video ids (scope)", "")
+  .option("--w-recency <n>", "Weight for recency")
+  .option("--w-relevance <n>", "Weight for relevance")
+  .option("--w-channel <n>", "Weight for channel boost")
+  .option("--high <n>", "High threshold")
+  .option("--medium <n>", "Medium threshold")
+  .option("--rotate-feed-token", "Rotate feed token", false)
+  .action(
+    async (
+      policyId: string,
+      cmd: {
+        name?: string;
+        description?: string;
+        clearDescription: boolean;
+        enabled?: string;
+        query?: string;
+        mode?: string;
+        limit?: string;
+        language?: string;
+        channels: string;
+        topics: string;
+        people: string;
+        videoIds: string;
+        wRecency?: string;
+        wRelevance?: string;
+        wChannel?: string;
+        high?: string;
+        medium?: string;
+        rotateFeedToken: boolean;
+      }
+    ) => {
+      try {
+        const opts = program.opts<{ baseUrl?: string; json: boolean }>();
+        const client = makeApiClient({ baseUrl: opts.baseUrl });
+
+        const current = await apiJson({
+          client,
+          method: "GET",
+          path: `/api/policies/${policyId}`,
+          schema: GetPolicyResponseSchema,
+        });
+        const currentPolicy = current.data.policy;
+
+        const scopeFromFlags: Record<string, unknown> = {};
+        const channels = parseCsvList(cmd.channels);
+        const topics = parseCsvList(cmd.topics);
+        const people = parseCsvList(cmd.people);
+        const video_ids = parseCsvList(cmd.videoIds);
+        if (channels.length) scopeFromFlags.channel_names = channels;
+        if (topics.length) scopeFromFlags.topics = topics;
+        if (people.length) scopeFromFlags.people = people;
+        if (video_ids.length) scopeFromFlags.video_ids = video_ids;
+
+        const nextSearch =
+          cmd.query ||
+          cmd.mode ||
+          cmd.limit ||
+          cmd.language ||
+          Object.keys(scopeFromFlags).length > 0
+            ? {
+                query: cmd.query ?? currentPolicy.search_payload.query,
+                mode: cmd.mode ?? currentPolicy.search_payload.mode,
+                limit: cmd.limit ? asInt(cmd.limit, currentPolicy.search_payload.limit) : currentPolicy.search_payload.limit,
+                language: cmd.language ?? currentPolicy.search_payload.language,
+                scope:
+                  Object.keys(scopeFromFlags).length > 0
+                    ? scopeFromFlags
+                    : currentPolicy.search_payload.scope,
+              }
+            : undefined;
+
+        const nextPriority =
+          cmd.wRecency || cmd.wRelevance || cmd.wChannel || cmd.high || cmd.medium
+            ? {
+                weights: {
+                  recency: asFloat(cmd.wRecency, currentPolicy.priority_config.weights.recency),
+                  relevance: asFloat(cmd.wRelevance, currentPolicy.priority_config.weights.relevance),
+                  channel_boost: asFloat(cmd.wChannel, currentPolicy.priority_config.weights.channel_boost),
+                },
+                thresholds: {
+                  high: asFloat(cmd.high, currentPolicy.priority_config.thresholds.high),
+                  medium: asFloat(cmd.medium, currentPolicy.priority_config.thresholds.medium),
+                },
+              }
+            : undefined;
+
+        const enabled =
+          cmd.enabled === undefined
+            ? undefined
+            : ["1", "true", "yes", "on"].includes(String(cmd.enabled).trim().toLowerCase());
+
+        const rawPatch: Record<string, unknown> = {};
+        if (cmd.name !== undefined) rawPatch.name = cmd.name;
+        if (cmd.clearDescription) rawPatch.description = null;
+        else if (cmd.description !== undefined) rawPatch.description = cmd.description;
+        if (enabled !== undefined) rawPatch.enabled = enabled;
+        if (nextSearch !== undefined) rawPatch.search_payload = nextSearch;
+        if (nextPriority !== undefined) rawPatch.priority_config = nextPriority;
+        if (cmd.rotateFeedToken) rawPatch.rotate_feed_token = true;
+
+        const patch = UpdatePolicyRequestSchema.parse(rawPatch);
+
+        const hasMutation =
+          patch.name !== undefined ||
+          Object.prototype.hasOwnProperty.call(patch, "description") ||
+          patch.enabled !== undefined ||
+          patch.search_payload !== undefined ||
+          patch.priority_config !== undefined ||
+          patch.rotate_feed_token;
+        if (!hasMutation) throw new Error("no updates specified");
+
+        const { data } = await apiJson({
+          client,
+          method: "PATCH",
+          path: `/api/policies/${policyId}`,
+          body: patch,
+          schema: UpdatePolicyResponseSchema,
+        });
+
+        if (opts.json) return void console.log(JSON.stringify(data, null, 2));
+        console.log(`policy: ${data.policy.id}`);
+        console.log(`feed token: ${data.policy.feed_token}`);
+      } catch (err) {
+        handleErr(err);
+      }
+    }
+  );
+
+policy
+  .command("run")
+  .description("Run a policy now")
+  .argument("<policyId>", "Policy ID")
+  .option("--triggered-by <source>", "manual|cli|cron|ci", "cli")
+  .action(async (policyId: string, cmd: { triggeredBy: string }) => {
+    try {
+      const opts = program.opts<{ baseUrl?: string; json: boolean }>();
+      const client = makeApiClient({ baseUrl: opts.baseUrl });
+      const body = RunPolicyRequestSchema.parse({ triggered_by: cmd.triggeredBy || "cli" });
+      const { data } = await apiJson({
+        client,
+        method: "POST",
+        path: `/api/policies/${policyId}/run`,
+        body,
+        schema: RunPolicyResponseSchema,
+      });
+      if (opts.json) return void console.log(JSON.stringify(data, null, 2));
+      console.log(`run: ${data.run.id}`);
+      console.log(`status: ${data.run.status}`);
+      console.log(`hits: ${data.hits_count}`);
+    } catch (err) {
+      handleErr(err);
+    }
+  });
+
+policy
+  .command("runs")
+  .description("List policy runs")
+  .argument("<policyId>", "Policy ID")
+  .option("--limit <n>", "Limit", "50")
+  .option("--offset <n>", "Offset", "0")
+  .action(async (policyId: string, cmd: { limit: string; offset: string }) => {
+    try {
+      const opts = program.opts<{ baseUrl?: string; json: boolean }>();
+      const client = makeApiClient({ baseUrl: opts.baseUrl });
+      const { data } = await apiJson({
+        client,
+        method: "GET",
+        path: `/api/policies/${policyId}/runs`,
+        query: { limit: asInt(cmd.limit, 50), offset: asInt(cmd.offset, 0) },
+        schema: ListPolicyRunsResponseSchema,
+      });
+      if (opts.json) return void console.log(JSON.stringify(data, null, 2));
+      printTable(
+        data.runs.map((r) => ({
+          run_id: r.id,
+          status: r.status,
+          trigger: r.triggered_by,
+          total_hits: String(r.stats?.total_hits ?? 0),
+          finished_at: r.finished_at ?? "",
+        }))
+      );
+    } catch (err) {
+      handleErr(err);
+    }
+  });
+
+policy
+  .command("hits")
+  .description("List policy hits")
+  .argument("<policyId>", "Policy ID")
+  .option("--run-id <id>", "Filter to a run id")
+  .option("--bucket <bucket>", "high|medium|low")
+  .option("--limit <n>", "Limit", "100")
+  .option("--offset <n>", "Offset", "0")
+  .action(
+    async (
+      policyId: string,
+      cmd: { runId?: string; bucket?: "high" | "medium" | "low"; limit: string; offset: string }
+    ) => {
+      try {
+        const opts = program.opts<{ baseUrl?: string; json: boolean }>();
+        const client = makeApiClient({ baseUrl: opts.baseUrl });
+        const { data } = await apiJson({
+          client,
+          method: "GET",
+          path: `/api/policies/${policyId}/hits`,
+          query: {
+            run_id: cmd.runId,
+            bucket: cmd.bucket,
+            limit: asInt(cmd.limit, 100),
+            offset: asInt(cmd.offset, 0),
+          },
+          schema: ListPolicyHitsResponseSchema,
+        });
+        if (opts.json) return void console.log(JSON.stringify(data, null, 2));
+        printTable(
+          data.hits.map((h) => ({
+            hit_id: h.id,
+            run_id: truncate(h.run_id, 12),
+            bucket: h.priority_bucket,
+            score: h.priority_score.toFixed(3),
+            at: formatMs(h.start_ms),
+            snippet: truncate(h.snippet, 44),
+          }))
+        );
+      } catch (err) {
+        handleErr(err);
+      }
+    }
+  );
+
+const feed = program.command("feed").description("Feed operations for saved policies");
+
+feed
+  .command("url")
+  .description("Print JSON and RSS feed URLs for a policy")
+  .argument("<policyId>", "Policy ID")
+  .option("--token <token>", "Explicit feed token (defaults to policy token)")
+  .action(async (policyId: string, cmd: { token?: string }) => {
+    try {
+      const opts = program.opts<{ baseUrl?: string; json: boolean }>();
+      const client = makeApiClient({ baseUrl: opts.baseUrl });
+      const token = await resolvePolicyFeedToken(client, policyId, cmd.token);
+      const out = {
+        json: `${client.baseUrl}/api/feeds/${policyId}.json?token=${encodeURIComponent(token)}`,
+        rss: `${client.baseUrl}/api/feeds/${policyId}.rss?token=${encodeURIComponent(token)}`,
+      };
+      if (opts.json) return void console.log(JSON.stringify(out, null, 2));
+      console.log(`json: ${out.json}`);
+      console.log(`rss:  ${out.rss}`);
+    } catch (err) {
+      handleErr(err);
+    }
+  });
+
+feed
+  .command("print")
+  .description("Fetch and print a policy feed")
+  .argument("<policyId>", "Policy ID")
+  .option("--token <token>", "Explicit feed token (defaults to policy token)")
+  .option("--format <format>", "json|rss", "json")
+  .option("--out <path>", "Write feed output to a file")
+  .action(async (policyId: string, cmd: { token?: string; format: string; out?: string }) => {
+    try {
+      const opts = program.opts<{ baseUrl?: string; json: boolean }>();
+      const client = makeApiClient({ baseUrl: opts.baseUrl });
+      const token = await resolvePolicyFeedToken(client, policyId, cmd.token);
+      const format = String(cmd.format || "json").toLowerCase();
+
+      if (format === "json") {
+        const { data } = await apiJson({
+          client,
+          method: "GET",
+          path: `/api/feeds/${policyId}.json`,
+          query: { token },
+          schema: FeedJsonResponseSchema,
+        });
+        const payload = JSON.stringify(data, null, 2);
+        if (cmd.out) {
+          writeFileSync(cmd.out, payload, "utf8");
+          if (!opts.json) console.error(`wrote: ${cmd.out}`);
+          return;
+        }
+        console.log(payload);
+        return;
+      }
+
+      if (format !== "rss") throw new Error(`unsupported format: ${format}`);
+      const { text } = await apiText({
+        client,
+        method: "GET",
+        path: `/api/feeds/${policyId}.rss`,
+        query: { token },
+      });
+      if (cmd.out) {
+        writeFileSync(cmd.out, text, "utf8");
+        if (!opts.json) console.error(`wrote: ${cmd.out}`);
+        return;
+      }
+      process.stdout.write(text);
+    } catch (err) {
+      handleErr(err);
+    }
+  });
+
 const youtube = program.command("youtube").description("YouTube discovery (best-effort, no API keys)");
 
 youtube
@@ -1479,5 +2014,804 @@ chat
       }
     }
   );
+
+// ─── Visual Intelligence Commands ────────────────────────────────────────────
+
+const visual = program.command("visual").description("Visual intelligence (action transcripts)");
+
+visual
+  .command("ingest <videoId>")
+  .description("Run visual intelligence pipeline on a video")
+  .option("--provider <p>", "Vision provider: claude|openai|gemini|ollama|claude-cli|gemini-cli|codex-cli|auto")
+  .option("--model <m>", "Vision model name")
+  .option("--prefer-local", "Prefer free local/CLI providers over paid API providers", false)
+  .option("--prompt-template <t>", "Prompt template: describe|caption|ocr|slide|audit", "describe")
+  .option("--strategy <s>", "Extraction strategy: scene_detect|uniform|keyframe", "scene_detect")
+  .option("--frames-per-minute <n>", "Frames per minute (uniform strategy)", "2")
+  .option("--scene-threshold <n>", "Scene detection threshold 0-1", "0.27")
+  .option("--max-frames <n>", "Maximum frames to extract", "200")
+  .option("--force", "Force re-processing", false)
+  .action(async (videoId: string, cmd: {
+    provider?: string;
+    model?: string;
+    preferLocal: boolean;
+    promptTemplate: string;
+    strategy: string;
+    framesPerMinute: string;
+    sceneThreshold: string;
+    maxFrames: string;
+    force: boolean;
+  }) => {
+    try {
+      const opts = program.opts<{ baseUrl?: string; json: boolean }>();
+      const client = makeApiClient({ baseUrl: opts.baseUrl });
+      videoId = await resolveVideoId(client, videoId);
+
+      let provider = cmd.provider as string | undefined;
+      let model = cmd.model;
+
+      // Auto-select or prefer-local: resolve provider on the client side and send to API
+      if (!provider || provider === "auto" || cmd.preferLocal) {
+        // Send prefer_local hint to API for server-side auto-selection
+        provider = cmd.preferLocal ? "auto-local" : "claude";
+      }
+
+      if (!model) {
+        const modelDefaults: Record<string, string> = {
+          "claude": "claude-sonnet-4-20250514",
+          "openai": "gpt-4o",
+          "gemini": "gemini-2.0-flash",
+          "ollama": "llava",
+          "claude-cli": "sonnet",
+          "gemini-cli": "gemini-2.0-flash",
+          "codex-cli": "o4-mini",
+        };
+        model = modelDefaults[provider] || "claude-sonnet-4-20250514";
+      }
+
+      const body = IngestVisualRequestSchema.parse({
+        extraction: {
+          strategy: cmd.strategy,
+          framesPerMinute: parseFloat(cmd.framesPerMinute),
+          sceneThreshold: parseFloat(cmd.sceneThreshold),
+          maxFrames: parseInt(cmd.maxFrames, 10),
+        },
+        vision: {
+          provider,
+          model,
+        },
+        force: cmd.force,
+      });
+
+      const { data } = await apiJson({
+        client,
+        method: "POST",
+        path: `/api/videos/${videoId}/visual/ingest`,
+        body,
+        schema: IngestVisualResponseSchema,
+      });
+
+      if (opts.json) {
+        console.log(JSON.stringify(data, null, 2));
+      } else {
+        console.log(`visual ingest job queued: ${data.job.id} (provider: ${provider})`);
+        console.log(`track with: yit job ${data.job.id} --follow`);
+      }
+    } catch (err) {
+      handleErr(err);
+    }
+  });
+
+visual
+  .command("providers")
+  .description("List available vision providers (API, CLI, local)")
+  .action(async () => {
+    try {
+      const { detectAvailableProviders } = await import("@yt/core");
+      const opts = program.opts<{ json: boolean }>();
+      const providers = detectAvailableProviders();
+
+      if (opts.json) {
+        console.log(JSON.stringify(providers, null, 2));
+        return;
+      }
+
+      console.log("Available Vision Providers:\n");
+      for (const p of providers) {
+        const status = p.available ? "available" : "not found";
+        const cost = p.free ? "FREE" : "paid (API key)";
+        const mark = p.available ? "+" : "-";
+        console.log(`  [${mark}] ${p.provider.padEnd(12)} ${p.type.padEnd(6)} ${cost.padEnd(16)} ${status}`);
+      }
+
+      const recommended = providers.find((p) => p.free && p.available);
+      if (recommended) {
+        console.log(`\nRecommended (free): --provider ${recommended.provider}`);
+      }
+      console.log("\nUse --prefer-local with 'visual ingest' to auto-select free providers.");
+    } catch (err) {
+      handleErr(err);
+    }
+  });
+
+visual
+  .command("status <videoId>")
+  .description("Show visual processing status for a video")
+  .action(async (videoId: string) => {
+    try {
+      const opts = program.opts<{ baseUrl?: string; json: boolean }>();
+      const client = makeApiClient({ baseUrl: opts.baseUrl });
+      videoId = await resolveVideoId(client, videoId);
+
+      const { data } = await apiJson({
+        client,
+        method: "GET",
+        path: `/api/videos/${videoId}/visual/status`,
+        schema: GetVisualStatusResponseSchema,
+      });
+
+      if (opts.json) {
+        console.log(JSON.stringify(data, null, 2));
+      } else {
+        const s = data.status;
+        console.log(`has_visual:     ${s.has_visual}`);
+        console.log(`frames:         ${s.frames_extracted}`);
+        console.log(`analyzed:       ${s.frames_analyzed}`);
+        console.log(`chunks:         ${s.frame_chunks}`);
+        console.log(`embeddings:     ${s.visual_embeddings}`);
+        console.log(`tokens:         ${s.total_tokens_used ?? "n/a"}`);
+        console.log(`provider:       ${s.vision_provider ?? "n/a"}`);
+        console.log(`model:          ${s.vision_model ?? "n/a"}`);
+        console.log(`strategy:       ${s.extraction_strategy ?? "n/a"}`);
+        console.log(`completed:      ${s.completed_at ?? "n/a"}`);
+      }
+    } catch (err) {
+      handleErr(err);
+    }
+  });
+
+visual
+  .command("transcript <videoId>")
+  .description("Show the action transcript (visual descriptions)")
+  .option("--format <f>", "Output format: text|json|srt", "text")
+  .action(async (videoId: string, cmd: { format: string }) => {
+    try {
+      const opts = program.opts<{ baseUrl?: string; json: boolean }>();
+      const client = makeApiClient({ baseUrl: opts.baseUrl });
+      videoId = await resolveVideoId(client, videoId);
+
+      const { data } = await apiJson({
+        client,
+        method: "GET",
+        path: `/api/videos/${videoId}/visual/transcript`,
+        schema: GetActionTranscriptResponseSchema,
+      });
+
+      if (opts.json || cmd.format === "json") {
+        console.log(JSON.stringify(data, null, 2));
+        return;
+      }
+
+      if (cmd.format === "srt") {
+        for (let i = 0; i < data.transcript.cues.length; i++) {
+          const cue = data.transcript.cues[i];
+          const startSrt = formatSrtTime(cue.start_ms);
+          const endSrt = formatSrtTime(cue.end_ms);
+          console.log(`${i + 1}`);
+          console.log(`${startSrt} --> ${endSrt}`);
+          console.log(cue.description);
+          console.log();
+        }
+        return;
+      }
+
+      // text format
+      console.log(`Action Transcript (${data.transcript.total_analyzed} frames, ${data.transcript.provider}/${data.transcript.model})\n`);
+      for (const cue of data.transcript.cues) {
+        const ts = formatMs(cue.timestamp_ms);
+        const scene = cue.scene_type ? ` [${cue.scene_type}]` : "";
+        console.log(`[${ts}]${scene} ${cue.description}`);
+        if (cue.text_overlay) console.log(`  TEXT: ${cue.text_overlay}`);
+      }
+    } catch (err) {
+      handleErr(err);
+    }
+  });
+
+visual
+  .command("frames <videoId>")
+  .description("List extracted frames for a video")
+  .option("--limit <n>", "Max frames to show", "20")
+  .option("--offset <n>", "Offset for pagination", "0")
+  .action(async (videoId: string, cmd: { limit: string; offset: string }) => {
+    try {
+      const opts = program.opts<{ baseUrl?: string; json: boolean }>();
+      const client = makeApiClient({ baseUrl: opts.baseUrl });
+      videoId = await resolveVideoId(client, videoId);
+
+      const { data } = await apiJson({
+        client,
+        method: "GET",
+        path: `/api/videos/${videoId}/frames`,
+        query: { limit: parseInt(cmd.limit, 10), offset: parseInt(cmd.offset, 10) },
+        schema: ListFramesResponseSchema,
+      });
+
+      if (opts.json) {
+        console.log(JSON.stringify(data, null, 2));
+        return;
+      }
+
+      const rows = data.frames.map((f) => ({
+        index: String(f.frame_index),
+        timestamp: formatMs(f.timestamp_ms),
+        method: f.extraction_method || "",
+        sharpness: f.sharpness != null ? f.sharpness.toFixed(1) : "n/a",
+        blank: f.is_blank ? "yes" : "no",
+        size: f.file_size_bytes != null ? `${Math.round(f.file_size_bytes / 1024)}KB` : "n/a",
+      }));
+      printTable(rows);
+    } catch (err) {
+      handleErr(err);
+    }
+  });
+
+visual
+  .command("frame <videoId> <frameId>")
+  .description("Show frame detail + analysis")
+  .action(async (videoId: string, frameId: string) => {
+    try {
+      const opts = program.opts<{ baseUrl?: string; json: boolean }>();
+      const client = makeApiClient({ baseUrl: opts.baseUrl });
+      videoId = await resolveVideoId(client, videoId);
+
+      const { data } = await apiJson({
+        client,
+        method: "GET",
+        path: `/api/videos/${videoId}/frames/${frameId}`,
+        schema: GetFrameAnalysisResponseSchema,
+      });
+
+      if (opts.json) {
+        console.log(JSON.stringify(data, null, 2));
+        return;
+      }
+
+      console.log(`Frame #${data.frame.frame_index} @ ${formatMs(data.frame.timestamp_ms)}`);
+      console.log(`  file: ${data.frame.file_path}`);
+      if (data.analysis) {
+        console.log(`  description: ${data.analysis.description}`);
+        if (data.analysis.text_overlay) console.log(`  text_overlay: ${data.analysis.text_overlay}`);
+        if (data.analysis.scene_type) console.log(`  scene_type: ${data.analysis.scene_type}`);
+        if (data.analysis.objects && Array.isArray(data.analysis.objects) && data.analysis.objects.length > 0) {
+          console.log(`  objects: ${data.analysis.objects.map((o: any) => o.label).join(", ")}`);
+        }
+      } else {
+        console.log("  (not analyzed)");
+      }
+    } catch (err) {
+      handleErr(err);
+    }
+  });
+
+visual
+  .command("estimate <videoId>")
+  .description("Estimate cost of visual analysis before running it")
+  .option("--provider <p>", "Vision provider: claude|openai|gemini|ollama", "claude")
+  .option("--model <m>", "Vision model name")
+  .option("--max-frames <n>", "Estimated max frames", "200")
+  .action(async (videoId: string, cmd: { provider: string; model?: string; maxFrames: string }) => {
+    try {
+      const opts = program.opts<{ baseUrl?: string; json: boolean }>();
+      const client = makeApiClient({ baseUrl: opts.baseUrl });
+      videoId = await resolveVideoId(client, videoId);
+
+      const { data } = await apiJson({
+        client,
+        method: "GET",
+        path: `/api/videos/${videoId}/visual/estimate`,
+        query: {
+          provider: cmd.provider,
+          model: cmd.model || (cmd.provider === "claude" ? "claude-sonnet-4-20250514" : cmd.provider === "openai" ? "gpt-4o" : cmd.provider === "gemini" ? "gemini-2.0-flash" : "llava"),
+          maxFrames: parseInt(cmd.maxFrames, 10),
+        },
+        schema: CostEstimateSchema,
+      });
+
+      if (opts.json) {
+        console.log(JSON.stringify(data, null, 2));
+      } else {
+        console.log(`Cost Estimate: ${data.frameCount} frames via ${data.provider}/${data.model}`);
+        if (data.isLocal) {
+          console.log("  Local provider — no API cost");
+        } else {
+          console.log(`  Input tokens:  ~${data.estimatedInputTokens.toLocaleString()}`);
+          console.log(`  Output tokens: ~${data.estimatedOutputTokens.toLocaleString()}`);
+          console.log(`  Total tokens:  ~${data.estimatedTotalTokens.toLocaleString()}`);
+          console.log(`  Est. cost:     ~$${data.estimatedCostUsd.toFixed(4)} USD`);
+        }
+      }
+    } catch (err) {
+      handleErr(err);
+    }
+  });
+
+visual
+  .command("narrative <videoId>")
+  .description("Generate or show narrative synthesis of visual content")
+  .action(async (videoId: string) => {
+    try {
+      const opts = program.opts<{ baseUrl?: string; json: boolean }>();
+      const client = makeApiClient({ baseUrl: opts.baseUrl });
+      videoId = await resolveVideoId(client, videoId);
+
+      const { data } = await apiJson({
+        client,
+        method: "GET",
+        path: `/api/videos/${videoId}/visual/narrative`,
+        schema: GetNarrativeSynthesisResponseSchema,
+      });
+
+      if (opts.json) {
+        console.log(JSON.stringify(data, null, 2));
+      } else {
+        const n = data.narrative;
+        console.log("=== Visual Narrative ===\n");
+        console.log(n.summary);
+
+        if (n.key_moments.length > 0) {
+          console.log("\n--- Key Moments ---");
+          for (const m of n.key_moments) {
+            console.log(`  [${formatMs(m.timestamp_ms)}] ${m.description}`);
+          }
+        }
+
+        if (n.visual_themes.length > 0) {
+          console.log(`\n--- Visual Themes ---`);
+          console.log(`  ${n.visual_themes.join(", ")}`);
+        }
+
+        if (n.scene_breakdown.length > 0) {
+          console.log("\n--- Scene Breakdown ---");
+          for (const s of n.scene_breakdown) {
+            console.log(`  ${s.scene_type}: ${s.count} (${s.percentage}%)`);
+          }
+        }
+
+        console.log(`\n(${n.total_frames} frames, ${n.provider}/${n.model})`);
+      }
+    } catch (err) {
+      handleErr(err);
+    }
+  });
+
+function formatSrtTime(ms: number): string {
+  const totalSeconds = Math.floor(ms / 1000);
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  const s = totalSeconds % 60;
+  const millis = ms % 1000;
+  const pad2 = (n: number) => String(n).padStart(2, "0");
+  const pad3 = (n: number) => String(n).padStart(3, "0");
+  return `${pad2(h)}:${pad2(m)}:${pad2(s)},${pad3(millis)}`;
+}
+
+const karaoke = program.command("karaoke").description("Karaoke sessions, queue, and scoring");
+const karaokeTrack = karaoke.command("track").description("Karaoke track catalog");
+const karaokeSession = karaoke.command("session").description("Karaoke sessions");
+const karaokeQueue = karaoke.command("queue").description("Karaoke queue operations");
+const karaokeRound = karaoke.command("round").description("Karaoke round operations");
+const karaokeScore = karaoke.command("score").description("Karaoke scoring operations");
+
+karaokeTrack
+  .command("add")
+  .description("Resolve a YouTube URL into a karaoke track")
+  .requiredOption("--url <url>", "YouTube video URL")
+  .option("--language <code>", "Language", "en")
+  .action(async (cmd: { url: string; language: string }) => {
+    try {
+      const opts = program.opts<{ baseUrl?: string; json: boolean }>();
+      const client = makeApiClient({ baseUrl: opts.baseUrl });
+      const body = KaraokeResolveTrackRequestSchema.parse({ url: cmd.url, language: cmd.language });
+      const { data } = await apiJson({
+        client,
+        method: "POST",
+        path: "/api/karaoke/tracks/resolve",
+        body,
+        schema: KaraokeResolveTrackResponseSchema,
+      });
+      if (opts.json) return void console.log(JSON.stringify(data, null, 2));
+      console.log(`track: ${data.track.id}`);
+      console.log(`video: ${data.video.provider_video_id}  state: ${data.track.ready_state}  cues: ${data.track.cue_count}`);
+      if (data.ingest_job) console.log(`ingest_job: ${data.ingest_job.id}`);
+    } catch (err) {
+      handleErr(err);
+    }
+  });
+
+karaokeTrack
+  .command("list")
+  .description("List karaoke tracks")
+  .option("--q <query>", "Filter text")
+  .option("--state <state>", "pending|ready|failed")
+  .option("--language <code>", "Language filter")
+  .option("--limit <n>", "Limit", "50")
+  .option("--offset <n>", "Offset", "0")
+  .option("--sort <sort>", "updated_desc|title_asc", "updated_desc")
+  .action(
+    async (cmd: { q?: string; state?: string; language?: string; limit: string; offset: string; sort: string }) => {
+      try {
+        const opts = program.opts<{ baseUrl?: string; json: boolean }>();
+        const client = makeApiClient({ baseUrl: opts.baseUrl });
+        const { data } = await apiJson({
+          client,
+          method: "GET",
+          path: "/api/karaoke/tracks",
+          query: {
+            q: cmd.q,
+            ready_state: cmd.state,
+            language: cmd.language,
+            limit: asInt(cmd.limit, 50),
+            offset: asInt(cmd.offset, 0),
+            sort: cmd.sort,
+          },
+          schema: ListKaraokeTracksResponseSchema,
+        });
+        if (opts.json) return void console.log(JSON.stringify(data, null, 2));
+        printTable(
+          data.tracks.map((t) => ({
+            track_id: t.id,
+            provider_video_id: t.provider_video_id,
+            state: t.ready_state,
+            cues: t.cue_count,
+            title: truncate(t.title || "", 56),
+          }))
+        );
+      } catch (err) {
+        handleErr(err);
+      }
+    }
+  );
+
+karaokeTrack
+  .command("get")
+  .description("Get one karaoke track")
+  .argument("<trackId>", "Track ID")
+  .action(async (trackId: string) => {
+    try {
+      const opts = program.opts<{ baseUrl?: string; json: boolean }>();
+      const client = makeApiClient({ baseUrl: opts.baseUrl });
+      const { data } = await apiJson({
+        client,
+        method: "GET",
+        path: `/api/karaoke/tracks/${trackId}`,
+        schema: GetKaraokeTrackResponseSchema,
+      });
+      if (opts.json) return void console.log(JSON.stringify(data, null, 2));
+      console.log(`${data.track.id}  ${data.track.ready_state}  cues=${data.track.cue_count}  ${data.track.title || data.track.provider_video_id}`);
+    } catch (err) {
+      handleErr(err);
+    }
+  });
+
+karaoke
+  .command("themes")
+  .description("List built-in karaoke themes")
+  .action(async () => {
+    try {
+      const opts = program.opts<{ baseUrl?: string; json: boolean }>();
+      const client = makeApiClient({ baseUrl: opts.baseUrl });
+      const { data } = await apiJson({
+        client,
+        method: "GET",
+        path: "/api/karaoke/themes",
+        schema: ListKaraokeThemesResponseSchema,
+      });
+      if (opts.json) return void console.log(JSON.stringify(data, null, 2));
+      printTable(data.themes.map((t) => ({ id: t.id, name: t.name, class: t.class_name })));
+    } catch (err) {
+      handleErr(err);
+    }
+  });
+
+karaokeSession
+  .command("create")
+  .description("Create a karaoke session")
+  .requiredOption("--name <name>", "Session name")
+  .option("--theme <id>", "Theme ID", "gold-stage")
+  .option("--seed <ids>", "Comma-separated track IDs", "")
+  .action(async (cmd: { name: string; theme: string; seed: string }) => {
+    try {
+      const opts = program.opts<{ baseUrl?: string; json: boolean }>();
+      const client = makeApiClient({ baseUrl: opts.baseUrl });
+      const body = CreateKaraokeSessionRequestSchema.parse({
+        name: cmd.name,
+        theme_id: cmd.theme,
+        seed_track_ids: parseCsvList(cmd.seed),
+      });
+      const { data } = await apiJson({
+        client,
+        method: "POST",
+        path: "/api/karaoke/sessions",
+        body,
+        schema: CreateKaraokeSessionResponseSchema,
+      });
+      if (opts.json) return void console.log(JSON.stringify(data, null, 2));
+      console.log(`session: ${data.session.id}  queue=${data.queue.length}`);
+    } catch (err) {
+      handleErr(err);
+    }
+  });
+
+karaokeSession
+  .command("show")
+  .description("Get karaoke session state")
+  .requiredOption("--id <sessionId>", "Session ID")
+  .action(async (cmd: { id: string }) => {
+    try {
+      const opts = program.opts<{ baseUrl?: string; json: boolean }>();
+      const client = makeApiClient({ baseUrl: opts.baseUrl });
+      const { data } = await apiJson({
+        client,
+        method: "GET",
+        path: `/api/karaoke/sessions/${cmd.id}`,
+        schema: GetKaraokeSessionResponseSchema,
+      });
+      if (opts.json) return void console.log(JSON.stringify(data, null, 2));
+      console.log(`session: ${data.session.name} (${data.session.status}) theme=${data.session.theme_id}`);
+      printTable(
+        data.queue.map((q) => ({
+          pos: q.position,
+          item_id: q.id,
+          track_id: q.track_id,
+          requested_by: q.requested_by,
+          status: q.status,
+        }))
+      );
+    } catch (err) {
+      handleErr(err);
+    }
+  });
+
+karaokeSession
+  .command("update")
+  .description("Patch a karaoke session")
+  .requiredOption("--id <sessionId>", "Session ID")
+  .option("--name <name>", "Session name")
+  .option("--status <status>", "draft|active|paused|completed")
+  .option("--theme <id>", "Theme ID")
+  .action(async (cmd: { id: string; name?: string; status?: string; theme?: string }) => {
+    try {
+      const opts = program.opts<{ baseUrl?: string; json: boolean }>();
+      const client = makeApiClient({ baseUrl: opts.baseUrl });
+      const body = UpdateKaraokeSessionRequestSchema.parse({
+        name: cmd.name,
+        status: cmd.status,
+        theme_id: cmd.theme,
+      });
+      const { data } = await apiJson({
+        client,
+        method: "PATCH",
+        path: `/api/karaoke/sessions/${cmd.id}`,
+        body,
+        schema: UpdateKaraokeSessionResponseSchema,
+      });
+      if (opts.json) return void console.log(JSON.stringify(data, null, 2));
+      console.log(`session: ${data.session.id}  status=${data.session.status}  theme=${data.session.theme_id}`);
+    } catch (err) {
+      handleErr(err);
+    }
+  });
+
+karaokeQueue
+  .command("add")
+  .description("Add track to session queue")
+  .requiredOption("--session <sessionId>", "Session ID")
+  .requiredOption("--track <trackId>", "Track ID")
+  .requiredOption("--player <name>", "Requested by")
+  .action(async (cmd: { session: string; track: string; player: string }) => {
+    try {
+      const opts = program.opts<{ baseUrl?: string; json: boolean }>();
+      const client = makeApiClient({ baseUrl: opts.baseUrl });
+      const body = AddKaraokeQueueItemRequestSchema.parse({ track_id: cmd.track, requested_by: cmd.player });
+      const { data } = await apiJson({
+        client,
+        method: "POST",
+        path: `/api/karaoke/sessions/${cmd.session}/queue`,
+        body,
+        schema: AddKaraokeQueueItemResponseSchema,
+      });
+      if (opts.json) return void console.log(JSON.stringify(data, null, 2));
+      console.log(`item: ${data.item.id}  pos=${data.item.position}  status=${data.item.status}`);
+    } catch (err) {
+      handleErr(err);
+    }
+  });
+
+karaokeQueue
+  .command("move")
+  .description("Move queue item position")
+  .requiredOption("--session <sessionId>", "Session ID")
+  .requiredOption("--item <itemId>", "Queue item ID")
+  .requiredOption("--position <n>", "New position")
+  .action(async (cmd: { session: string; item: string; position: string }) => {
+    try {
+      const opts = program.opts<{ baseUrl?: string; json: boolean }>();
+      const client = makeApiClient({ baseUrl: opts.baseUrl });
+      const body = UpdateKaraokeQueueItemRequestSchema.parse({ action: "move", new_position: asInt(cmd.position, 0) });
+      const { data } = await apiJson({
+        client,
+        method: "PATCH",
+        path: `/api/karaoke/sessions/${cmd.session}/queue/${cmd.item}`,
+        body,
+        schema: UpdateKaraokeQueueItemResponseSchema,
+      });
+      if (opts.json) return void console.log(JSON.stringify(data, null, 2));
+      console.log(`item: ${data.item.id}  pos=${data.item.position}`);
+    } catch (err) {
+      handleErr(err);
+    }
+  });
+
+karaokeQueue
+  .command("skip")
+  .description("Skip a queue item")
+  .requiredOption("--session <sessionId>", "Session ID")
+  .requiredOption("--item <itemId>", "Queue item ID")
+  .action(async (cmd: { session: string; item: string }) => {
+    try {
+      const opts = program.opts<{ baseUrl?: string; json: boolean }>();
+      const client = makeApiClient({ baseUrl: opts.baseUrl });
+      const body = UpdateKaraokeQueueItemRequestSchema.parse({ action: "skip" });
+      const { data } = await apiJson({
+        client,
+        method: "PATCH",
+        path: `/api/karaoke/sessions/${cmd.session}/queue/${cmd.item}`,
+        body,
+        schema: UpdateKaraokeQueueItemResponseSchema,
+      });
+      if (opts.json) return void console.log(JSON.stringify(data, null, 2));
+      console.log(`item: ${data.item.id}  status=${data.item.status}`);
+    } catch (err) {
+      handleErr(err);
+    }
+  });
+
+karaokeQueue
+  .command("complete")
+  .description("Complete a queue item")
+  .requiredOption("--session <sessionId>", "Session ID")
+  .requiredOption("--item <itemId>", "Queue item ID")
+  .action(async (cmd: { session: string; item: string }) => {
+    try {
+      const opts = program.opts<{ baseUrl?: string; json: boolean }>();
+      const client = makeApiClient({ baseUrl: opts.baseUrl });
+      const body = UpdateKaraokeQueueItemRequestSchema.parse({ action: "complete" });
+      const { data } = await apiJson({
+        client,
+        method: "PATCH",
+        path: `/api/karaoke/sessions/${cmd.session}/queue/${cmd.item}`,
+        body,
+        schema: UpdateKaraokeQueueItemResponseSchema,
+      });
+      if (opts.json) return void console.log(JSON.stringify(data, null, 2));
+      console.log(`item: ${data.item.id}  status=${data.item.status}`);
+    } catch (err) {
+      handleErr(err);
+    }
+  });
+
+karaokeQueue
+  .command("play-now")
+  .description("Immediately start playing a queue item")
+  .requiredOption("--session <sessionId>", "Session ID")
+  .requiredOption("--item <itemId>", "Queue item ID")
+  .action(async (cmd: { session: string; item: string }) => {
+    try {
+      const opts = program.opts<{ baseUrl?: string; json: boolean }>();
+      const client = makeApiClient({ baseUrl: opts.baseUrl });
+      const body = UpdateKaraokeQueueItemRequestSchema.parse({ action: "play_now" });
+      const { data } = await apiJson({
+        client,
+        method: "PATCH",
+        path: `/api/karaoke/sessions/${cmd.session}/queue/${cmd.item}`,
+        body,
+        schema: UpdateKaraokeQueueItemResponseSchema,
+      });
+      if (opts.json) return void console.log(JSON.stringify(data, null, 2));
+      console.log(`item: ${data.item.id}  status=${data.item.status}`);
+    } catch (err) {
+      handleErr(err);
+    }
+  });
+
+karaokeRound
+  .command("start")
+  .description("Start round playback for a queue item")
+  .requiredOption("--session <sessionId>", "Session ID")
+  .requiredOption("--item <itemId>", "Queue item ID")
+  .action(async (cmd: { session: string; item: string }) => {
+    try {
+      const opts = program.opts<{ baseUrl?: string; json: boolean }>();
+      const client = makeApiClient({ baseUrl: opts.baseUrl });
+      const body = StartKaraokeRoundRequestSchema.parse({ queue_item_id: cmd.item });
+      const { data } = await apiJson({
+        client,
+        method: "POST",
+        path: `/api/karaoke/sessions/${cmd.session}/rounds/start`,
+        body,
+        schema: StartKaraokeRoundResponseSchema,
+      });
+      if (opts.json) return void console.log(JSON.stringify(data, null, 2));
+      console.log(`item: ${data.item.id}  status=${data.item.status}`);
+    } catch (err) {
+      handleErr(err);
+    }
+  });
+
+karaokeScore
+  .command("add")
+  .description("Record one karaoke score event")
+  .requiredOption("--session <sessionId>", "Session ID")
+  .requiredOption("--item <itemId>", "Queue item ID")
+  .requiredOption("--player <name>", "Player name")
+  .requiredOption("--cue <cueId>", "Cue ID")
+  .requiredOption("--expected <ms>", "Expected timestamp (ms)")
+  .requiredOption("--actual <ms>", "Actual timestamp (ms)")
+  .action(
+    async (cmd: { session: string; item: string; player: string; cue: string; expected: string; actual: string }) => {
+      try {
+        const opts = program.opts<{ baseUrl?: string; json: boolean }>();
+        const client = makeApiClient({ baseUrl: opts.baseUrl });
+        const body = RecordKaraokeScoreEventRequestSchema.parse({
+          queue_item_id: cmd.item,
+          player_name: cmd.player,
+          cue_id: cmd.cue,
+          expected_at_ms: asInt(cmd.expected, 0),
+          actual_at_ms: asInt(cmd.actual, 0),
+        });
+        const { data } = await apiJson({
+          client,
+          method: "POST",
+          path: `/api/karaoke/sessions/${cmd.session}/scores/events`,
+          body,
+          schema: RecordKaraokeScoreEventResponseSchema,
+        });
+        if (opts.json) return void console.log(JSON.stringify(data, null, 2));
+        console.log(`event: ${data.event.id}  points=${data.event.awarded_points}  error_ms=${data.event.timing_error_ms}`);
+      } catch (err) {
+        handleErr(err);
+      }
+    }
+  );
+
+karaoke
+  .command("leaderboard")
+  .description("Get current session leaderboard")
+  .requiredOption("--session <sessionId>", "Session ID")
+  .action(async (cmd: { session: string }) => {
+    try {
+      const opts = program.opts<{ baseUrl?: string; json: boolean }>();
+      const client = makeApiClient({ baseUrl: opts.baseUrl });
+      const { data } = await apiJson({
+        client,
+        method: "GET",
+        path: `/api/karaoke/sessions/${cmd.session}/leaderboard`,
+        schema: GetKaraokeLeaderboardResponseSchema,
+      });
+      if (opts.json) return void console.log(JSON.stringify(data, null, 2));
+      printTable(
+        data.entries.map((e) => ({
+          player: e.player_name,
+          points: e.total_points,
+          rounds: e.rounds_played,
+          avg_error_ms: e.avg_timing_error_ms,
+          streak_best: e.streak_best,
+        }))
+      );
+    } catch (err) {
+      handleErr(err);
+    }
+  });
 
 program.parseAsync(process.argv).catch(handleErr);

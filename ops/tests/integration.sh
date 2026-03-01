@@ -4,6 +4,22 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "${ROOT_DIR}"
 
+kill_listener() {
+  local port="$1"
+  local pid
+  pid="$(lsof -nP -iTCP:"${port}" -sTCP:LISTEN -t 2>/dev/null | head -n1 || true)"
+  if [ -z "${pid}" ]; then
+    return 0
+  fi
+  kill "${pid}" >/dev/null 2>&1 || true
+  for _ in $(seq 1 40); do
+    if ! lsof -nP -iTCP:"${port}" -sTCP:LISTEN -t >/dev/null 2>&1; then
+      return 0
+    fi
+    sleep 0.25
+  done
+}
+
 cleanup() {
   if [ "${YIT_TEST_KEEP_STACK:-0}" = "1" ]; then
     echo "integration: leaving stack running (YIT_TEST_KEEP_STACK=1)"
@@ -23,6 +39,11 @@ export YIT_EMBED_PROVIDER="${YIT_EMBED_PROVIDER:-none}"
 export YIT_STT_PROVIDER="${YIT_STT_PROVIDER:-}"
 export YIT_DIARIZE_BACKEND="${YIT_DIARIZE_BACKEND:-}"
 echo "integration: python=${YIT_PYTHON_BIN} embed=${YIT_EMBED_PROVIDER} stt=${YIT_STT_PROVIDER:-<unset>}"
+# Force a clean restart so worker/web pick up test env (python path/provider overrides).
+pnpm bg:down >/dev/null 2>&1 || true
+kill_listener "${YIT_WEB_PORT:-3333}"
+kill_listener "${YIT_KARAOKE_PORT:-3334}"
+kill_listener "${YIT_WORKER_METRICS_PORT:-4010}"
 YIT_PYTHON_BIN="${YIT_PYTHON_BIN}" \
 PYTHON_BIN="${PYTHON_BIN}" \
 YIT_EMBED_PROVIDER="${YIT_EMBED_PROVIDER}" \

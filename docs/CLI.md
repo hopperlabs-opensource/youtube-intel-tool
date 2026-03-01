@@ -50,6 +50,9 @@ YIT_BASE_URL="http://localhost:${YIT_WEB_PORT:-3333}" pnpm yit --json health
 - `job ...` status and logs
 - `transcript ...` cues and export
 - `library` list local videos
+- `policy ...` saved policy CRUD + run + hits
+- `feed ...` policy feed URLs and output
+- `karaoke ...` karaoke track/session/queue/scoring flow
 - `facets ...` channels/topics/people
 - `speaker rename ...` label diarization speakers
 
@@ -94,6 +97,47 @@ pnpm yit transcript export <transcriptId> --format vtt
 pnpm yit youtube search "retrieval augmented generation"
 pnpm yit youtube channel @channel_handle
 pnpm yit youtube playlist "https://www.youtube.com/playlist?list=..."
+```
+
+### 7. Saved policy + feed
+
+```bash
+pnpm yit policy create --name "daily-rag" --query "retrieval quality" --mode hybrid
+pnpm yit policy run <policyId> --triggered-by cli
+pnpm yit policy hits <policyId> --bucket high
+pnpm yit feed url <policyId>
+pnpm yit feed print <policyId> --format rss
+```
+
+### 8. Rotate feed token
+
+```bash
+pnpm yit policy update <policyId> --rotate-feed-token
+pnpm yit feed url <policyId>
+```
+
+### 9. Cron-friendly run
+
+```bash
+YIT_BASE_URL="http://localhost:3333" pnpm yit policy run <policyId> --triggered-by cron
+```
+
+### 10. Karaoke flow
+
+```bash
+# add/resolve track from YouTube URL
+pnpm yit karaoke track add --url "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+pnpm yit karaoke track list --state ready --limit 10
+
+# create a session and inspect queue
+pnpm yit karaoke session create --name "Friday Night" --theme gold-stage
+pnpm yit karaoke session show --id <sessionId>
+
+# queue, start round, score, and leaderboard
+pnpm yit karaoke queue add --session <sessionId> --track <trackId> --player Host
+pnpm yit karaoke round start --session <sessionId> --item <queueItemId>
+pnpm yit karaoke score add --session <sessionId> --item <queueItemId> --player Alice --cue <cueId> --expected 12000 --actual 12120
+pnpm yit karaoke leaderboard --session <sessionId>
 ```
 
 ## Ingest Flags

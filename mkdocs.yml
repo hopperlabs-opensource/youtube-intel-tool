@@ -78,12 +78,14 @@ nav:
       - Troubleshooting: TROUBLESHOOTING.md
   - Build and Use:
       - Use Cases: USE_CASES.md
+      - Karaoke Mode: KARAOKE.md
       - CLI Reference: CLI.md
       - API Reference: API.md
       - Configuration: CONFIG.md
       - Architecture: ARCHITECTURE.md
   - Project Ops:
       - Governance: GOVERNANCE.md
+      - Competitor Patterns: COMPETITOR_PATTERNS.md
       - GitHub Docs Style Guide: github_docs_styleguide.md
       - Agent Packs: AGENT_PACKS.md
       - Releasing: RELEASING.md

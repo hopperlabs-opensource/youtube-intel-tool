@@ -22,6 +22,7 @@
   },
   "scripts": {
     "migrate": "tsx src/cli/migrate.ts",
+    "test:unit": "node --import tsx --test test/*.test.ts",
     "lint": "pnpm -w exec eslint packages/core/src --ext .ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   }

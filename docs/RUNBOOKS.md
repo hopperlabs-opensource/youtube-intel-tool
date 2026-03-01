@@ -27,6 +27,7 @@ pnpm yit capabilities
 
 ### Verify
 - Web UI: `http://localhost:<YIT_WEB_PORT>` (default `3333`)
+- Karaoke UI: `http://localhost:<YIT_KARAOKE_PORT>` (default `3334`)
 - Worker metrics: `http://localhost:<YIT_WORKER_METRICS_PORT>/metrics` (default `4010`)
 - Grafana: `http://localhost:<YIT_GRAFANA_PORT>` (default `53000`)
 - Prometheus: `http://localhost:<YIT_PROMETHEUS_PORT>` (default `59092`)
@@ -62,6 +63,14 @@ pnpm bg:logs
 pnpm bg:restart
 ```
 
+Target specific logs when needed:
+
+```bash
+pnpm bg:logs web
+pnpm bg:logs karaoke
+pnpm bg:logs worker
+```
+
 To stop:
 
 ```bash
@@ -73,8 +82,9 @@ pnpm bg:down
 - `pnpm yit health` returns success.
 
 Notes:
-- `bg:up` starts infra, runs migrations, starts web/worker, and writes Prometheus config.
-- Port overrides: `YIT_WEB_PORT`, `YIT_WORKER_METRICS_PORT`, `YIT_POSTGRES_PORT`, `YIT_REDIS_PORT`, `YIT_PROMETHEUS_PORT`, `YIT_GRAFANA_PORT`.
+- `bg:up` starts infra, runs migrations, starts web/karaoke/worker, and writes Prometheus config.
+- If `YIT_PYTHON_BIN`/`PYTHON_BIN` are unset, `bg:up` bootstraps a pinned local Python venv for transcript fetch (`.run/venvs/tests`).
+- Port overrides: `YIT_WEB_PORT`, `YIT_KARAOKE_PORT`, `YIT_WORKER_METRICS_PORT`, `YIT_POSTGRES_PORT`, `YIT_REDIS_PORT`, `YIT_PROMETHEUS_PORT`, `YIT_GRAFANA_PORT`.
 
 ## 4. macOS Login Service Mode (`launchd`)
 
@@ -97,6 +107,7 @@ pnpm svc:uninstall
 - `pnpm svc:status` shows expected agents:
   - `com.ytintel.stack`
   - `com.ytintel.web`
+  - `com.ytintel.karaoke`
   - `com.ytintel.worker`
 
 ## 5. Observability Controls
@@ -132,11 +143,13 @@ pnpm yit --json health
 pnpm yit smoke --url "https://www.youtube.com/watch?v=..."
 pnpm test
 pnpm test:integration
+pnpm exec playwright test --config apps/web/e2e/playwright.config.cjs --project=chromium
 ```
 
 ### Verify
 - Smoke flow exits successfully and returns expected ingest/search status.
 - `pnpm test:integration` uses a pinned Python test venv at `.run/venvs/tests` (source of truth: `ops/tests/requirements.txt`).
+- Browser gate/runtime checks pass in Playwright.
 
 ## 7. Incident Procedures
 
@@ -198,3 +211,53 @@ If anything fails, use docs/TROUBLESHOOTING.md and report root cause + fix.
 ## 9. Scope Reminder
 
 For public internet exposure, add auth, TLS/reverse proxy, rate limits, CORS controls, secret management, and monitoring before deployment.
+
+## 10. Policy Automation (Cron/CI)
+
+### Requirements
+- At least one saved policy (`pnpm yit policy create ...`)
+- Local stack reachable at `YIT_BASE_URL`
+
+### Steps
+```bash
+# create once
+pnpm yit policy create --name "daily-rag" --query "retrieval quality" --mode hybrid
+
+# run manually
+pnpm yit policy run <policyId> --triggered-by cli
+
+# inspect latest high-priority hits
+pnpm yit policy hits <policyId> --bucket high --limit 20
+```
+
+Cron example (every 30 minutes):
+
+```bash
+*/30 * * * * cd /path/to/youtube-intel-tool && YIT_BASE_URL=http://localhost:3333 pnpm yit policy run <policyId> --triggered-by cron >> .run/logs/policy-cron.log 2>&1
+```
+
+### Verify
+- `pnpm yit policy runs <policyId>` shows new completed runs.
+- `pnpm yit policy hits <policyId> --bucket high` returns expected rows.
+
+## 11. Feed Token Rotation and Feed Access
+
+### Requirements
+- Existing policy id
+
+### Steps
+```bash
+# rotate feed token
+pnpm yit policy update <policyId> --rotate-feed-token
+
+# print current feed URLs
+pnpm yit feed url <policyId>
+
+# fetch feed payloads
+pnpm yit feed print <policyId> --format json
+pnpm yit feed print <policyId> --format rss
+```
+
+### Verify
+- New token URLs return `200`.
+- Old token URLs return `401`.

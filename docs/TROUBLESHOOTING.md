@@ -172,6 +172,33 @@ pnpm test:integration
 - Contract test suite exits successfully.
 - Python transcript dependency is sourced from pinned `ops/tests/requirements.txt` via `.run/venvs/tests`.
 
+## Symptom: Safety notice checkboxes are checked but Accept stays disabled
+
+### Likely causes
+- Brave Shields or privacy/script-blocking extensions are interfering with localhost scripts.
+- Browser storage is blocked in this profile.
+
+### Steps
+1. Disable Shields for `http://localhost:3333`.
+2. Disable script/privacy extensions for localhost.
+3. Hard refresh (`Cmd+Shift+R` / `Ctrl+Shift+R`).
+4. If needed, clear site storage and reload.
+
+### Verify
+- After checking both boxes, `I Understand and Accept` becomes enabled.
+- If browser protections still interfere, use `Continue Without Gate (This Session)`.
+
+### Extra validation
+```bash
+pnpm exec playwright test --config apps/web/e2e/playwright.config.cjs --project=chromium
+pnpm exec playwright test --config apps/web/e2e/playwright.config.cjs --project=firefox
+pnpm exec playwright test --config apps/web/e2e/playwright.config.cjs --project=webkit
+
+# optional local channels
+E2E_ENABLE_CHROME=1 pnpm exec playwright test --config apps/web/e2e/playwright.config.cjs --project=chrome
+E2E_BRAVE_PATH=\"/Applications/Brave Browser.app/Contents/MacOS/Brave Browser\" pnpm exec playwright test --config apps/web/e2e/playwright.config.cjs --project=brave
+```
+
 ## Still Stuck
 
 When opening an issue, include:

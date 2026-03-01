@@ -65,6 +65,7 @@ Last updated: 2026-02-28
 - Start fast: [Quick Start](QUICKSTART.md)
 - New here: [Getting Started](GETTING_STARTED.md)
 - Operating the stack: [Runbooks](RUNBOOKS.md)
+- Karaoke app workflow: [Karaoke Mode](KARAOKE.md)
 - Integration: [CLI](CLI.md) and [API](API.md)
 - Project policy: [Governance](GOVERNANCE.md)
 - Docs standards: [GitHub Docs Style Guide](github_docs_styleguide.md)

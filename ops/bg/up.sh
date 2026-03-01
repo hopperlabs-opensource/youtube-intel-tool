@@ -17,6 +17,7 @@ if ! docker_ready; then
 fi
 
 WEB_PORT="$(web_port)"
+KARAOKE_WEB_PORT="$(karaoke_web_port)"
 WORKER_METRICS_PORT="$(worker_metrics_port)"
 GRAFANA_PORT="$(grafana_port)"
 PROMETHEUS_PORT="$(prometheus_port)"
@@ -61,7 +62,24 @@ else
   if [ -n "$(listener_pid "${WORKER_METRICS_PORT}")" ]; then
     die "worker: :${WORKER_METRICS_PORT} is already in use; set YIT_WORKER_METRICS_PORT=<free_port>"
   fi
-  start_bg "worker" "METRICS_PORT=${WORKER_METRICS_PORT} pnpm -C apps/worker dev"
+
+  # If no python path is configured, bootstrap pinned local deps used by transcript fetch.
+  WORKER_PY_PREFIX=""
+  if [ -z "${YIT_PYTHON_BIN:-}" ] && [ -z "${PYTHON_BIN:-}" ] && [ -f "${ROOT_DIR}/ops/tests/ensure_py_deps.sh" ]; then
+    if WORKER_PY_BIN="$(bash "${ROOT_DIR}/ops/tests/ensure_py_deps.sh" 2>/dev/null)"; then
+      log "worker: using local python venv ${WORKER_PY_BIN}"
+      WORKER_PY_PREFIX="YIT_PYTHON_BIN=${WORKER_PY_BIN} PYTHON_BIN=${WORKER_PY_BIN}"
+    else
+      log "worker: python venv bootstrap skipped (continuing with system python)"
+    fi
+  fi
+
+  WORKER_CMD="METRICS_PORT=${WORKER_METRICS_PORT} pnpm -C apps/worker dev"
+  if [ -n "${WORKER_PY_PREFIX}" ]; then
+    WORKER_CMD="${WORKER_PY_PREFIX} ${WORKER_CMD}"
+  fi
+
+  start_bg "worker" "${WORKER_CMD}"
   if ! wait_for_worker "${WORKER_METRICS_PORT}"; then
     die "worker: did not become healthy on :${WORKER_METRICS_PORT} (see .run/logs/worker.log)"
   fi
@@ -79,7 +97,20 @@ else
   fi
 fi
 
+if is_yt_karaoke_web_up "${KARAOKE_WEB_PORT}" >/dev/null 2>&1; then
+  log "karaoke-web: already up on :${KARAOKE_WEB_PORT}"
+else
+  if [ -n "$(listener_pid "${KARAOKE_WEB_PORT}")" ]; then
+    die "karaoke-web: :${KARAOKE_WEB_PORT} is already in use; set YIT_KARAOKE_PORT=<free_port>"
+  fi
+  start_bg "karaoke-web" "YIT_BASE_URL=http://localhost:${WEB_PORT} KARAOKE_WEB_PORT=${KARAOKE_WEB_PORT} pnpm -C apps/karaoke-web dev"
+  if ! wait_for_karaoke_web "${KARAOKE_WEB_PORT}"; then
+    die "karaoke-web: did not become healthy on :${KARAOKE_WEB_PORT} (see .run/logs/karaoke-web.log)"
+  fi
+fi
+
 log "up: web http://localhost:${WEB_PORT}"
+log "up: karaoke-web http://localhost:${KARAOKE_WEB_PORT}"
 log "up: grafana http://localhost:${GRAFANA_PORT} (container yt_grafana)"
 log "up: prometheus http://localhost:${PROMETHEUS_PORT} (container yt_prometheus)"
 log "up: logs: pnpm bg:logs"

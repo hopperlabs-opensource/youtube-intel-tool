@@ -19,17 +19,24 @@ export function truncate(s: string, n: number): string {
   return s.slice(0, Math.max(0, n - 3)) + "...";
 }
 
-export function printTable(rows: Array<Record<string, string>>): void {
+type TableValue = string | number | boolean | null | undefined;
+
+function asCell(value: TableValue): string {
+  if (value === null || value === undefined) return "";
+  return String(value);
+}
+
+export function printTable(rows: Array<Record<string, TableValue>>): void {
   if (rows.length === 0) return;
   const cols = Object.keys(rows[0] ?? {});
   const widths = new Map<string, number>();
   for (const c of cols) widths.set(c, c.length);
   for (const r of rows) {
-    for (const c of cols) widths.set(c, Math.max(widths.get(c) ?? 0, (r[c] ?? "").length));
+    for (const c of cols) widths.set(c, Math.max(widths.get(c) ?? 0, asCell(r[c]).length));
   }
   const header = cols.map((c) => padRight(c, widths.get(c) ?? c.length)).join("  ");
   const sep = cols.map((c) => "-".repeat(widths.get(c) ?? c.length)).join("  ");
   console.log(header);
   console.log(sep);
-  for (const r of rows) console.log(cols.map((c) => padRight(r[c] ?? "", widths.get(c) ?? 0)).join("  "));
+  for (const r of rows) console.log(cols.map((c) => padRight(asCell(r[c]), widths.get(c) ?? 0)).join("  "));
 }
