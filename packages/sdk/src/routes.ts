@@ -2,6 +2,8 @@ export const SDK_ROUTE_COVERAGE = [
   "GET /api/health",
   "GET /api/metrics",
   "GET /api/capabilities",
+  "GET /api/safety-ack",
+  "POST /api/safety-ack",
   "GET /api/settings/openai",
   "POST /api/videos/resolve",
   "GET /api/videos",

@@ -5,7 +5,12 @@ import { useEffect, useState } from "react";
 import { JobCenter } from "@/components/JobCenter";
 import { SafetyNoticeGate } from "@/components/SafetyNoticeGate";
 
-export default function Providers({ children }: { children: React.ReactNode }) {
+type ProvidersProps = {
+  children: React.ReactNode;
+  initialSafetyAccepted: boolean;
+};
+
+export default function Providers({ children, initialSafetyAccepted }: ProvidersProps) {
   const [client] = useState(() => new QueryClient());
 
   useEffect(() => {
@@ -18,7 +23,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     <QueryClientProvider client={client}>
       {children}
       <JobCenter />
-      <SafetyNoticeGate />
+      <SafetyNoticeGate initialAccepted={initialSafetyAccepted} />
     </QueryClientProvider>
   );
 }
