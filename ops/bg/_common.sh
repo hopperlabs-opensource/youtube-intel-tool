@@ -11,6 +11,7 @@ source "${ROOT_DIR}/ops/lib/defaults.sh"
 mkdir -p "${LOG_DIR}"
 
 WEB_PORT_DEFAULT="$(yit_read_default_env "${ROOT_DIR}" "YIT_WEB_PORT" "3333")"
+KARAOKE_WEB_PORT_DEFAULT="$(yit_read_default_env "${ROOT_DIR}" "YIT_KARAOKE_PORT" "3334")"
 WORKER_METRICS_PORT_DEFAULT="$(yit_read_default_env "${ROOT_DIR}" "YIT_WORKER_METRICS_PORT" "4010")"
 GRAFANA_PORT_DEFAULT="$(yit_read_default_env "${ROOT_DIR}" "YIT_GRAFANA_PORT" "53000")"
 PROMETHEUS_PORT_DEFAULT="$(yit_read_default_env "${ROOT_DIR}" "YIT_PROMETHEUS_PORT" "59092")"
@@ -38,6 +39,10 @@ docker_ready() {
 
 web_port() {
   echo "${YIT_WEB_PORT:-$WEB_PORT_DEFAULT}"
+}
+
+karaoke_web_port() {
+  echo "${YIT_KARAOKE_PORT:-${KARAOKE_WEB_PORT:-$KARAOKE_WEB_PORT_DEFAULT}}"
 }
 
 worker_metrics_port() {
@@ -82,6 +87,11 @@ is_yt_web_up() {
   json_service_is "http://localhost:${port}/api/health" "yt-web"
 }
 
+is_yt_karaoke_web_up() {
+  local port="$1"
+  json_service_is "http://localhost:${port}/api/health" "yt-karaoke-web"
+}
+
 is_yt_worker_up() {
   local port="$1"
   json_service_is "http://localhost:${port}/health" "yt-worker"
@@ -102,6 +112,17 @@ wait_for_worker() {
   local port="$1"
   for _ in {1..80}; do
     if is_yt_worker_up "${port}" >/dev/null 2>&1; then
+      return 0
+    fi
+    sleep 0.25
+  done
+  return 1
+}
+
+wait_for_karaoke_web() {
+  local port="$1"
+  for _ in {1..80}; do
+    if is_yt_karaoke_web_up "${port}" >/dev/null 2>&1; then
       return 0
     fi
     sleep 0.25
@@ -134,7 +155,7 @@ start_bg() {
 stop_by_port_if_healthy() {
   local name="$1"
   local port="$2"
-  local health_kind="$3" # web|worker
+  local health_kind="$3" # web|worker|karaoke
 
   local pid
   pid="$(listener_pid "${port}")"
@@ -150,6 +171,10 @@ stop_by_port_if_healthy() {
   elif [ "${health_kind}" = "worker" ]; then
     if ! is_yt_worker_up "${port}" >/dev/null 2>&1; then
       die "${name}: port :${port} is in use by pid ${pid} (not yt-worker); refusing to stop"
+    fi
+  elif [ "${health_kind}" = "karaoke" ]; then
+    if ! is_yt_karaoke_web_up "${port}" >/dev/null 2>&1; then
+      die "${name}: port :${port} is in use by pid ${pid} (not yt-karaoke-web); refusing to stop"
     fi
   else
     die "unknown health_kind: ${health_kind}"

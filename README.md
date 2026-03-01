@@ -83,7 +83,10 @@ pnpm run setup
 pnpm seed:demo   # optional starter ingest list
 ```
 
-Open `http://localhost:<YIT_WEB_PORT>` (default: `http://localhost:3333`).
+Open:
+
+- Main app: `http://localhost:<YIT_WEB_PORT>` (default `3333`)
+- Karaoke app: `http://localhost:<YIT_KARAOKE_PORT>` (default `3334`, run `pnpm dev:karaoke`)
 
 Stop everything:
 
@@ -163,6 +166,7 @@ proxy, rate limiting, CORS controls, secret management, and monitoring first.
 - Extract named entities and inspect time-aligned mentions.
 - Build context cards (Wikipedia + local DB sources).
 - Run grounded chat with source references.
+- Run local karaoke sessions with queue + beat-scoring from transcript cues.
 - Observe the system with Prometheus-style metrics.
 
 ---
@@ -194,6 +198,7 @@ pnpm run setup
 Open:
 
 - App: `http://localhost:<YIT_WEB_PORT>` (default `3333`)
+- Karaoke app: `http://localhost:<YIT_KARAOKE_PORT>` (default `3334`, optional)
 - Web metrics: `http://localhost:<YIT_WEB_PORT>/metrics`
 - Worker metrics: `http://localhost:<YIT_WORKER_METRICS_PORT>` (default `4010`)
 
@@ -218,7 +223,7 @@ Edit the list in `config/demo_videos.txt`.
 
 Ports and local URL defaults live in `.env.example` and are shared by scripts/runtime:
 
-- `YIT_WEB_PORT`, `YIT_WORKER_METRICS_PORT`
+- `YIT_WEB_PORT`, `YIT_KARAOKE_PORT`, `YIT_WORKER_METRICS_PORT`
 - `YIT_POSTGRES_PORT`, `YIT_REDIS_PORT`
 - `YIT_PROMETHEUS_PORT`, `YIT_GRAFANA_PORT`
 
@@ -299,8 +304,19 @@ pnpm yit ingest "https://www.youtube.com/watch?v=..." --wait --logs
 # search across full library
 pnpm yit search "key claim about retrieval quality"
 
+# save and run a policy
+pnpm yit policy create --name "daily-rag" --query "retrieval quality" --mode hybrid
+pnpm yit policy run <policyId> --triggered-by cli
+pnpm yit feed url <policyId>
+
 # grounded chat
 pnpm yit chat ask <videoId> "Summarize and cite sources as [S1], [S2]."
+
+# karaoke flow
+pnpm yit karaoke track add --url "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+pnpm yit karaoke session create --name "Friday Night" --theme gold-stage
+pnpm yit karaoke queue add --session <sessionId> --track <trackId> --player Host
+pnpm yit karaoke leaderboard --session <sessionId>
 ```
 
 CLI guide: [docs/CLI.md](docs/CLI.md)
@@ -318,6 +334,15 @@ CLI guide: [docs/CLI.md](docs/CLI.md)
 - `GET /api/videos/:videoId/context`
 - `POST /api/videos/:videoId/chat`
 - `POST /api/videos/:videoId/chat/stream`
+- `GET /api/policies`
+- `POST /api/policies`
+- `POST /api/policies/:policyId/run`
+- `GET /api/feeds/:policyId.json?token=...`
+- `GET /api/feeds/:policyId.rss?token=...`
+- `GET /api/karaoke/tracks`
+- `POST /api/karaoke/sessions`
+- `POST /api/karaoke/sessions/:sessionId/queue`
+- `POST /api/karaoke/sessions/:sessionId/scores/events`
 
 API guide: [docs/API.md](docs/API.md)
 
@@ -328,6 +353,7 @@ API guide: [docs/API.md](docs/API.md)
 - Quick Start: [docs/QUICKSTART.md](docs/QUICKSTART.md)
 - Start here: [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md)
 - Product workflows: [docs/USE_CASES.md](docs/USE_CASES.md)
+- Karaoke workflow: [docs/KARAOKE.md](docs/KARAOKE.md)
 - System internals: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - CLI reference: [docs/CLI.md](docs/CLI.md)
 - API reference: [docs/API.md](docs/API.md)
@@ -335,6 +361,7 @@ API guide: [docs/API.md](docs/API.md)
 - Runbooks (operations): [docs/RUNBOOKS.md](docs/RUNBOOKS.md)
 - Configuration model: [docs/CONFIG.md](docs/CONFIG.md)
 - Agent packs: [docs/AGENT_PACKS.md](docs/AGENT_PACKS.md)
+- Competitor patterns to port: [docs/COMPETITOR_PATTERNS.md](docs/COMPETITOR_PATTERNS.md)
 - Releasing/npm packaging: [docs/RELEASING.md](docs/RELEASING.md)
 - GitHub docs style guide: [docs/github_docs_styleguide.md](docs/github_docs_styleguide.md)
 - Troubleshooting: [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)
@@ -361,6 +388,7 @@ Run stack in the background:
 pnpm bg:up
 pnpm bg:status
 pnpm bg:logs
+pnpm bg:logs karaoke
 pnpm bg:down
 ```
 

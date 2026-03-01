@@ -35,6 +35,7 @@ pnpm run doctor
 
 ### Verify
 - App: `http://localhost:<YIT_WEB_PORT>` (default `3333`)
+- Karaoke app: `http://localhost:<YIT_KARAOKE_PORT>` (default `3334`, run `pnpm dev:karaoke`)
 - Web metrics: `http://localhost:<YIT_WEB_PORT>/metrics`
 - Worker metrics: `http://localhost:<YIT_WORKER_METRICS_PORT>/metrics` (default `4010`)
 - Tests: `pnpm test` and `pnpm test:integration`

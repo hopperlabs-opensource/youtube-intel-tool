@@ -158,6 +158,89 @@ curl -s -X POST "$BASE_URL/api/videos/<videoId>/chat" \
 - `GET /api/library/health`
 - `POST /api/library/repair`
 
+## Saved Policies and Feeds
+
+- `GET /api/policies`
+- `POST /api/policies`
+- `GET /api/policies/:policyId`
+- `PATCH /api/policies/:policyId`
+- `POST /api/policies/:policyId/run`
+- `GET /api/policies/:policyId/runs`
+- `GET /api/policies/:policyId/hits`
+- `GET /api/feeds/:policyId.json?token=<feed_token>`
+- `GET /api/feeds/:policyId.rss?token=<feed_token>`
+
+Create policy example:
+
+```bash
+curl -s -X POST "$BASE_URL/api/policies" \
+  -H 'content-type: application/json' \
+  -d '{
+    "name":"daily-rag",
+    "search_payload":{"query":"retrieval quality","mode":"hybrid","limit":20,"language":"en"},
+    "priority_config":{"weights":{"recency":0.3,"relevance":0.6,"channel_boost":0.1},"thresholds":{"high":0.85,"medium":0.55}}
+  }' | jq
+```
+
+Run policy now:
+
+```bash
+curl -s -X POST "$BASE_URL/api/policies/<policyId>/run" \
+  -H 'content-type: application/json' \
+  -d '{"triggered_by":"cli"}' | jq
+```
+
+Consume feed:
+
+```bash
+curl -s "$BASE_URL/api/feeds/<policyId>.json?token=<feed_token>" | jq
+curl -s "$BASE_URL/api/feeds/<policyId>.rss?token=<feed_token>"
+```
+
+Policy/feed error semantics:
+- Invalid or missing feed token -> `401 unauthorized`
+- `PATCH /api/policies/:policyId` with empty body -> `400 invalid_request`
+
+## Karaoke Sessions (Eureka Karaoke Tube)
+
+- `POST /api/karaoke/tracks/resolve`
+- `GET /api/karaoke/tracks`
+- `GET /api/karaoke/tracks/:trackId`
+- `POST /api/karaoke/sessions`
+- `GET /api/karaoke/sessions/:sessionId`
+- `PATCH /api/karaoke/sessions/:sessionId`
+- `POST /api/karaoke/sessions/:sessionId/queue`
+- `PATCH /api/karaoke/sessions/:sessionId/queue/:itemId`
+- `POST /api/karaoke/sessions/:sessionId/rounds/start`
+- `POST /api/karaoke/sessions/:sessionId/scores/events`
+- `GET /api/karaoke/sessions/:sessionId/leaderboard`
+- `GET /api/karaoke/themes`
+
+Resolve and queue example:
+
+```bash
+# 1) resolve/add track
+TRACK_ID="$(
+  curl -s -X POST "$BASE_URL/api/karaoke/tracks/resolve" \
+    -H 'content-type: application/json' \
+    -d '{"url":"https://www.youtube.com/watch?v=dQw4w9WgXcQ","language":"en"}' \
+  | jq -r '.track.id'
+)"
+
+# 2) create session
+SESSION_ID="$(
+  curl -s -X POST "$BASE_URL/api/karaoke/sessions" \
+    -H 'content-type: application/json' \
+    -d '{"name":"Friday Session","theme_id":"gold-stage"}' \
+  | jq -r '.session.id'
+)"
+
+# 3) add queue item
+curl -s -X POST "$BASE_URL/api/karaoke/sessions/$SESSION_ID/queue" \
+  -H 'content-type: application/json' \
+  -d "{\"track_id\":\"$TRACK_ID\",\"requested_by\":\"Host\"}" | jq
+```
+
 ## YouTube Discovery (yt-dlp)
 
 - `POST /api/youtube/search`

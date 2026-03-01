@@ -15,6 +15,7 @@ This project now treats `.env.example` as the tracked source of local defaults.
 Edit these in `.env.example` (and/or override in your local `.env`):
 
 - `YIT_WEB_PORT`
+- `YIT_KARAOKE_PORT`
 - `YIT_WORKER_METRICS_PORT`
 - `YIT_POSTGRES_PORT`
 - `YIT_REDIS_PORT`
@@ -27,6 +28,7 @@ These values drive:
 - background scripts (`ops/bg/*`)
 - launchd scripts (`ops/launchd/*`)
 - runtime fallback defaults in web/worker/CLI/core
+- karaoke web app proxy/runtime defaults (`apps/karaoke-web`)
 
 ## 2) Derived defaults
 
@@ -36,6 +38,7 @@ If you do not set advanced override vars, runtime derives them from the ports ab
 - `REDIS_URL` from `YIT_REDIS_PORT`
 - `METRICS_PORT` from `YIT_WORKER_METRICS_PORT`
 - `YIT_BASE_URL` from `YIT_WEB_PORT`
+- `KARAOKE_WEB_PORT` from `YIT_KARAOKE_PORT`
 
 Advanced overrides are optional and still supported in `.env`:
 

@@ -4,8 +4,9 @@ import { ChatSourceSchema, type ChatSource } from "@yt/contracts";
 import { createEmbedderFromEnv } from "../embeddings/provider";
 import { listCuesInWindow } from "../repos/cues";
 import { getChunksByIds } from "../repos/chunks";
-import { searchCuesByVideo, searchChunksByVideoSemantic } from "../repos/search";
+import { searchCuesByVideo, searchChunksByVideoSemantic, searchFrameChunksByVideoSemantic, searchCuesByVideoUnified } from "../repos/search";
 import { getLatestTranscriptForVideo } from "../repos/transcripts";
+import { getFrameAnalysesInWindow } from "../repos/frames";
 
 function formatHms(ms: number): string {
   const totalSeconds = Math.floor(ms / 1000);
@@ -174,6 +175,78 @@ export async function buildRagForVideoChat(
     });
   }
 
+  // 4) Visual sources: frame analyses in the time window.
+  try {
+    const visualWindowAnalyses = await getFrameAnalysesInWindow(
+      client,
+      opts.videoId,
+      windowStart,
+      windowEnd,
+      { limit: 20 },
+    );
+    for (const va of visualWindowAnalyses) {
+      addSource({
+        type: "vis",
+        id: va.id,
+        start_ms: va.start_ms,
+        end_ms: va.end_ms,
+        snippet: cleanSnippet(va.description, 300),
+      });
+    }
+  } catch {
+    // Visual data may not exist yet; continue gracefully.
+  }
+
+  // 5) Visual keyword search (supplements transcript keyword hits).
+  if (opts.keyword_k > 0) {
+    try {
+      const visualKeywordHits = await searchCuesByVideoUnified(
+        client,
+        opts.videoId,
+        opts.query,
+        { limit: Math.min(opts.keyword_k, 6), sourceType: "visual" },
+      );
+      for (const h of visualKeywordHits) {
+        addSource({
+          type: "vis-kw",
+          id: h.cue_id,
+          start_ms: h.start_ms,
+          end_ms: h.end_ms,
+          score: h.score,
+          snippet: cleanSnippet(h.snippet, 300),
+        });
+      }
+    } catch {
+      // Visual search may not be available yet.
+    }
+  }
+
+  // 6) Visual semantic search.
+  if (opts.semantic_k > 0 && !embeddingError) {
+    try {
+      const embedder = createEmbedderFromEnv(opts.embedding_env ?? process.env);
+      const embedding = await embedder.embed(opts.query);
+      const visualSemanticHits = await searchFrameChunksByVideoSemantic(
+        client,
+        opts.videoId,
+        embedding,
+        { limit: Math.min(opts.semantic_k, 4), model_id: embedder.model_id },
+      );
+      for (const h of visualSemanticHits) {
+        addSource({
+          type: "vis-sem",
+          id: h.cue_id,
+          start_ms: h.start_ms,
+          end_ms: h.end_ms,
+          score: h.score,
+          snippet: cleanSnippet(h.snippet, 300),
+        });
+      }
+    } catch {
+      // Visual semantic search may not be available.
+    }
+  }
+
   const nowLine =
     opts.at_ms == null ? "Playhead: unknown." : `Playhead: t=${formatHms(opts.at_ms)} (at_ms=${opts.at_ms}).`;
 
@@ -189,6 +262,8 @@ export async function buildRagForVideoChat(
     "Use ONLY the SOURCES below; do not guess beyond them.",
     "When you use a source, cite it inline using the bracket form like [S1] or [S2].",
     "If the SOURCES are insufficient, say what is missing and ask a clarifying question.",
+    "Sources marked [vis], [vis-kw], or [vis-sem] describe what is VISUALLY shown on screen.",
+    "When the user asks about what is shown, displayed, or visible, prioritize visual sources.",
     nowLine,
     "",
     "SOURCES:",

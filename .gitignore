@@ -24,6 +24,7 @@ coverage/
 .env.*
 !.env.example
 .yit-dev.json
+.yit-karaoke-dev.json
 .npmrc
 
 # Python caches

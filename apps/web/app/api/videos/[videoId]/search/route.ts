@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createEmbedderFromEnv, getPool, initMetrics, searchChunksByVideoSemantic, searchCuesByVideo } from "@yt/core";
+import { createEmbedderFromEnv, getPool, initMetrics, searchChunksByVideoSemantic, searchCuesByVideo, searchCuesByVideoUnified, searchFrameChunksByVideoSemantic } from "@yt/core";
 import { SearchRequestSchema, SearchResponseSchema } from "@yt/contracts";
 import type { SearchHit } from "@yt/contracts";
 import { jsonError } from "@/lib/server/api";
@@ -14,43 +14,106 @@ export async function POST(req: Request, ctx: { params: Promise<{ videoId: strin
     const { videoId } = await ctx.params;
     const body = SearchRequestSchema.parse(await req.json());
     const embedEnv = getEmbeddingsEnvForRequest(req);
+    const sourceType = body.source_type ?? "all";
 
     const pool = getPool();
     const client = await pool.connect();
     try {
-      let hits;
+      let hits: SearchHit[];
       let embedding_error: string | null = null;
 
       if (body.mode === "keyword") {
-        hits = await searchCuesByVideo(client, videoId, body.query, { limit: body.limit, language: "en" });
+        hits = await searchCuesByVideoUnified(client, videoId, body.query, {
+          limit: body.limit,
+          language: "en",
+          sourceType,
+        });
       } else if (body.mode === "semantic") {
         try {
           const embedder = createEmbedderFromEnv(embedEnv);
           const emb = await embedder.embed(body.query);
           if (emb.length !== 768) return jsonError("embed_dim_mismatch", `expected 768 dims, got ${emb.length}`, { status: 500 });
-          hits = await searchChunksByVideoSemantic(client, videoId, emb, {
-            limit: body.limit,
-            language: "en",
-            model_id: embedder.model_id,
-          });
-        } catch (err: unknown) {
-          embedding_error = err instanceof Error ? err.message : String(err);
-          // Best-effort fallback: semantic search unavailable; return keyword hits so the UX doesn't dead-end.
-          hits = await searchCuesByVideo(client, videoId, body.query, { limit: body.limit, language: "en" });
-        }
-      } else {
-        // Hybrid = keyword + semantic merged by cue_id
-        const kw = await searchCuesByVideo(client, videoId, body.query, { limit: body.limit, language: "en" });
-        let sem: typeof kw = [];
-        try {
-          const embedder = createEmbedderFromEnv(embedEnv);
-          const emb = await embedder.embed(body.query);
-          if (emb.length === 768) {
-            sem = await searchChunksByVideoSemantic(client, videoId, emb, {
+
+          if (sourceType === "visual") {
+            hits = await searchFrameChunksByVideoSemantic(client, videoId, emb, {
+              limit: body.limit,
+              model_id: embedder.model_id,
+            });
+          } else if (sourceType === "transcript") {
+            hits = await searchChunksByVideoSemantic(client, videoId, emb, {
               limit: body.limit,
               language: "en",
               model_id: embedder.model_id,
             });
+          } else {
+            // "all": merge transcript + visual semantic
+            const transcriptHits = await searchChunksByVideoSemantic(client, videoId, emb, {
+              limit: body.limit,
+              language: "en",
+              model_id: embedder.model_id,
+            });
+            let visualHits: SearchHit[] = [];
+            try {
+              visualHits = await searchFrameChunksByVideoSemantic(client, videoId, emb, {
+                limit: Math.min(body.limit, 10),
+                model_id: embedder.model_id,
+              });
+            } catch {
+              // Visual search may not be available
+            }
+            const merged = [...transcriptHits, ...visualHits]
+              .sort((a, b) => b.score - a.score)
+              .slice(0, body.limit);
+            hits = merged;
+          }
+        } catch (err: unknown) {
+          embedding_error = err instanceof Error ? err.message : String(err);
+          hits = await searchCuesByVideoUnified(client, videoId, body.query, {
+            limit: body.limit,
+            language: "en",
+            sourceType,
+          });
+        }
+      } else {
+        // Hybrid = keyword + semantic merged by cue_id
+        const kw = await searchCuesByVideoUnified(client, videoId, body.query, {
+          limit: body.limit,
+          language: "en",
+          sourceType,
+        });
+        let sem: SearchHit[] = [];
+        try {
+          const embedder = createEmbedderFromEnv(embedEnv);
+          const emb = await embedder.embed(body.query);
+          if (emb.length === 768) {
+            if (sourceType === "visual") {
+              sem = await searchFrameChunksByVideoSemantic(client, videoId, emb, {
+                limit: body.limit,
+                model_id: embedder.model_id,
+              });
+            } else if (sourceType === "transcript") {
+              sem = await searchChunksByVideoSemantic(client, videoId, emb, {
+                limit: body.limit,
+                language: "en",
+                model_id: embedder.model_id,
+              });
+            } else {
+              const tSem = await searchChunksByVideoSemantic(client, videoId, emb, {
+                limit: body.limit,
+                language: "en",
+                model_id: embedder.model_id,
+              });
+              let vSem: SearchHit[] = [];
+              try {
+                vSem = await searchFrameChunksByVideoSemantic(client, videoId, emb, {
+                  limit: Math.min(body.limit, 10),
+                  model_id: embedder.model_id,
+                });
+              } catch {
+                // Visual search may not be available
+              }
+              sem = [...tSem, ...vSem];
+            }
           }
         } catch (err: unknown) {
           embedding_error = err instanceof Error ? err.message : String(err);

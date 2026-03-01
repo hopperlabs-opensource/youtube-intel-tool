@@ -1,5 +1,5 @@
 import type pg from "pg";
-import { LibrarySearchHitSchema, SearchHitSchema, type LibrarySearchHit, type SearchHit } from "@yt/contracts";
+import { LibrarySearchHitSchema, SearchHitSchema, type LibrarySearchHit, type SearchHit, type SearchSourceType } from "@yt/contracts";
 
 function toPgVector(v: number[]): string {
   // pgvector accepts a string literal in the form: '[1,2,3]'.
@@ -31,6 +31,13 @@ function cleanScope(scope: GlobalSearchScope | undefined): {
     topics: cleanList(scope?.topics),
     people: cleanList(scope?.people),
   };
+}
+
+function parseSearchHitRow(row: Record<string, unknown>): SearchHit {
+  return SearchHitSchema.parse({
+    ...row,
+    chunk_id: row.chunk_id ?? undefined,
+  });
 }
 
 export async function searchCuesByVideo(
@@ -73,7 +80,7 @@ export async function searchCuesByVideo(
     `,
     [videoId, query, language, limit]
   );
-  return res.rows.map((r) => SearchHitSchema.parse(r));
+  return res.rows.map((r) => parseSearchHitRow(r));
 }
 
 export async function searchChunksByVideoSemantic(
@@ -128,7 +135,7 @@ export async function searchChunksByVideoSemantic(
     [videoId, language, v, modelId, limit]
   );
 
-  return res.rows.map((r) => SearchHitSchema.parse(r));
+  return res.rows.map((r) => parseSearchHitRow(r));
 }
 
 export async function searchCuesKeywordGlobal(
@@ -269,4 +276,165 @@ export async function searchChunksSemanticGlobal(
   );
 
   return res.rows.map((r) => LibrarySearchHitSchema.parse(r));
+}
+
+// ─── Visual Search ───────────────────────────────────────────────────────────
+
+/**
+ * Keyword search across both transcript cues and frame analyses (UNION ALL).
+ * Returns results with source_type='transcript' or source_type='visual'.
+ */
+export async function searchCuesByVideoUnified(
+  client: pg.PoolClient,
+  videoId: string,
+  query: string,
+  opts?: { limit?: number; language?: string; sourceType?: SearchSourceType }
+): Promise<SearchHit[]> {
+  const limit = Math.min(opts?.limit ?? 20, 50);
+  const language = opts?.language ?? "en";
+  const sourceType = opts?.sourceType ?? "all";
+
+  if (sourceType === "visual") {
+    return searchFrameAnalysesByVideo(client, videoId, query, { limit });
+  }
+
+  if (sourceType === "transcript") {
+    return searchCuesByVideo(client, videoId, query, { limit, language });
+  }
+
+  // "all": UNION ALL transcript + visual
+  const res = await client.query(
+    `
+    WITH t AS (
+      SELECT id
+      FROM transcripts
+      WHERE video_id = $1
+        AND language = $3
+      ORDER BY fetched_at DESC
+      LIMIT 1
+    ),
+    q AS (
+      SELECT websearch_to_tsquery('english', $2) as q
+    ),
+    transcript_hits AS (
+      SELECT
+        c.id::text as cue_id,
+        NULL::text as chunk_id,
+        c.start_ms,
+        c.end_ms,
+        CASE
+          WHEN q.q = ''::tsquery THEN 0.01
+          ELSE ts_rank_cd(c.tsv, q.q)
+        END as score,
+        c.text as snippet,
+        'transcript' as source_type
+      FROM transcript_cues c
+      JOIN t ON t.id = c.transcript_id
+      JOIN q ON true
+      WHERE (q.q <> ''::tsquery AND c.tsv @@ q.q)
+         OR (q.q = ''::tsquery AND c.text ILIKE ('%' || $2 || '%'))
+    ),
+    visual_hits AS (
+      SELECT
+        fa.id::text as cue_id,
+        NULL::text as chunk_id,
+        fa.start_ms,
+        fa.end_ms,
+        CASE
+          WHEN q.q = ''::tsquery THEN 0.01
+          ELSE ts_rank_cd(fa.tsv, q.q)
+        END as score,
+        fa.description as snippet,
+        'visual' as source_type
+      FROM frame_analyses fa
+      JOIN q ON true
+      WHERE fa.video_id = $1
+        AND ((q.q <> ''::tsquery AND fa.tsv @@ q.q)
+          OR (q.q = ''::tsquery AND (fa.description ILIKE ('%' || $2 || '%') OR fa.text_overlay ILIKE ('%' || $2 || '%'))))
+    )
+    SELECT * FROM transcript_hits
+    UNION ALL
+    SELECT * FROM visual_hits
+    ORDER BY score DESC
+    LIMIT $4
+    `,
+    [videoId, query, language, limit]
+  );
+  return res.rows.map((r) => parseSearchHitRow(r));
+}
+
+/**
+ * Keyword search over frame_analyses only.
+ */
+async function searchFrameAnalysesByVideo(
+  client: pg.PoolClient,
+  videoId: string,
+  query: string,
+  opts?: { limit?: number }
+): Promise<SearchHit[]> {
+  const limit = Math.min(opts?.limit ?? 20, 50);
+  const res = await client.query(
+    `
+    WITH q AS (
+      SELECT websearch_to_tsquery('english', $2) as q
+    )
+    SELECT
+      fa.id::text as cue_id,
+      fa.start_ms,
+      fa.end_ms,
+      CASE
+        WHEN q.q = ''::tsquery THEN 0.01
+        ELSE ts_rank_cd(fa.tsv, q.q)
+      END as score,
+      fa.description as snippet,
+      'visual' as source_type
+    FROM frame_analyses fa
+    JOIN q ON true
+    WHERE fa.video_id = $1
+      AND ((q.q <> ''::tsquery AND fa.tsv @@ q.q)
+        OR (q.q = ''::tsquery AND (fa.description ILIKE ('%' || $2 || '%') OR fa.text_overlay ILIKE ('%' || $2 || '%'))))
+    ORDER BY score DESC
+    LIMIT $3
+    `,
+    [videoId, query, limit]
+  );
+  return res.rows.map((r) => parseSearchHitRow(r));
+}
+
+/**
+ * Semantic search over visual frame chunks.
+ */
+export async function searchFrameChunksByVideoSemantic(
+  client: pg.PoolClient,
+  videoId: string,
+  queryEmbedding: number[],
+  opts?: { limit?: number; model_id?: string }
+): Promise<SearchHit[]> {
+  const limit = Math.min(opts?.limit ?? 20, 50);
+  const modelId = opts?.model_id ?? "nomic-embed-text";
+
+  const v = toPgVector(queryEmbedding);
+
+  const res = await client.query(
+    `
+    SELECT
+      fc.id::text as cue_id,
+      fc.id::text as chunk_id,
+      fc.start_ms,
+      fc.end_ms,
+      (1 - (e.embedding <=> $1::vector)) as score,
+      substring(fc.text from 1 for 240) as snippet,
+      'visual' as source_type
+    FROM frame_chunks fc
+    JOIN embeddings e ON e.frame_chunk_id = fc.id
+    WHERE fc.video_id = $2
+      AND e.model_id = $3
+      AND e.source_type = 'visual'
+    ORDER BY e.embedding <=> $1::vector
+    LIMIT $4
+    `,
+    [v, videoId, modelId, limit]
+  );
+
+  return res.rows.map((r) => parseSearchHitRow(r));
 }

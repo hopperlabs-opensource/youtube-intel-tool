@@ -1,12 +1,21 @@
 import {
   ApiErrorSchema,
   CapabilitiesResponseSchema,
+  CreateKaraokeSessionRequestSchema,
+  CreateKaraokeSessionResponseSchema,
   ChatRequestSchema,
   ChatResponseSchema,
   ChatStreamEventSchema,
+  CreatePolicyRequestSchema,
+  CreatePolicyResponseSchema,
+  FeedJsonResponseSchema,
+  GetKaraokeLeaderboardResponseSchema,
+  GetKaraokeSessionResponseSchema,
+  GetKaraokeTrackResponseSchema,
   GetChatTurnResponseSchema,
   GetContextResponseSchema,
   GetJobResponseSchema,
+  GetPolicyResponseSchema,
   GetVideoResponseSchema,
   HealthResponseSchema,
   IngestVideoRequestSchema,
@@ -25,17 +34,38 @@ import {
   ListLibraryPeopleResponseSchema,
   ListLibraryTopicsResponseSchema,
   ListLibraryVideosResponseSchema,
+  ListPoliciesResponseSchema,
+  ListPolicyHitsResponseSchema,
+  ListPolicyRunsResponseSchema,
   ListSpeakerSegmentsResponseSchema,
   ListTranscriptsResponseSchema,
   ListVideoChaptersResponseSchema,
   ListVideoSpeakersResponseSchema,
   ListVideoTagsResponseSchema,
   JobStreamEventSchema,
+  KaraokeResolveTrackRequestSchema,
+  KaraokeResolveTrackResponseSchema,
   ResolveVideoRequestSchema,
   ResolveVideoResponseSchema,
+  ListKaraokeThemesResponseSchema,
+  ListKaraokeTracksResponseSchema,
+  RunPolicyRequestSchema,
+  RunPolicyResponseSchema,
   SearchRequestSchema,
   SearchResponseSchema,
   SettingsOpenAIResponseSchema,
+  AddKaraokeQueueItemRequestSchema,
+  AddKaraokeQueueItemResponseSchema,
+  RecordKaraokeScoreEventRequestSchema,
+  RecordKaraokeScoreEventResponseSchema,
+  StartKaraokeRoundRequestSchema,
+  StartKaraokeRoundResponseSchema,
+  UpdatePolicyRequestSchema,
+  UpdatePolicyResponseSchema,
+  UpdateKaraokeQueueItemRequestSchema,
+  UpdateKaraokeQueueItemResponseSchema,
+  UpdateKaraokeSessionRequestSchema,
+  UpdateKaraokeSessionResponseSchema,
   UpdateVideoSpeakerRequestSchema,
   UpdateVideoSpeakerResponseSchema,
   YouTubeChannelUploadsRequestSchema,
@@ -44,6 +74,15 @@ import {
   YouTubePlaylistItemsResponseSchema,
   YouTubeSearchRequestSchema,
   YouTubeSearchResponseSchema,
+  IngestVisualRequestSchema,
+  IngestVisualResponseSchema,
+  GetVisualStatusResponseSchema,
+  ListFramesResponseSchema,
+  GetFrameAnalysisResponseSchema,
+  GetActionTranscriptResponseSchema,
+  ListFrameChunksResponseSchema,
+  CostEstimateSchema,
+  GetNarrativeSynthesisResponseSchema,
 } from "@yt/contracts";
 import type { z } from "zod";
 
@@ -278,6 +317,59 @@ export function createYitClient(opts: { baseUrl: string; fetch?: FetchLike; head
     listLibraryPeople: (opts?: { limit?: number }) => getJson("/api/library/people", ListLibraryPeopleResponseSchema, opts),
     libraryHealth: (opts?: { limit?: number; offset?: number }) => getJson("/api/library/health", LibraryHealthResponseSchema, opts),
     libraryRepair: (req: unknown) => sendJson("POST", "/api/library/repair", LibraryRepairRequestSchema.parse(req), LibraryRepairResponseSchema),
+    listPolicies: (opts?: { limit?: number; offset?: number }) =>
+      getJson("/api/policies", ListPoliciesResponseSchema, opts),
+    createPolicy: (req: unknown) =>
+      sendJson("POST", "/api/policies", CreatePolicyRequestSchema.parse(req), CreatePolicyResponseSchema),
+    getPolicy: (policyId: string) => getJson(`/api/policies/${policyId}`, GetPolicyResponseSchema),
+    updatePolicy: (policyId: string, req: unknown) =>
+      sendJson("PATCH", `/api/policies/${policyId}`, UpdatePolicyRequestSchema.parse(req), UpdatePolicyResponseSchema),
+    runPolicy: (policyId: string, req?: unknown) =>
+      sendJson("POST", `/api/policies/${policyId}/run`, RunPolicyRequestSchema.parse(req ?? {}), RunPolicyResponseSchema),
+    listPolicyRuns: (policyId: string, opts?: { limit?: number; offset?: number }) =>
+      getJson(`/api/policies/${policyId}/runs`, ListPolicyRunsResponseSchema, opts),
+    listPolicyHits: (
+      policyId: string,
+      opts?: { run_id?: string; bucket?: "high" | "medium" | "low"; limit?: number; offset?: number },
+    ) => getJson(`/api/policies/${policyId}/hits`, ListPolicyHitsResponseSchema, opts),
+    getPolicyFeedJson: (policyId: string, token: string) =>
+      getJson(`/api/feeds/${policyId}.json`, FeedJsonResponseSchema, { token }),
+    getPolicyFeedRss: (policyId: string, token: string) =>
+      getText(`/api/feeds/${policyId}.rss`, { token }),
+
+    karaokeResolveTrack: (req: unknown) =>
+      sendJson("POST", "/api/karaoke/tracks/resolve", KaraokeResolveTrackRequestSchema.parse(req), KaraokeResolveTrackResponseSchema),
+    listKaraokeTracks: (opts?: {
+      q?: string;
+      language?: string;
+      ready_state?: "pending" | "ready" | "failed";
+      limit?: number;
+      offset?: number;
+      sort?: "updated_desc" | "title_asc";
+    }) => getJson("/api/karaoke/tracks", ListKaraokeTracksResponseSchema, opts),
+    getKaraokeTrack: (trackId: string) => getJson(`/api/karaoke/tracks/${trackId}`, GetKaraokeTrackResponseSchema),
+    createKaraokeSession: (req: unknown) =>
+      sendJson("POST", "/api/karaoke/sessions", CreateKaraokeSessionRequestSchema.parse(req), CreateKaraokeSessionResponseSchema),
+    getKaraokeSession: (sessionId: string) =>
+      getJson(`/api/karaoke/sessions/${sessionId}`, GetKaraokeSessionResponseSchema),
+    updateKaraokeSession: (sessionId: string, req: unknown) =>
+      sendJson("PATCH", `/api/karaoke/sessions/${sessionId}`, UpdateKaraokeSessionRequestSchema.parse(req), UpdateKaraokeSessionResponseSchema),
+    addKaraokeQueueItem: (sessionId: string, req: unknown) =>
+      sendJson("POST", `/api/karaoke/sessions/${sessionId}/queue`, AddKaraokeQueueItemRequestSchema.parse(req), AddKaraokeQueueItemResponseSchema),
+    updateKaraokeQueueItem: (sessionId: string, itemId: string, req: unknown) =>
+      sendJson("PATCH", `/api/karaoke/sessions/${sessionId}/queue/${itemId}`, UpdateKaraokeQueueItemRequestSchema.parse(req), UpdateKaraokeQueueItemResponseSchema),
+    startKaraokeRound: (sessionId: string, req: unknown) =>
+      sendJson("POST", `/api/karaoke/sessions/${sessionId}/rounds/start`, StartKaraokeRoundRequestSchema.parse(req), StartKaraokeRoundResponseSchema),
+    recordKaraokeScoreEvent: (sessionId: string, req: unknown) =>
+      sendJson(
+        "POST",
+        `/api/karaoke/sessions/${sessionId}/scores/events`,
+        RecordKaraokeScoreEventRequestSchema.parse(req),
+        RecordKaraokeScoreEventResponseSchema
+      ),
+    getKaraokeLeaderboard: (sessionId: string) =>
+      getJson(`/api/karaoke/sessions/${sessionId}/leaderboard`, GetKaraokeLeaderboardResponseSchema),
+    listKaraokeThemes: () => getJson("/api/karaoke/themes", ListKaraokeThemesResponseSchema),
 
     youtubeSearch: (req: unknown) =>
       sendJson("POST", "/api/youtube/search", YouTubeSearchRequestSchema.parse(req), YouTubeSearchResponseSchema),
@@ -285,5 +377,29 @@ export function createYitClient(opts: { baseUrl: string; fetch?: FetchLike; head
       sendJson("POST", "/api/youtube/channel/uploads", YouTubeChannelUploadsRequestSchema.parse(req), YouTubeChannelUploadsResponseSchema),
     youtubePlaylistItems: (req: unknown) =>
       sendJson("POST", "/api/youtube/playlist/items", YouTubePlaylistItemsRequestSchema.parse(req), YouTubePlaylistItemsResponseSchema),
+
+    // Visual Intelligence
+    ingestVisual: (videoId: string, req: unknown) =>
+      sendJson("POST", `/api/videos/${videoId}/visual/ingest`, IngestVisualRequestSchema.parse(req), IngestVisualResponseSchema),
+    getVisualStatus: (videoId: string) =>
+      getJson(`/api/videos/${videoId}/visual/status`, GetVisualStatusResponseSchema),
+    listFrames: (videoId: string, opts?: { limit?: number; offset?: number }) =>
+      getJson(`/api/videos/${videoId}/frames`, ListFramesResponseSchema, opts),
+    getFrameAnalysis: (videoId: string, frameId: string) =>
+      getJson(`/api/videos/${videoId}/frames/${frameId}`, GetFrameAnalysisResponseSchema),
+    getActionTranscript: (videoId: string) =>
+      getJson(`/api/videos/${videoId}/visual/transcript`, GetActionTranscriptResponseSchema),
+    getFrameChunks: (videoId: string) =>
+      getJson(`/api/videos/${videoId}/visual/chunks`, ListFrameChunksResponseSchema),
+    estimateCost: (videoId: string, opts?: { provider?: string; model?: string; maxFrames?: number }) => {
+      const q = new URLSearchParams();
+      if (opts?.provider) q.set("provider", opts.provider);
+      if (opts?.model) q.set("model", opts.model);
+      if (opts?.maxFrames) q.set("maxFrames", String(opts.maxFrames));
+      const qs = q.toString() ? `?${q}` : "";
+      return getJson(`/api/videos/${videoId}/visual/estimate${qs}`, CostEstimateSchema);
+    },
+    getNarrative: (videoId: string) =>
+      getJson(`/api/videos/${videoId}/visual/narrative`, GetNarrativeSynthesisResponseSchema),
   };
 }
