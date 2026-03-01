@@ -41,16 +41,31 @@ type KaraokeTrackRow = {
 };
 
 function parseTrackRow(row: KaraokeTrackRow): KaraokeTrack {
+  const readyState =
+    row.ready_state === "ready" || row.ready_state === "failed" || row.ready_state === "pending"
+      ? row.ready_state
+      : "pending";
+  const thumbnailUrl = (() => {
+    const raw = row.thumbnail_url?.trim() ?? "";
+    if (!raw) return null;
+    try {
+      const parsed = new URL(raw);
+      return parsed.toString();
+    } catch {
+      return null;
+    }
+  })();
+
   return KaraokeTrackSchema.parse({
     id: row.id,
     video_id: row.video_id,
     provider_video_id: row.provider_video_id,
     title: row.title,
     channel_name: row.channel_name,
-    thumbnail_url: row.thumbnail_url,
+    thumbnail_url: thumbnailUrl,
     duration_ms: row.duration_ms,
     language: row.language,
-    ready_state: KaraokeTrackReadyStateSchema.parse(row.ready_state),
+    ready_state: KaraokeTrackReadyStateSchema.parse(readyState),
     cue_count: row.cue_count,
     created_at: row.created_at,
     updated_at: row.updated_at,

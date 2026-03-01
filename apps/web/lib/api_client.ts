@@ -7,7 +7,7 @@ let client: YitClient | null = null;
 
 function getBaseUrl(): string {
   if (typeof window !== "undefined" && window.location?.origin) return window.location.origin;
-  return "http://localhost:3333";
+  return "http://localhost:48333";
 }
 
 export function getApiClient(): YitClient {

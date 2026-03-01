@@ -13,7 +13,7 @@ npm install @yt/sdk @yt/contracts
 ```ts
 import { createYitClient } from "@yt/sdk";
 
-const api = createYitClient({ baseUrl: "http://localhost:3333" });
+const api = createYitClient({ baseUrl: "http://localhost:48333" });
 const health = await api.health();
 console.log(health.ok);
 ```
@@ -33,4 +33,19 @@ const { policy } = await api.createPolicy({
 await api.runPolicy(policy.id, { triggered_by: "cli" });
 const feed = await api.getPolicyFeedJson(policy.id, policy.feed_token);
 console.log(feed.items.length);
+```
+
+## Karaoke manifest workflow
+
+```ts
+import { readFileSync } from "node:fs";
+import { KaraokeLibraryManifestSchema } from "@yt/contracts";
+
+const api = createYitClient({ baseUrl: "http://localhost:48333" });
+const raw = JSON.parse(readFileSync("manifests/karaoke/library.example.json", "utf8"));
+const manifest = KaraokeLibraryManifestSchema.parse(raw);
+
+await api.importKaraokeLibraryManifest({ manifest });
+const stats = await api.getKaraokeLibraryStats();
+console.log(stats.tracks_total, stats.playlists_total);
 ```

@@ -13,10 +13,12 @@ mkdir -p "${LOG_DIR}"
 ts() { date -u +"%Y-%m-%dT%H:%M:%SZ"; }
 log() { printf '%s %s\n' "$(ts)" "$*"; }
 
-WEB_PORT_DEFAULT="$(yit_read_default_env "${ROOT_DIR}" "YIT_WEB_PORT" "3333")"
-WORKER_METRICS_PORT_DEFAULT="$(yit_read_default_env "${ROOT_DIR}" "YIT_WORKER_METRICS_PORT" "4010")"
+WEB_PORT_DEFAULT="$(yit_read_default_env "${ROOT_DIR}" "YIT_WEB_PORT" "48333")"
+WORKER_METRICS_PORT_DEFAULT="$(yit_read_default_env "${ROOT_DIR}" "YIT_WORKER_METRICS_PORT" "48410")"
 WEB_PORT="${YIT_WEB_PORT:-${WEB_PORT_DEFAULT}}"
 WORKER_METRICS_PORT="${YIT_WORKER_METRICS_PORT:-${WORKER_METRICS_PORT_DEFAULT}}"
+PROM_CONFIG_DIR="${ROOT_DIR}/.run/observability"
+PROM_CONFIG_PATH="${PROM_CONFIG_DIR}/prometheus.generated.yml"
 
 log "stack: waiting for docker..."
 for _ in {1..180}; do
@@ -28,7 +30,8 @@ done
 docker info >/dev/null 2>&1 || { log "stack: docker not ready after timeout"; exit 1; }
 
 log "stack: writing prometheus config for web:${WEB_PORT} worker:${WORKER_METRICS_PORT}"
-cat >"${ROOT_DIR}/ops/observability/prometheus/prometheus.generated.yml" <<YAML
+mkdir -p "${PROM_CONFIG_DIR}"
+cat >"${PROM_CONFIG_PATH}" <<YAML
 global:
   scrape_interval: 15s
   evaluation_interval: 15s

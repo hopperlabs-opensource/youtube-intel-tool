@@ -67,10 +67,10 @@ pnpm dev:karaoke
 ```
 
 ### Verify
-- Web UI: `http://localhost:<YIT_WEB_PORT>` (default `3333`)
-- Karaoke UI: `http://localhost:<YIT_KARAOKE_PORT>` (default `3334`)
+- Web UI: `http://localhost:<YIT_WEB_PORT>` (default `48333`)
+- Karaoke UI: `http://localhost:<YIT_KARAOKE_PORT>` (default `48334`)
 - Web metrics: `http://localhost:<YIT_WEB_PORT>/metrics`
-- Worker metrics: `http://localhost:<YIT_WORKER_METRICS_PORT>/metrics` (default `4010`)
+- Worker metrics: `http://localhost:<YIT_WORKER_METRICS_PORT>/metrics` (default `48410`)
 
 ## 5. Verify Health
 
@@ -100,7 +100,7 @@ Expected outcome:
 ## 6. First Ingest (UI and CLI)
 
 ### UI flow
-1. Open `http://localhost:<YIT_WEB_PORT>` (default `3333`).
+1. Open `http://localhost:<YIT_WEB_PORT>` (default `48333`).
 2. Paste a YouTube URL and click `Open`.
 3. On the video page, click `Ingest`.
 4. Watch Job Center progress.

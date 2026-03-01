@@ -19,14 +19,17 @@ test("accept button enables only after both checkboxes", async ({ page }) => {
   const risk = page.locator("#safety-risk");
 
   await expect(acceptButton).toBeVisible();
-  await expect(acceptButton).toBeDisabled();
+  const initialOpacity = await acceptButton.evaluate((el) => getComputedStyle(el).opacity);
+  expect(Number(initialOpacity)).toBeLessThan(1);
 
-  await localOnly.click();
-  await expect(acceptButton).toBeDisabled();
+  await acceptButton.click();
+  await expect(page.getByText("Local-Only Security Notice")).toBeVisible();
 
-  await risk.click();
-  await expect(acceptButton).toBeEnabled();
+  await localOnly.check();
+  await acceptButton.click();
+  await expect(page.getByText("Local-Only Security Notice")).toBeVisible();
 
+  await risk.check();
   await acceptButton.click();
   await expect(acceptButton).toBeHidden();
 });
@@ -50,8 +53,7 @@ test("fallback accept works when JavaScript is disabled", async ({ browser }) =>
   await page.goto("/safety-check");
   await expect(page.getByText("Local-Only Security Notice")).toBeVisible();
 
-  await page.locator("summary").click();
-  await page.getByRole("button", { name: "Accept via Fallback Reload" }).click();
+  await page.getByRole("link", { name: "Accept via Fallback Reload" }).click();
   await page.waitForLoadState("domcontentloaded");
   await page.goto("/safety-check");
 

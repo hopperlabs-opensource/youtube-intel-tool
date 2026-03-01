@@ -66,6 +66,11 @@ import {
   ListKaraokeGuestRequestsResponseSchema,
   UpdateKaraokeGuestRequestRequestSchema,
   UpdateKaraokeGuestRequestResponseSchema,
+  BootstrapKaraokeLibraryRequestSchema,
+  BootstrapKaraokeLibraryResponseSchema,
+  KaraokeLibraryImportRequestSchema,
+  KaraokeLibraryImportResponseSchema,
+  KaraokeLibraryStatsResponseSchema,
   ResolveVideoRequestSchema,
   ResolveVideoResponseSchema,
   ListKaraokeThemesResponseSchema,
@@ -115,7 +120,11 @@ import {
   UpdateFaceIdentityResponseSchema,
   ListFaceAppearancesResponseSchema,
   ListFaceDetectionsResponseSchema,
+  GetSpeakerVoiceResponseSchema,
   MatchSpeakerResponseSchema,
+  IngestFacesResponseSchema,
+  IngestVoiceResponseSchema,
+  ListSignificantMarksResponseSchema,
   ListGlobalSpeakersResponseSchema,
   CreateGlobalSpeakerRequestSchema,
   CreateGlobalSpeakerResponseSchema,
@@ -410,6 +419,22 @@ export function createYitClient(opts: { baseUrl: string; fetch?: FetchLike; head
     getKaraokeLeaderboard: (sessionId: string) =>
       getJson(`/api/karaoke/sessions/${sessionId}/leaderboard`, GetKaraokeLeaderboardResponseSchema),
     listKaraokeThemes: () => getJson("/api/karaoke/themes", ListKaraokeThemesResponseSchema),
+    bootstrapKaraokeLibrary: (req?: unknown) =>
+      sendJson(
+        "POST",
+        "/api/karaoke/library/bootstrap",
+        BootstrapKaraokeLibraryRequestSchema.parse(req ?? {}),
+        BootstrapKaraokeLibraryResponseSchema
+      ),
+    importKaraokeLibraryManifest: (req: unknown) =>
+      sendJson(
+        "POST",
+        "/api/karaoke/library/import",
+        KaraokeLibraryImportRequestSchema.parse(req),
+        KaraokeLibraryImportResponseSchema
+      ),
+    getKaraokeLibraryStats: () =>
+      getJson("/api/karaoke/library/stats", KaraokeLibraryStatsResponseSchema),
     createKaraokePlaylist: (req: unknown) =>
       sendJson("POST", "/api/karaoke/playlists", CreateKaraokePlaylistRequestSchema.parse(req), CreateKaraokePlaylistResponseSchema),
     listKaraokePlaylists: (opts?: { limit?: number; offset?: number }) =>
@@ -480,7 +505,7 @@ export function createYitClient(opts: { baseUrl: string; fetch?: FetchLike; head
     detectAutoChapters: (videoId: string, req?: unknown) =>
       sendJson("POST", `/api/videos/${videoId}/auto-chapters`, DetectAutoChaptersRequestSchema.parse(req ?? {}), DetectAutoChaptersResponseSchema),
     listSignificantMarks: (videoId: string, opts?: { type?: string }) =>
-      getJson(`/api/videos/${videoId}/marks`, GetAutoChaptersResponseSchema, opts),
+      getJson(`/api/videos/${videoId}/marks`, ListSignificantMarksResponseSchema, opts),
 
     // Face Indexing
     listFaceIdentities: (videoId: string) =>
@@ -492,7 +517,15 @@ export function createYitClient(opts: { baseUrl: string; fetch?: FetchLike; head
     listFaceDetections: (videoId: string, opts?: { identityId?: string }) =>
       getJson(`/api/videos/${videoId}/faces/${opts?.identityId ?? "_"}/detections`, ListFaceDetectionsResponseSchema),
 
+    // Face Ingest
+    ingestFaces: (videoId: string, opts?: { det_threshold?: number; cluster_threshold?: number; force?: boolean }) =>
+      sendJson("POST", `/api/videos/${videoId}/faces/ingest`, opts ?? {}, IngestFacesResponseSchema),
+
     // Voice Fingerprinting
+    getSpeakerVoice: (videoId: string, speakerId: string) =>
+      getJson(`/api/videos/${videoId}/speakers/${speakerId}/voice`, GetSpeakerVoiceResponseSchema),
+    ingestVoice: (videoId: string, opts?: { force?: boolean }) =>
+      sendJson("POST", `/api/videos/${videoId}/speakers/voice-ingest`, opts ?? {}, IngestVoiceResponseSchema),
     matchSpeaker: (videoId: string, speakerId: string) =>
       sendJson("POST", `/api/videos/${videoId}/speakers/${speakerId}/match`, {}, MatchSpeakerResponseSchema),
 

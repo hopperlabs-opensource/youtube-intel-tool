@@ -1,7 +1,7 @@
 import { getEmbeddingsStatus, getPool, initMetrics, listLibraryHealth } from "@yt/core";
 import { LibraryHealthResponseSchema } from "@yt/contracts";
 import { NextResponse } from "next/server";
-import { jsonError } from "@/lib/server/api";
+import { jsonError, classifyApiError } from "@/lib/server/api";
 import { getEmbeddingsEnvForRequest } from "@/lib/server/openai_key";
 
 export const runtime = "nodejs";
@@ -31,8 +31,8 @@ export async function GET(req: Request) {
       client.release();
     }
   } catch (err: unknown) {
-    metrics.httpRequestsTotal.inc({ route: "/api/library/health", method: "GET", status: "400" });
-    const msg = err instanceof Error ? err.message : String(err);
-    return jsonError("invalid_request", msg, { status: 400 });
+    const apiErr = classifyApiError(err);
+    metrics.httpRequestsTotal.inc({ route: "/api/library/health", method: "GET", status: String(apiErr.status) });
+    return jsonError(apiErr.code, apiErr.message, { status: apiErr.status, details: apiErr.details });
   }
 }

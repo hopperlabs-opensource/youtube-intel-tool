@@ -14,13 +14,21 @@ type SafetyGateProps = {
 };
 
 export function SafetyGate({ initialAccepted }: SafetyGateProps) {
-  const [accepted, setAccepted] = useState<boolean>(() => initialAccepted || (typeof window !== "undefined" ? loadSafetyAck() : false));
-  const [localOnly, setLocalOnly] = useState(false);
-  const [risk, setRisk] = useState(false);
-  const [storageSupport] = useState<SafetyStorageSupport>(() =>
-    typeof window !== "undefined" ? detectSafetyStorageSupport() : { localStorage: false, cookies: false }
-  );
+  const [accepted, setAccepted] = useState<boolean>(initialAccepted);
+  const [storageSupport, setStorageSupport] = useState<SafetyStorageSupport | null>(null);
   const [showBypass, setShowBypass] = useState(false);
+
+  useEffect(() => {
+    if (initialAccepted) return;
+    const timer = window.setTimeout(() => {
+      if (loadSafetyAck()) {
+        setAccepted(true);
+        return;
+      }
+      setStorageSupport(detectSafetyStorageSupport());
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [initialAccepted]);
 
   useEffect(() => {
     const bypassDelayMs = computeSafetyBypassDelayMs(process.env.NEXT_PUBLIC_YIT_SAFETY_BYPASS_DELAY_MS);
@@ -30,8 +38,8 @@ export function SafetyGate({ initialAccepted }: SafetyGateProps) {
 
   if (accepted) return null;
 
-  const canAccept = localOnly && risk;
   const storageLikelyBlocked = Boolean(storageSupport && !storageSupport.localStorage && !storageSupport.cookies);
+  const fallbackUrl = "/api/safety-ack?return_to=/";
 
   return (
     <div className="safety-overlay">
@@ -46,38 +54,44 @@ export function SafetyGate({ initialAccepted }: SafetyGateProps) {
           secrets management, and abuse protection.
         </p>
         <p>If controls look stuck in Brave, disable Shields/extensions for localhost and hard refresh.</p>
-        <label>
-          <input type="checkbox" checked={localOnly} onChange={(e) => setLocalOnly(e.currentTarget.checked)} /> I
-          understand this is local-use software.
-        </label>
-        <label>
-          <input type="checkbox" checked={risk} onChange={(e) => setRisk(e.currentTarget.checked)} /> I understand
-          public exposure without hardening can leak data and allow abuse.
-        </label>
-        <button
-          disabled={!canAccept}
-          onClick={() => {
+        <form
+          method="get"
+          action="/api/safety-ack"
+          className="safety-consent-form"
+          onSubmit={(e) => {
+            if (!e.currentTarget.checkValidity()) return;
+            e.preventDefault();
             saveSafetyAck();
             setAccepted(true);
           }}
         >
-          I Understand and Accept
-        </button>
+          <input type="hidden" name="return_to" value="/" />
+          <label>
+            <input id="karaoke-safety-local" name="local_only_ack" type="checkbox" required />{" "}
+            I understand this is local-use software.
+          </label>
+          <label>
+            <input id="karaoke-safety-risk" name="risk_ack" type="checkbox" required />{" "}
+            I understand public exposure without hardening can leak data and allow abuse.
+          </label>
+          <button className="safety-accept-btn" type="submit">
+            I Understand and Accept
+          </button>
+        </form>
 
         {storageLikelyBlocked ? (
           <p className="safety-note">Browser storage appears blocked. Acknowledgement may not persist on reload.</p>
         ) : null}
 
-        <details className="safety-fallback">
-          <summary>Button stuck in Brave/extension-heavy browsers?</summary>
-          <p>Use fallback accept to set the same acknowledgement cookie and reload this page.</p>
-          <form method="post" action="/api/safety-ack">
-            <button type="submit">Accept via Fallback Reload</button>
-          </form>
-        </details>
+        <div className="safety-fallback">
+          <p>Button stuck in Brave/extension-heavy browsers? Use fallback accept to set the same cookie and reload.</p>
+          <a className="safety-fallback-link" href={fallbackUrl}>
+            Accept via Fallback Reload
+          </a>
+        </div>
 
         {showBypass ? (
-          <p className="safety-note">
+          <div className="safety-note">
             Fallback: if browser protections prevent this gate from working, continue in non-blocking mode for this
             session.
             <button
@@ -89,7 +103,7 @@ export function SafetyGate({ initialAccepted }: SafetyGateProps) {
             >
               Continue Without Gate (This Session)
             </button>
-          </p>
+          </div>
         ) : null}
       </div>
     </div>

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createJob, getPool, initMetrics } from "@yt/core";
 import { LibraryRepairRequestSchema, LibraryRepairResponseSchema } from "@yt/contracts";
-import { jsonError } from "@/lib/server/api";
+import { jsonError, classifyApiError } from "@/lib/server/api";
 import { getIngestQueue } from "@/lib/server/queue";
 import { randomUUID } from "crypto";
 
@@ -47,9 +47,9 @@ export async function POST(req: Request) {
       client.release();
     }
   } catch (err: unknown) {
-    metrics.httpRequestsTotal.inc({ route: "/api/library/repair", method: "POST", status: "400" });
-    const msg = err instanceof Error ? err.message : String(err);
-    return jsonError("invalid_request", msg, { status: 400 });
+    const apiErr = classifyApiError(err);
+    metrics.httpRequestsTotal.inc({ route: "/api/library/repair", method: "POST", status: String(apiErr.status) });
+    return jsonError(apiErr.code, apiErr.message, { status: apiErr.status, details: apiErr.details });
   }
 }
 

@@ -37,22 +37,26 @@ export async function ensureVideoFile(input: string, opts?: {
   }
 
   const maxHeight = opts?.maxHeight ?? 720;
-  const tmpPath = `${outputPath}.tmp`;
+  // Use a directory-based tmp path so yt-dlp can add its own extension
+  const tmpDir = path.join(outputDir, ".tmp");
+  await fs.mkdir(tmpDir, { recursive: true });
+  const tmpBase = path.join(tmpDir, urlHash);
 
   try {
     await execFileAsync("yt-dlp", [
       "-f", `bestvideo[height<=${maxHeight}]+bestaudio/best[height<=${maxHeight}]`,
       "--merge-output-format", "mp4",
-      "-o", tmpPath,
+      "-o", `${tmpBase}.%(ext)s`,
       "--no-playlist",
       "--no-warnings",
       input,
     ], { timeout: 300_000 }); // 5 minute timeout
 
-    await fs.rename(tmpPath, outputPath);
+    // yt-dlp writes to <tmpBase>.mp4
+    await fs.rename(`${tmpBase}.mp4`, outputPath);
   } catch (err) {
     // Clean up temp file on failure
-    await fs.rm(tmpPath, { force: true });
+    await fs.rm(`${tmpBase}.mp4`, { force: true });
     throw err;
   }
 

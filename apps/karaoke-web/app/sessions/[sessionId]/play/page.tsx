@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import type { TranscriptCue } from "@yt/contracts";
 import { DEFAULT_KARAOKE_UI_SETTINGS, loadKaraokeUiSettings, saveKaraokeUiSettings, type KaraokeUiSettings } from "@yt/experience-core";
+import { KaraokeSkinControls } from "@yt/karaoke-ui";
 import { getApiClient } from "@/lib/api";
 
 function formatMs(ms: number): string {
@@ -25,7 +26,7 @@ export default function SessionPlayPage() {
   const qc = useQueryClient();
 
   const [playerName, setPlayerName] = useState("Player 1");
-  const [nowMs, setNowMs] = useState(() => Date.now());
+  const [nowMs, setNowMs] = useState(0);
   const [uiSettings, setUiSettings] = useState<KaraokeUiSettings>(DEFAULT_KARAOKE_UI_SETTINGS);
 
   const sessionQ = useQuery({
@@ -107,6 +108,7 @@ export default function SessionPlayPage() {
     if (!activeItem?.started_at) return;
     const startedAt = Date.parse(activeItem.started_at);
     if (Number.isNaN(startedAt)) return;
+    setNowMs(Date.now());
     const id = window.setInterval(tick, 100);
     return () => window.clearInterval(id);
     function tick() {
@@ -115,8 +117,10 @@ export default function SessionPlayPage() {
   }, [activeItem?.id, activeItem?.started_at]);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    setUiSettings(loadKaraokeUiSettings());
+    const timer = window.setTimeout(() => {
+      setUiSettings(loadKaraokeUiSettings());
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   const startedAtMs = activeItem?.started_at ? Date.parse(activeItem.started_at) : Number.NaN;
@@ -185,47 +189,14 @@ export default function SessionPlayPage() {
             <label className="muted" style={{ fontSize: 12 }}>
               Skin mode
             </label>
-            <select
-              value={uiSettings.themeMode}
-              onChange={(e) => {
-                const next: KaraokeUiSettings = { ...uiSettings, themeMode: e.target.value as KaraokeUiSettings["themeMode"] };
+            <KaraokeSkinControls
+              settings={uiSettings}
+              showHideUpcoming
+              onChange={(next) => {
                 setUiSettings(next);
                 saveKaraokeUiSettings(next);
               }}
-              style={{ maxWidth: 140 }}
-            >
-              <option value="theme">Theme</option>
-              <option value="light">Light</option>
-              <option value="dark">Dark</option>
-            </select>
-            <label className="muted" style={{ fontSize: 12 }}>
-              Lyric scale
-            </label>
-            <input
-              type="range"
-              min={0.8}
-              max={1.6}
-              step={0.05}
-              value={uiSettings.lyricScale}
-              onChange={(e) => {
-                const next: KaraokeUiSettings = { ...uiSettings, lyricScale: Number(e.target.value) };
-                setUiSettings(next);
-                saveKaraokeUiSettings(next);
-              }}
-              style={{ maxWidth: 120 }}
             />
-            <label className="muted" style={{ fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
-              <input
-                type="checkbox"
-                checked={uiSettings.hideUpcomingTitles}
-                onChange={(e) => {
-                  const next: KaraokeUiSettings = { ...uiSettings, hideUpcomingTitles: e.target.checked };
-                  setUiSettings(next);
-                  saveKaraokeUiSettings(next);
-                }}
-              />
-              Hide up-next titles
-            </label>
           </div>
 
           <div style={{ marginTop: 10 }}>

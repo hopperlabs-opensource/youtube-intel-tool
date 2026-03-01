@@ -1123,6 +1123,78 @@ export const ListKaraokeThemesResponseSchema = z.object({
 });
 export type ListKaraokeThemesResponse = z.infer<typeof ListKaraokeThemesResponseSchema>;
 
+export const BootstrapKaraokeLibraryRequestSchema = z.object({
+  target_count: z.number().int().min(50).max(2000).default(1000),
+  language: z.string().trim().min(2).max(12).default("en"),
+  query_pack: z.enum(["default", "quick"]).default("default"),
+});
+export type BootstrapKaraokeLibraryRequest = z.infer<typeof BootstrapKaraokeLibraryRequestSchema>;
+
+export const BootstrapKaraokeLibraryResponseSchema = z.object({
+  ok: z.literal(true),
+  seeded_track_count: z.number().int().nonnegative(),
+  target_count: z.number().int().nonnegative(),
+  playlists: z.array(
+    z.object({
+      id: IdSchema,
+      name: z.string().min(1),
+      added_count: z.number().int().nonnegative(),
+    })
+  ),
+});
+export type BootstrapKaraokeLibraryResponse = z.infer<typeof BootstrapKaraokeLibraryResponseSchema>;
+
+export const KaraokeLibraryManifestTrackSchema = z.object({
+  url: z.string().trim().url(),
+  language: z.string().trim().min(2).max(12).optional(),
+});
+export type KaraokeLibraryManifestTrack = z.infer<typeof KaraokeLibraryManifestTrackSchema>;
+
+export const KaraokeLibraryManifestPlaylistSchema = z.object({
+  name: z.string().trim().min(1).max(160),
+  description: z.string().trim().max(2_000).optional().nullable(),
+  tracks: z.array(KaraokeLibraryManifestTrackSchema).default([]),
+});
+export type KaraokeLibraryManifestPlaylist = z.infer<typeof KaraokeLibraryManifestPlaylistSchema>;
+
+export const KaraokeLibraryManifestSchema = z.object({
+  version: z.literal(1).default(1),
+  language: z.string().trim().min(2).max(12).default("en"),
+  tracks: z.array(KaraokeLibraryManifestTrackSchema).default([]),
+  playlists: z.array(KaraokeLibraryManifestPlaylistSchema).default([]),
+});
+export type KaraokeLibraryManifest = z.infer<typeof KaraokeLibraryManifestSchema>;
+
+export const KaraokeLibraryImportRequestSchema = z.object({
+  manifest: KaraokeLibraryManifestSchema,
+});
+export type KaraokeLibraryImportRequest = z.infer<typeof KaraokeLibraryImportRequestSchema>;
+
+export const KaraokeLibraryImportResponseSchema = z.object({
+  ok: z.literal(true),
+  imported_track_count: z.number().int().nonnegative(),
+  imported_playlist_count: z.number().int().nonnegative(),
+  imported_playlist_item_count: z.number().int().nonnegative(),
+  failed: z.array(
+    z.object({
+      url: z.string().trim(),
+      reason: z.string().trim().min(1),
+    })
+  ),
+});
+export type KaraokeLibraryImportResponse = z.infer<typeof KaraokeLibraryImportResponseSchema>;
+
+export const KaraokeLibraryStatsResponseSchema = z.object({
+  tracks_total: z.number().int().nonnegative(),
+  tracks_ready: z.number().int().nonnegative(),
+  tracks_pending: z.number().int().nonnegative(),
+  tracks_failed: z.number().int().nonnegative(),
+  playlists_total: z.number().int().nonnegative(),
+  playlist_items_total: z.number().int().nonnegative(),
+  generated_at: IsoDateTimeSchema,
+});
+export type KaraokeLibraryStatsResponse = z.infer<typeof KaraokeLibraryStatsResponseSchema>;
+
 export const KaraokePlaylistSchema = z.object({
   id: IdSchema,
   name: z.string().min(1),
@@ -1355,6 +1427,7 @@ export type FrameChunkRow = z.infer<typeof FrameChunkRowSchema>;
 export const VisionProviderSchema = z.enum([
   "claude", "openai", "gemini", "ollama",
   "claude-cli", "gemini-cli", "codex-cli",
+  "auto", "auto-local",
 ]);
 export type VisionProvider = z.infer<typeof VisionProviderSchema>;
 
@@ -1363,7 +1436,7 @@ export type PromptTemplate = z.infer<typeof PromptTemplateSchema>;
 
 export const VisionConfigSchema = z.object({
   provider: VisionProviderSchema,
-  model: z.string().min(1),
+  model: z.string().min(1).default("auto"),
   baseUrl: z.string().url().optional(),
   apiKey: z.string().min(1).optional(),
   maxTokensPerFrame: z.number().int().min(50).max(4096).default(512),

@@ -32,8 +32,8 @@ pnpm yit capabilities
 ```bash
 YIT_WEB_PORT=3344 \
 YIT_WORKER_METRICS_PORT=4011 \
-YIT_PROMETHEUS_PORT=59093 \
-YIT_GRAFANA_PORT=53001 \
+YIT_PROMETHEUS_PORT=49093 \
+YIT_GRAFANA_PORT=48301 \
 pnpm bg:up
 ```
 
@@ -42,7 +42,7 @@ pnpm bg:up
 - If needed, set CLI base URL:
 
 ```bash
-export YIT_BASE_URL="http://localhost:${YIT_WEB_PORT:-3333}"
+export YIT_BASE_URL="http://localhost:${YIT_WEB_PORT:-48333}"
 pnpm yit health
 ```
 
@@ -163,7 +163,7 @@ If needed, remove persistent volumes manually before `db:up`.
 
 ### Steps
 ```bash
-export YIT_BASE_URL="http://localhost:${YIT_WEB_PORT:-3333}"
+export YIT_BASE_URL="http://localhost:${YIT_WEB_PORT:-48333}"
 export YIT_CONTRACT_TEST_INGEST_URL=https://www.youtube.com/watch?v=dQw4w9WgXcQ
 pnpm test:integration
 ```
@@ -179,7 +179,7 @@ pnpm test:integration
 - Browser storage is blocked in this profile.
 
 ### Steps
-1. Disable Shields for `http://localhost:3333`.
+1. Disable Shields for `http://localhost:48333`.
 2. Disable script/privacy extensions for localhost.
 3. Hard refresh (`Cmd+Shift+R` / `Ctrl+Shift+R`).
 4. If needed, clear site storage and reload.

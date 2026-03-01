@@ -14,6 +14,7 @@ import {
 import { ChatRequestSchema, ChatResponseSchema } from "@yt/contracts";
 import { randomUUID } from "crypto";
 import { getEmbeddingsEnvForRequest } from "@/lib/server/openai_key";
+import { classifyApiError } from "@/lib/server/api";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -209,11 +210,11 @@ export async function POST(req: Request, ctx: { params: Promise<{ videoId: strin
         controller.enqueue(enc.encode(sseEncode({ type: "done", response })));
         controller.close();
       } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : String(err);
+        const apiErr = classifyApiError(err);
         const durationMs = Date.now() - startedAt;
         metrics.chatRequestsTotal.inc({ provider: body.provider, status: "failed" });
         metrics.chatDurationMs.observe({ provider: body.provider, status: "failed" }, durationMs);
-        metrics.httpRequestsTotal.inc({ route: "/api/videos/:id/chat/stream", method: "POST", status: "400" });
+        metrics.httpRequestsTotal.inc({ route: "/api/videos/:id/chat/stream", method: "POST", status: String(apiErr.status) });
 
         if (chatTurnId) {
           try {
@@ -224,7 +225,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ videoId: strin
                 status: "failed",
                 response_text: null,
                 response_json: null,
-                error: msg,
+                error: apiErr.message,
                 duration_ms: durationMs,
               });
             } finally {
@@ -233,7 +234,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ videoId: strin
           } catch {}
         }
 
-        controller.enqueue(enc.encode(sseEncode({ type: "error", error: { code: "chat_failed", message: msg } })));
+        controller.enqueue(enc.encode(sseEncode({ type: "error", error: { code: apiErr.code, message: apiErr.message } })));
         controller.close();
       }
     },

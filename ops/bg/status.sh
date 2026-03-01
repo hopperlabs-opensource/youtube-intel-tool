@@ -6,7 +6,6 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${HERE}/_common.sh"
 
 require_cmd curl
-require_cmd docker
 require_cmd lsof
 require_cmd node
 
@@ -40,7 +39,14 @@ fi
 
 echo
 echo "Docker:"
-docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}' | awk 'NR==1 || $1 ~ /^yt_/ || $1 ~ /^NAME/ {print}'
+if command -v docker >/dev/null 2>&1 && docker_ready; then
+  if [ -n "${DOCKER_CONTEXT_NAME:-}" ]; then
+    echo "  context: ${DOCKER_CONTEXT_NAME}"
+  fi
+  docker_cmd ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}' | awk 'NR==1 || $1 ~ /^yt_/ || $1 ~ /^NAME/ {print}'
+else
+  echo "  docker unavailable (external infra mode)"
+fi
 
 echo
 echo "Logs:"

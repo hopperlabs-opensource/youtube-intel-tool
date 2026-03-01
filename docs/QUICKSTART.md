@@ -34,10 +34,10 @@ pnpm run doctor
 ```
 
 ### Verify
-- App: `http://localhost:<YIT_WEB_PORT>` (default `3333`)
-- Karaoke app: `http://localhost:<YIT_KARAOKE_PORT>` (default `3334`, run `pnpm dev:karaoke`)
+- App: `http://localhost:<YIT_WEB_PORT>` (default `48333`)
+- Karaoke app: `http://localhost:<YIT_KARAOKE_PORT>` (default `48334`, run `pnpm dev:karaoke`)
 - Web metrics: `http://localhost:<YIT_WEB_PORT>/metrics`
-- Worker metrics: `http://localhost:<YIT_WORKER_METRICS_PORT>/metrics` (default `4010`)
+- Worker metrics: `http://localhost:<YIT_WORKER_METRICS_PORT>/metrics` (default `48410`)
 - Tests: `pnpm test` and `pnpm test:integration`
 
 ## First Ingest Flow
@@ -46,7 +46,7 @@ pnpm run doctor
 - Stack is running and healthy
 
 ### Steps
-1. Open `http://localhost:<YIT_WEB_PORT>` (default `3333`).
+1. Open `http://localhost:<YIT_WEB_PORT>` (default `48333`).
 2. Paste a YouTube URL on `/` and select `Open`.
 3. On the video page, select `Ingest`.
 4. Watch progress in Job Center.

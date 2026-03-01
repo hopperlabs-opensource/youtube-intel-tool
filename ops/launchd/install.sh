@@ -28,9 +28,9 @@ DOCKER_DIR="$(dirname "${DOCKER_BIN}")"
 # Launchd does not reliably inherit your shell PATH (especially with nvm).
 LAUNCHD_PATH="${PNPM_DIR}:${DOCKER_DIR}:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 
-WEB_PORT_DEFAULT="$(yit_read_default_env "${ROOT_DIR}" "YIT_WEB_PORT" "3333")"
-KARAOKE_WEB_PORT_DEFAULT="$(yit_read_default_env "${ROOT_DIR}" "YIT_KARAOKE_PORT" "3334")"
-WORKER_METRICS_PORT_DEFAULT="$(yit_read_default_env "${ROOT_DIR}" "YIT_WORKER_METRICS_PORT" "4010")"
+WEB_PORT_DEFAULT="$(yit_read_default_env "${ROOT_DIR}" "YIT_WEB_PORT" "48333")"
+KARAOKE_WEB_PORT_DEFAULT="$(yit_read_default_env "${ROOT_DIR}" "YIT_KARAOKE_PORT" "48334")"
+WORKER_METRICS_PORT_DEFAULT="$(yit_read_default_env "${ROOT_DIR}" "YIT_WORKER_METRICS_PORT" "48410")"
 WEB_PORT="${YIT_WEB_PORT:-${WEB_PORT_DEFAULT}}"
 KARAOKE_WEB_PORT="${YIT_KARAOKE_PORT:-${KARAOKE_WEB_PORT_DEFAULT}}"
 WORKER_METRICS_PORT="${YIT_WORKER_METRICS_PORT:-${WORKER_METRICS_PORT_DEFAULT}}"

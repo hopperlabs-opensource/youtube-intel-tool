@@ -6,7 +6,7 @@ let client: YitClient | null = null;
 
 function getBaseUrl(): string {
   if (typeof window !== "undefined" && window.location?.origin) return window.location.origin;
-  return process.env.NEXT_PUBLIC_KARAOKE_BASE_URL || "http://localhost:3334";
+  return process.env.NEXT_PUBLIC_KARAOKE_BASE_URL || "http://localhost:48334";
 }
 
 export function getApiClient(): YitClient {

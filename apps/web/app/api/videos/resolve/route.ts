@@ -1,14 +1,13 @@
 import { NextResponse } from "next/server";
 import { fetchYouTubeOEmbed, getPool, parseYouTubeUrl, updateVideoMetadata, upsertVideoByProviderId, initMetrics } from "@yt/core";
 import { ResolveVideoRequestSchema, ResolveVideoResponseSchema } from "@yt/contracts";
-import { jsonError } from "@/lib/server/api";
+import { jsonError, classifyApiError } from "@/lib/server/api";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
   const metrics = initMetrics();
-  const startedAt = Date.now();
   try {
     const body = ResolveVideoRequestSchema.parse(await req.json());
     const parsed = parseYouTubeUrl(body.url);
@@ -37,8 +36,8 @@ export async function POST(req: Request) {
       client.release();
     }
   } catch (err: unknown) {
-    metrics.httpRequestsTotal.inc({ route: "/api/videos/resolve", method: "POST", status: "400" });
-    const msg = err instanceof Error ? err.message : String(err);
-    return jsonError("invalid_request", msg, { status: 400, details: { ms: Date.now() - startedAt } });
+    const apiErr = classifyApiError(err);
+    metrics.httpRequestsTotal.inc({ route: "/api/videos/resolve", method: "POST", status: String(apiErr.status) });
+    return jsonError(apiErr.code, apiErr.message, { status: apiErr.status, details: apiErr.details });
   }
 }

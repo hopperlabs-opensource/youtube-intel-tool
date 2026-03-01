@@ -6,13 +6,13 @@ scrape_configs:
   - job_name: yt_web
     metrics_path: /metrics
     static_configs:
-      - targets: ["host.docker.internal:3333"]
+      - targets: ["host.docker.internal:48333"]
         labels:
           service: web
 
   - job_name: yt_worker
     metrics_path: /metrics
     static_configs:
-      - targets: ["host.docker.internal:4010"]
+      - targets: ["host.docker.internal:48410"]
         labels:
           service: worker

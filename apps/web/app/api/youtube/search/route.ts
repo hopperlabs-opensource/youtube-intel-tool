@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getPool, initMetrics, listVideoSources, upsertVideoSource } from "@yt/core";
 import { YouTubeSearchRequestSchema, YouTubeSearchResponseSchema } from "@yt/contracts";
-import { jsonError } from "@/lib/server/api";
+import { jsonError, classifyApiError } from "@/lib/server/api";
 import { isYtDlpMissingError, runYtDlpJson } from "@/lib/server/yt_dlp";
 
 export const runtime = "nodejs";
@@ -142,8 +142,8 @@ export async function POST(req: Request) {
       client.release();
     }
   } catch (err: unknown) {
-    metrics.httpRequestsTotal.inc({ route: "/api/youtube/search", method: "POST", status: "400" });
-    const msg = err instanceof Error ? err.message : String(err);
-    return jsonError("invalid_request", msg, { status: 400 });
+    const apiErr = classifyApiError(err);
+    metrics.httpRequestsTotal.inc({ route: "/api/youtube/search", method: "POST", status: String(apiErr.status) });
+    return jsonError(apiErr.code, apiErr.message, { status: apiErr.status, details: apiErr.details });
   }
 }

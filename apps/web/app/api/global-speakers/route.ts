@@ -1,17 +1,17 @@
 import { NextResponse } from "next/server";
 import { getPool, initMetrics } from "@yt/core";
-import { listGlobalSpeakers, upsertGlobalSpeaker, linkSpeakerToGlobal, getSpeakerEmbedding } from "@yt/core";
+import { listGlobalSpeakers, upsertGlobalSpeaker, linkSpeakerToGlobal } from "@yt/core";
 import {
   ListGlobalSpeakersResponseSchema,
   CreateGlobalSpeakerRequestSchema,
   CreateGlobalSpeakerResponseSchema,
 } from "@yt/contracts";
-import { jsonError } from "@/lib/server/api";
+import { jsonError, classifyApiError } from "@/lib/server/api";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET(_req: Request) {
+export async function GET() {
   const metrics = initMetrics();
   try {
     const pool = getPool();
@@ -49,8 +49,8 @@ export async function POST(req: Request) {
       client.release();
     }
   } catch (err: unknown) {
-    metrics.httpRequestsTotal.inc({ route: "/api/global-speakers", method: "POST", status: "400" });
-    const msg = err instanceof Error ? err.message : String(err);
-    return jsonError("invalid_request", msg, { status: 400 });
+    const apiErr = classifyApiError(err);
+    metrics.httpRequestsTotal.inc({ route: "/api/global-speakers", method: "POST", status: String(apiErr.status) });
+    return jsonError(apiErr.code, apiErr.message, { status: apiErr.status, details: apiErr.details });
   }
 }

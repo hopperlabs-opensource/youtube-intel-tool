@@ -10,11 +10,38 @@ source "${ROOT_DIR}/ops/lib/defaults.sh"
 
 mkdir -p "${LOG_DIR}"
 
-WEB_PORT_DEFAULT="$(yit_read_default_env "${ROOT_DIR}" "YIT_WEB_PORT" "3333")"
-KARAOKE_WEB_PORT_DEFAULT="$(yit_read_default_env "${ROOT_DIR}" "YIT_KARAOKE_PORT" "3334")"
-WORKER_METRICS_PORT_DEFAULT="$(yit_read_default_env "${ROOT_DIR}" "YIT_WORKER_METRICS_PORT" "4010")"
-GRAFANA_PORT_DEFAULT="$(yit_read_default_env "${ROOT_DIR}" "YIT_GRAFANA_PORT" "53000")"
-PROMETHEUS_PORT_DEFAULT="$(yit_read_default_env "${ROOT_DIR}" "YIT_PROMETHEUS_PORT" "59092")"
+WEB_PORT_DEFAULT="$(yit_read_default_env "${ROOT_DIR}" "YIT_WEB_PORT" "48333")"
+KARAOKE_WEB_PORT_DEFAULT="$(yit_read_default_env "${ROOT_DIR}" "YIT_KARAOKE_PORT" "48334")"
+WORKER_METRICS_PORT_DEFAULT="$(yit_read_default_env "${ROOT_DIR}" "YIT_WORKER_METRICS_PORT" "48410")"
+GRAFANA_PORT_DEFAULT="$(yit_read_default_env "${ROOT_DIR}" "YIT_GRAFANA_PORT" "48300")"
+PROMETHEUS_PORT_DEFAULT="$(yit_read_default_env "${ROOT_DIR}" "YIT_PROMETHEUS_PORT" "49092")"
+
+docker_has_context() {
+  local name="$1"
+  docker context ls --format '{{.Name}}' 2>/dev/null | grep -Fxq "${name}"
+}
+
+pick_docker_context() {
+  if [ -n "${YIT_DOCKER_CONTEXT:-}" ]; then
+    echo "${YIT_DOCKER_CONTEXT}"
+    return 0
+  fi
+  if docker_has_context "orbstack"; then
+    echo "orbstack"
+    return 0
+  fi
+  if docker_has_context "default"; then
+    echo "default"
+    return 0
+  fi
+  if docker_has_context "desktop-linux"; then
+    echo "desktop-linux"
+    return 0
+  fi
+  echo ""
+}
+
+DOCKER_CONTEXT_NAME="$(pick_docker_context)"
 
 ts() {
   date -u +"%Y-%m-%dT%H:%M:%SZ"
@@ -34,7 +61,23 @@ require_cmd() {
 }
 
 docker_ready() {
-  docker info >/dev/null 2>&1
+  docker_cmd info >/dev/null 2>&1
+}
+
+docker_cmd() {
+  if [ -n "${DOCKER_CONTEXT_NAME}" ]; then
+    docker --context "${DOCKER_CONTEXT_NAME}" "$@"
+    return
+  fi
+  docker "$@"
+}
+
+docker_compose_cmd() {
+  if [ -n "${DOCKER_CONTEXT_NAME}" ]; then
+    docker --context "${DOCKER_CONTEXT_NAME}" compose "$@"
+    return
+  fi
+  docker compose "$@"
 }
 
 web_port() {

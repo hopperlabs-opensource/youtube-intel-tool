@@ -7,7 +7,7 @@ import {
   queueKaraokePlaylistToSession,
 } from "@yt/core";
 import { QueueFromKaraokePlaylistRequestSchema, QueueFromKaraokePlaylistResponseSchema } from "@yt/contracts";
-import { jsonError } from "@/lib/server/api";
+import { jsonError, classifyApiError } from "@/lib/server/api";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -51,8 +51,8 @@ export async function POST(req: Request, ctx: { params: Promise<{ sessionId: str
       client.release();
     }
   } catch (err: unknown) {
-    metrics.httpRequestsTotal.inc({ route: "/api/karaoke/sessions/:sessionId/queue/from-playlist", method: "POST", status: "400" });
-    const msg = err instanceof Error ? err.message : String(err);
-    return jsonError("invalid_request", msg, { status: 400 });
+    const apiErr = classifyApiError(err);
+    metrics.httpRequestsTotal.inc({ route: "/api/karaoke/sessions/:sessionId/queue/from-playlist", method: "POST", status: String(apiErr.status) });
+    return jsonError(apiErr.code, apiErr.message, { status: apiErr.status, details: apiErr.details });
   }
 }

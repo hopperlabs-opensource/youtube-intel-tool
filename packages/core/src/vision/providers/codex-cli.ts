@@ -2,7 +2,8 @@
  * Codex CLI vision provider — runs frame analysis through the locally installed
  * `codex` CLI. Uses OpenAI API via the Codex CLI's built-in auth.
  *
- * Saves the frame image to a temp file, passes it via stdin with the analysis prompt.
+ * This provider saves the frame image to a temp file and passes it via the native
+ * `--image` flag for proper multimodal input.
  */
 
 import fs from "node:fs";
@@ -33,22 +34,22 @@ export function createCodexCliVisionProvider(opts?: CodexCliVisionOpts): VisionP
       try {
         fs.writeFileSync(tmpImg, Buffer.from(req.imageBase64, "base64"));
 
-        const prompt = `Analyze this image file: ${tmpImg}\n\n${req.prompt}`;
-
         const args = [
           "-s", "read-only",
           "-a", "on-failure",
           ...(model ? ["-m", model] : []),
+          "--image", tmpImg,                    // Native image attachment
           "exec",
           "--skip-git-repo-check",
           "--ephemeral",
           "-C", os.tmpdir(),
           "--output-last-message", outPath,
-          "-",
+          "-",                                  // Read prompt from stdin
         ];
 
+        // stdin is just the analysis prompt — no file path embedded
         const res = await spawnCapture("codex", args, {
-          stdin: prompt,
+          stdin: req.prompt,
           timeoutMs,
           cwd: os.tmpdir(),
         });

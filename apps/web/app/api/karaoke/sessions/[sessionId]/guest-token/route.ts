@@ -7,7 +7,7 @@ import {
 } from "@yt/core";
 import { CreateKaraokeGuestTokenRequestSchema, CreateKaraokeGuestTokenResponseSchema } from "@yt/contracts";
 import { karaokeJoinPath } from "@yt/experience-core";
-import { jsonError } from "@/lib/server/api";
+import { jsonError, classifyApiError } from "@/lib/server/api";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -39,8 +39,8 @@ export async function POST(req: Request, ctx: { params: Promise<{ sessionId: str
       client.release();
     }
   } catch (err: unknown) {
-    metrics.httpRequestsTotal.inc({ route: "/api/karaoke/sessions/:sessionId/guest-token", method: "POST", status: "400" });
-    const msg = err instanceof Error ? err.message : String(err);
-    return jsonError("invalid_request", msg, { status: 400 });
+    const apiErr = classifyApiError(err);
+    metrics.httpRequestsTotal.inc({ route: "/api/karaoke/sessions/:sessionId/guest-token", method: "POST", status: String(apiErr.status) });
+    return jsonError(apiErr.code, apiErr.message, { status: apiErr.status, details: apiErr.details });
   }
 }

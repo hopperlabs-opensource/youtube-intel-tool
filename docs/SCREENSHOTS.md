@@ -39,7 +39,7 @@ pnpm dlx playwright install chromium
 From repo root:
 
 ```bash
-BASE_URL="${YIT_BASE_URL:-http://localhost:${YIT_WEB_PORT:-3333}}"
+BASE_URL="${YIT_BASE_URL:-http://localhost:${YIT_WEB_PORT:-48333}}"
 
 # Home
 pnpm dlx playwright screenshot \

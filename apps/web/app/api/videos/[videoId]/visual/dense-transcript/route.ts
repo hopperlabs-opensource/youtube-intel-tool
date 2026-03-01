@@ -6,7 +6,7 @@ import {
   BuildDenseTranscriptResponseSchema,
   GetDenseTranscriptResponseSchema,
 } from "@yt/contracts";
-import { jsonError } from "@/lib/server/api";
+import { jsonError, classifyApiError } from "@/lib/server/api";
 import { getIngestQueue } from "@/lib/server/queue";
 import { randomUUID } from "crypto";
 
@@ -22,10 +22,6 @@ export async function GET(_req: Request, ctx: { params: Promise<{ videoId: strin
     try {
       const cues = await getDenseActionCuesByVideo(client, videoId);
       const counts = await countDenseActionCues(client, videoId);
-
-      if (cues.length === 0) {
-        return jsonError("not_found", "No dense transcript found — trigger build first", { status: 404 });
-      }
 
       metrics.httpRequestsTotal.inc({ route: "/api/videos/:id/visual/dense-transcript", method: "GET", status: "200" });
       return NextResponse.json(
@@ -43,9 +39,9 @@ export async function GET(_req: Request, ctx: { params: Promise<{ videoId: strin
       client.release();
     }
   } catch (err: unknown) {
-    metrics.httpRequestsTotal.inc({ route: "/api/videos/:id/visual/dense-transcript", method: "GET", status: "500" });
-    const msg = err instanceof Error ? err.message : String(err);
-    return jsonError("internal_error", msg, { status: 500 });
+    const apiErr = classifyApiError(err);
+    metrics.httpRequestsTotal.inc({ route: "/api/videos/:id/visual/dense-transcript", method: "GET", status: String(apiErr.status) });
+    return jsonError(apiErr.code, apiErr.message, { status: apiErr.status, details: apiErr.details });
   }
 }
 
@@ -87,8 +83,8 @@ export async function POST(req: Request, ctx: { params: Promise<{ videoId: strin
       client.release();
     }
   } catch (err: unknown) {
-    metrics.httpRequestsTotal.inc({ route: "/api/videos/:id/visual/dense-transcript", method: "POST", status: "400" });
-    const msg = err instanceof Error ? err.message : String(err);
-    return jsonError("invalid_request", msg, { status: 400 });
+    const apiErr = classifyApiError(err);
+    metrics.httpRequestsTotal.inc({ route: "/api/videos/:id/visual/dense-transcript", method: "POST", status: String(apiErr.status) });
+    return jsonError(apiErr.code, apiErr.message, { status: apiErr.status, details: apiErr.details });
   }
 }

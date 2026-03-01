@@ -48,7 +48,7 @@ Last updated: 2026-02-28
     pnpm yit health
     ```
 
-    Then open `http://localhost:<YIT_WEB_PORT>` (default `3333`).
+    Then open `http://localhost:<YIT_WEB_PORT>` (default `48333`).
 
 === "Agentic"
 

@@ -64,7 +64,7 @@ export async function getFramesByVideo(
   const offset = opts?.offset ?? 0;
   const res = await client.query(
     `SELECT id::text, video_id::text, frame_index, timestamp_ms, file_path, width, height,
-            file_size_bytes, extraction_method, scene_score, sharpness, is_blank, created_at
+            file_size_bytes, extraction_method, scene_score, sharpness, is_blank, created_at::text
      FROM video_frames
      WHERE video_id = $1
      ORDER BY frame_index ASC
@@ -81,7 +81,7 @@ export async function getFrameById(
 ): Promise<VideoFrameRow | null> {
   const res = await client.query(
     `SELECT id::text, video_id::text, frame_index, timestamp_ms, file_path, width, height,
-            file_size_bytes, extraction_method, scene_score, sharpness, is_blank, created_at
+            file_size_bytes, extraction_method, scene_score, sharpness, is_blank, created_at::text
      FROM video_frames
      WHERE video_id = $1 AND id = $2`,
     [videoId, frameId],
@@ -260,7 +260,7 @@ export async function getFrameChunksByVideo(
   videoId: string,
 ): Promise<FrameChunkRow[]> {
   const res = await client.query(
-    `SELECT id::text, video_id::text, chunk_index, start_ms, end_ms, text, token_estimate, created_at
+    `SELECT id::text, video_id::text, chunk_index, start_ms, end_ms, text, token_estimate, created_at::text
      FROM frame_chunks
      WHERE video_id = $1
      ORDER BY chunk_index ASC`,
@@ -330,7 +330,7 @@ export async function getVisualJobMeta(
   const res = await client.query(
     `SELECT id::text, video_id::text, extraction_strategy, frames_per_minute, scene_threshold,
             vision_provider, vision_model, total_frames_extracted, total_frames_analyzed,
-            total_tokens_used, cache_key, started_at, completed_at, created_at
+            total_tokens_used, cache_key, started_at::text, completed_at::text, created_at::text
      FROM visual_jobs_meta
      WHERE video_id = $1`,
     [videoId],
@@ -345,7 +345,11 @@ export async function deleteVisualDataForVideo(
   videoId: string,
 ): Promise<void> {
   // Delete in reverse dependency order; CASCADE handles frame_analyses via frame_id
-  await client.query(`DELETE FROM embeddings WHERE video_id = $1 AND source_type = 'visual'`, [videoId]);
+  // embeddings table doesn't have video_id — join through frame_chunks
+  await client.query(
+    `DELETE FROM embeddings WHERE source_type = 'visual' AND frame_chunk_id IN (SELECT id FROM frame_chunks WHERE video_id = $1)`,
+    [videoId],
+  );
   await client.query(`DELETE FROM frame_chunks WHERE video_id = $1`, [videoId]);
   await client.query(`DELETE FROM frame_analyses WHERE video_id = $1`, [videoId]);
   await client.query(`DELETE FROM video_frames WHERE video_id = $1`, [videoId]);
@@ -368,7 +372,7 @@ export async function countVisualData(
        (SELECT count(*) FROM video_frames WHERE video_id = $1)::int AS frames,
        (SELECT count(*) FROM frame_analyses WHERE video_id = $1)::int AS analyses,
        (SELECT count(*) FROM frame_chunks WHERE video_id = $1)::int AS chunks,
-       (SELECT count(*) FROM embeddings WHERE video_id = $1 AND source_type = 'visual')::int AS embeddings`,
+       (SELECT count(*) FROM embeddings WHERE source_type = 'visual' AND frame_chunk_id IN (SELECT id FROM frame_chunks WHERE video_id = $1))::int AS embeddings`,
     [videoId],
   );
   return res.rows[0];
@@ -390,9 +394,9 @@ export async function insertVisualEmbedding(
 ): Promise<void> {
   const v = `[${input.embedding.join(",")}]`;
   await client.query(
-    `INSERT INTO embeddings (video_id, frame_chunk_id, model_id, dimensions, embedding, text_hash, source_type)
-     VALUES ($1, $2, $3, $4, $5::vector, $6, 'visual')
+    `INSERT INTO embeddings (frame_chunk_id, model_id, dimensions, embedding, text_hash, source_type)
+     VALUES ($1, $2, $3, $4::vector, $5, 'visual')
      ON CONFLICT DO NOTHING`,
-    [input.video_id, input.frame_chunk_id, input.model_id, input.dimensions, v, input.text_hash],
+    [input.frame_chunk_id, input.model_id, input.dimensions, v, input.text_hash],
   );
 }

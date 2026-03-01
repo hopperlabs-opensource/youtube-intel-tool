@@ -3,7 +3,7 @@
  * `claude` CLI (Claude Code). Free with Claude Pro/Team/Enterprise subscriptions.
  *
  * This provider saves the frame image to a temp file, then invokes the Claude CLI
- * with the image path and analysis prompt. No API key needed — the CLI handles auth.
+ * with explicit instructions to read the image via its Read tool. No API key needed.
  */
 
 import fs from "node:fs";
@@ -34,14 +34,20 @@ export function createClaudeCliVisionProvider(opts?: ClaudeCliVisionOpts): Visio
       try {
         fs.writeFileSync(tmpImg, Buffer.from(req.imageBase64, "base64"));
 
-        // Claude CLI accepts images via file references in the prompt.
-        // Use -p (print mode) with --permission-mode plan (no file writes).
-        const prompt = `Look at the image file at ${tmpImg} and respond to this:\n\n${req.prompt}`;
+        // Explicitly instruct Claude CLI to read the image file using the Read tool.
+        // The Read tool natively presents images visually to the model.
+        const prompt = [
+          `Read the image file at ${tmpImg} using the Read tool, then analyze it.`,
+          ``,
+          req.prompt,
+        ].join("\n");
 
         const args = [
           "-p",
-          "--permission-mode", "plan",
+          "--permission-mode", "default",     // Not "plan" — plan mode may prevent tool use
           "--output-format", "json",
+          "--allowedTools", "Read",            // Only allow Read tool (safe, read-only)
+          "--add-dir", path.dirname(tmpImg),   // Ensure access to temp dir
         ];
         if (model) args.push("--model", model);
         args.push(prompt);

@@ -1,6 +1,4 @@
 import path from "path";
-import { execFile } from "child_process";
-import { promisify } from "util";
 import { getPool } from "@yt/core";
 import {
   addJobLog,
@@ -18,8 +16,7 @@ import {
   listFaceDetectionsByVideo,
 } from "@yt/core";
 import { clusterFaces, type FaceForClustering } from "@yt/core";
-
-const execFileAsync = promisify(execFile);
+import { runFaceDetection } from "../providers/face_detect.js";
 
 export type IngestFacesJobData = {
   videoId: string;
@@ -29,7 +26,7 @@ export type IngestFacesJobData = {
   trace_id?: string;
 };
 
-interface PythonDetection {
+interface FlatDetection {
   frame_index: number;
   bbox: { x: number; y: number; w: number; h: number };
   det_score: number;
@@ -74,30 +71,38 @@ export async function runIngestFaces(jobId: string, data: IngestFacesJobData) {
     await addJobLog(client, jobId, { message: `Loaded ${frames.length} frames` });
     await updateJobStatus(client, jobId, { progress: 10 });
 
-    // ── Step 2: Run face detection via Python script ───────────────────────
+    // ── Step 2: Run face detection via provider ────────────────────────────
     const framesDir = path.join(process.cwd(), ".run", "frames", data.videoId);
-    const scriptPath = path.join(process.cwd(), "scripts", "face_index.py");
 
     await addJobLog(client, jobId, {
       message: "Running face detection",
       data_json: { frames_dir: framesDir, det_threshold: detThreshold },
     });
 
-    let detections: PythonDetection[] = [];
+    let detections: FlatDetection[] = [];
     try {
-      const { stdout } = await execFileAsync("python3", [
-        scriptPath,
-        "--frames-dir", framesDir,
-        "--det-threshold", String(detThreshold),
-        "--output", "json",
-      ], { maxBuffer: 50 * 1024 * 1024, timeout: 300_000 });
+      const result = await runFaceDetection({
+        framesDir,
+        detThreshold,
+      });
 
-      detections = JSON.parse(stdout);
+      // Flatten provider result (frames[].faces[]) into flat detections array
+      for (const frame of result.frames ?? []) {
+        for (const face of frame.faces) {
+          detections.push({
+            frame_index: frame.frame_index,
+            bbox: face.bbox,
+            det_score: face.det_score,
+            embedding: face.embedding_512d,
+            landmarks: face.landmarks ?? null,
+          });
+        }
+      }
     } catch (e: any) {
       const msg = String(e?.message || e);
       await addJobLog(client, jobId, {
         level: "warn",
-        message: "Python face_index.py not available or failed, checking for existing detections",
+        message: "Face detection provider not available or failed, checking for existing detections",
         data_json: { error: msg },
       });
 
@@ -106,7 +111,7 @@ export async function runIngestFaces(jobId: string, data: IngestFacesJobData) {
       if (existing.length === 0) {
         await updateJobStatus(client, jobId, {
           status: "failed",
-          error: `Face detection script failed: ${msg}`,
+          error: `Face detection failed: ${msg}`,
           progress: 100,
         });
         return;

@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "language": "en",
+  "tracks": [
+    {
+      "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+    },
+    {
+      "url": "https://www.youtube.com/watch?v=fJ9rUzIMcZQ"
+    }
+  ],
+  "playlists": [
+    {
+      "name": "Party Starters",
+      "description": "High-energy warmup tracks",
+      "tracks": [
+        {
+          "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+        },
+        {
+          "url": "https://www.youtube.com/watch?v=fJ9rUzIMcZQ"
+        }
+      ]
+    },
+    {
+      "name": "Rock Belters",
+      "description": "Crowd singalong classics",
+      "tracks": [
+        {
+          "url": "https://www.youtube.com/watch?v=hTWKbfoikeg"
+        }
+      ]
+    }
+  ]
+}

@@ -2,7 +2,8 @@
  * Gemini CLI vision provider — runs frame analysis through the locally installed
  * `gemini` CLI. Free with Google AI Studio or Gemini API free tier.
  *
- * Saves the frame image to a temp file, passes it via stdin with the prompt.
+ * This provider saves the frame image to a temp file and instructs the Gemini CLI
+ * agent to read and analyze it using its file-reading tools.
  */
 
 import fs from "node:fs";
@@ -32,10 +33,19 @@ export function createGeminiCliVisionProvider(opts?: GeminiCliVisionOpts): Visio
       try {
         fs.writeFileSync(tmpImg, Buffer.from(req.imageBase64, "base64"));
 
-        // Gemini CLI: pass image file reference in prompt
-        const prompt = `Analyze this image file: ${tmpImg}\n\n${req.prompt}`;
+        // Instruct Gemini CLI to read and analyze the image file using its tools
+        const prompt = [
+          `Read and analyze the image file at ${tmpImg}.`,
+          ``,
+          req.prompt,
+        ].join("\n");
 
-        const args = ["--output-format", "json", "--prompt", prompt];
+        const args = [
+          "--output-format", "json",
+          "--prompt", prompt,
+          "--approval-mode", "yolo",                          // Auto-approve file reads
+          "--include-directories", path.dirname(tmpImg),      // Allow temp dir access
+        ];
         if (model) args.push("--model", model);
 
         const res = await spawnCapture("gemini", args, {

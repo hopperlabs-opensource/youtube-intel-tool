@@ -274,7 +274,7 @@ Example envelope:
 ## API
 
 ### Base URL
-- Local: `http://localhost:${YIT_WEB_PORT:-3333}`
+- Local: `http://localhost:${YIT_WEB_PORT:-48333}`
 
 ### Health
 `GET /api/health`
@@ -298,7 +298,7 @@ Likely causes:
 Fix:
 ```bash
 pnpm yit health
-export YIT_BASE_URL="http://localhost:${YIT_WEB_PORT:-3333}"
+export YIT_BASE_URL="http://localhost:${YIT_WEB_PORT:-48333}"
 pnpm yit health
 ```
 ````

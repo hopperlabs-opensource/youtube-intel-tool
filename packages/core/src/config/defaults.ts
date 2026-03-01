@@ -2,12 +2,12 @@ import fs from "node:fs";
 import path from "node:path";
 
 const BASE_DEFAULTS = {
-  YIT_WEB_PORT: "3333",
-  YIT_WORKER_METRICS_PORT: "4010",
-  YIT_POSTGRES_PORT: "55432",
-  YIT_REDIS_PORT: "56379",
-  YIT_PROMETHEUS_PORT: "59092",
-  YIT_GRAFANA_PORT: "53000",
+  YIT_WEB_PORT: "48333",
+  YIT_WORKER_METRICS_PORT: "48410",
+  YIT_POSTGRES_PORT: "48432",
+  YIT_REDIS_PORT: "48379",
+  YIT_PROMETHEUS_PORT: "49092",
+  YIT_GRAFANA_PORT: "48300",
   OLLAMA_BASE_URL: "http://127.0.0.1:11434",
   OPENAI_BASE_URL: "https://api.openai.com",
 } as const;
@@ -59,8 +59,8 @@ function findUp(startDir: string, fileName: string, maxDepth = 8): string | null
   return null;
 }
 
-function readEnvExample(): Record<string, string> {
-  const file = findUp(process.cwd(), ".env.example", 8);
+function readDotEnvFile(fileName: string): Record<string, string> {
+  const file = findUp(process.cwd(), fileName, 8);
   if (!file) return {};
   try {
     return parseDotEnv(fs.readFileSync(file, "utf8"));
@@ -73,26 +73,30 @@ let cachedDefaults: ResolvedDefaults | null = null;
 
 function resolveDefaults(): ResolvedDefaults {
   if (cachedDefaults) return cachedDefaults;
-  const envExample = readEnvExample();
+  const envExample = readDotEnvFile(".env.example");
+  const envLocal = readDotEnvFile(".env");
 
   const base = {
-    YIT_WEB_PORT: clean(envExample.YIT_WEB_PORT) || BASE_DEFAULTS.YIT_WEB_PORT,
-    YIT_WORKER_METRICS_PORT: clean(envExample.YIT_WORKER_METRICS_PORT) || BASE_DEFAULTS.YIT_WORKER_METRICS_PORT,
-    YIT_POSTGRES_PORT: clean(envExample.YIT_POSTGRES_PORT) || BASE_DEFAULTS.YIT_POSTGRES_PORT,
-    YIT_REDIS_PORT: clean(envExample.YIT_REDIS_PORT) || BASE_DEFAULTS.YIT_REDIS_PORT,
-    YIT_PROMETHEUS_PORT: clean(envExample.YIT_PROMETHEUS_PORT) || BASE_DEFAULTS.YIT_PROMETHEUS_PORT,
-    YIT_GRAFANA_PORT: clean(envExample.YIT_GRAFANA_PORT) || BASE_DEFAULTS.YIT_GRAFANA_PORT,
-    OLLAMA_BASE_URL: clean(envExample.OLLAMA_BASE_URL) || BASE_DEFAULTS.OLLAMA_BASE_URL,
-    OPENAI_BASE_URL: clean(envExample.OPENAI_BASE_URL) || BASE_DEFAULTS.OPENAI_BASE_URL,
+    YIT_WEB_PORT: clean(envLocal.YIT_WEB_PORT) || clean(envExample.YIT_WEB_PORT) || BASE_DEFAULTS.YIT_WEB_PORT,
+    YIT_WORKER_METRICS_PORT:
+      clean(envLocal.YIT_WORKER_METRICS_PORT) || clean(envExample.YIT_WORKER_METRICS_PORT) || BASE_DEFAULTS.YIT_WORKER_METRICS_PORT,
+    YIT_POSTGRES_PORT: clean(envLocal.YIT_POSTGRES_PORT) || clean(envExample.YIT_POSTGRES_PORT) || BASE_DEFAULTS.YIT_POSTGRES_PORT,
+    YIT_REDIS_PORT: clean(envLocal.YIT_REDIS_PORT) || clean(envExample.YIT_REDIS_PORT) || BASE_DEFAULTS.YIT_REDIS_PORT,
+    YIT_PROMETHEUS_PORT: clean(envLocal.YIT_PROMETHEUS_PORT) || clean(envExample.YIT_PROMETHEUS_PORT) || BASE_DEFAULTS.YIT_PROMETHEUS_PORT,
+    YIT_GRAFANA_PORT: clean(envLocal.YIT_GRAFANA_PORT) || clean(envExample.YIT_GRAFANA_PORT) || BASE_DEFAULTS.YIT_GRAFANA_PORT,
+    OLLAMA_BASE_URL: clean(envLocal.OLLAMA_BASE_URL) || clean(envExample.OLLAMA_BASE_URL) || BASE_DEFAULTS.OLLAMA_BASE_URL,
+    OPENAI_BASE_URL: clean(envLocal.OPENAI_BASE_URL) || clean(envExample.OPENAI_BASE_URL) || BASE_DEFAULTS.OPENAI_BASE_URL,
   };
 
   cachedDefaults = {
     ...base,
-    YIT_BASE_URL: clean(envExample.YIT_BASE_URL) || `http://localhost:${base.YIT_WEB_PORT}`,
-    METRICS_PORT: clean(envExample.METRICS_PORT) || base.YIT_WORKER_METRICS_PORT,
+    YIT_BASE_URL: clean(envLocal.YIT_BASE_URL) || clean(envExample.YIT_BASE_URL) || `http://localhost:${base.YIT_WEB_PORT}`,
+    METRICS_PORT: clean(envLocal.METRICS_PORT) || clean(envExample.METRICS_PORT) || base.YIT_WORKER_METRICS_PORT,
     DATABASE_URL:
-      clean(envExample.DATABASE_URL) || `postgresql://postgres:postgres@127.0.0.1:${base.YIT_POSTGRES_PORT}/youtube_intel`,
-    REDIS_URL: clean(envExample.REDIS_URL) || `redis://127.0.0.1:${base.YIT_REDIS_PORT}`,
+      clean(envLocal.DATABASE_URL) ||
+      clean(envExample.DATABASE_URL) ||
+      `postgresql://postgres:postgres@127.0.0.1:${base.YIT_POSTGRES_PORT}/youtube_intel`,
+    REDIS_URL: clean(envLocal.REDIS_URL) || clean(envExample.REDIS_URL) || `redis://127.0.0.1:${base.YIT_REDIS_PORT}`,
   };
   return cachedDefaults;
 }

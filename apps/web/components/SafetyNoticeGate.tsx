@@ -14,15 +14,22 @@ type SafetyNoticeGateProps = {
 };
 
 export function SafetyNoticeGate({ initialAccepted }: SafetyNoticeGateProps) {
-  const [accepted, setAccepted] = useState(() => initialAccepted || (typeof window !== "undefined" ? loadSafetyAck() : false));
-  const [localOnlyChecked, setLocalOnlyChecked] = useState(false);
-  const [riskChecked, setRiskChecked] = useState(false);
-  const [storageSupport] = useState<SafetyStorageSupport>(() =>
-    typeof window !== "undefined" ? detectSafetyStorageSupport() : { localStorage: false, cookies: false }
-  );
+  const [accepted, setAccepted] = useState<boolean>(initialAccepted);
+  const [storageSupport, setStorageSupport] = useState<SafetyStorageSupport | null>(null);
   const [showBypass, setShowBypass] = useState(false);
+  const fallbackUrl = "/api/safety-ack?return_to=/";
 
-  const canAccept = localOnlyChecked && riskChecked;
+  useEffect(() => {
+    if (initialAccepted) return;
+    const timer = window.setTimeout(() => {
+      if (loadSafetyAck()) {
+        setAccepted(true);
+        return;
+      }
+      setStorageSupport(detectSafetyStorageSupport());
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [initialAccepted]);
 
   useEffect(() => {
     const bypassDelayMs = computeSafetyBypassDelayMs(process.env.NEXT_PUBLIC_YIT_SAFETY_BYPASS_DELAY_MS);
@@ -58,32 +65,40 @@ export function SafetyNoticeGate({ initialAccepted }: SafetyNoticeGateProps) {
           </p>
         </div>
 
-        <div className="mt-4 space-y-2 rounded-xl border border-zinc-200 bg-zinc-50 p-4">
+        <form
+          method="get"
+          action="/api/safety-ack"
+          className="safety-consent-form mt-4 space-y-2 rounded-xl border border-zinc-200 bg-zinc-50 p-4"
+          onSubmit={(e) => {
+            if (!e.currentTarget.checkValidity()) return;
+            e.preventDefault();
+            saveSafetyAck();
+            setAccepted(true);
+          }}
+        >
+          <input type="hidden" name="return_to" value="/" />
           <div className="flex items-start gap-2 text-sm text-zinc-800">
-            <input
-              id="safety-local-only"
-              type="checkbox"
-              checked={localOnlyChecked}
-              onChange={(e) => setLocalOnlyChecked(e.currentTarget.checked)}
-              className="mt-1"
-            />
+            <input id="safety-local-only" name="local_only_ack" type="checkbox" required className="mt-1" />
             <label htmlFor="safety-local-only" className="cursor-pointer">
               I understand this tool is intended for local/self-hosted use, not public internet serving.
             </label>
           </div>
           <div className="flex items-start gap-2 text-sm text-zinc-800">
-            <input
-              id="safety-risk"
-              type="checkbox"
-              checked={riskChecked}
-              onChange={(e) => setRiskChecked(e.currentTarget.checked)}
-              className="mt-1"
-            />
+            <input id="safety-risk" name="risk_ack" type="checkbox" required className="mt-1" />
             <label htmlFor="safety-risk" className="cursor-pointer">
               I understand public exposure without hardening can leak data or keys and allow abuse.
             </label>
           </div>
-        </div>
+
+          <div className="mt-5 flex items-center justify-end">
+            <button
+              type="submit"
+              className="safety-accept-btn rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800"
+            >
+              I Understand and Accept
+            </button>
+          </div>
+        </form>
 
         {storageLikelyBlocked ? (
           <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
@@ -91,37 +106,18 @@ export function SafetyNoticeGate({ initialAccepted }: SafetyNoticeGateProps) {
           </div>
         ) : null}
 
-        <div className="mt-5 flex items-center justify-end">
-          <button
-            type="button"
-            className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
-            disabled={!canAccept}
-            onClick={() => {
-              saveSafetyAck();
-              setAccepted(true);
-            }}
-          >
-            I Understand and Accept
-          </button>
-        </div>
-
-        <details className="mt-3 rounded-lg border border-zinc-200 bg-zinc-50 p-3 text-xs text-zinc-700">
-          <summary className="cursor-pointer font-medium text-zinc-800">
-            Button stuck in Brave/extension-heavy browsers?
-          </summary>
-          <p className="mt-2">
-            Use fallback accept to set the same acknowledgement cookie and reload this page without relying on React
-            hydration.
+        <div className="mt-3 rounded-lg border border-zinc-200 bg-zinc-50 p-3 text-xs text-zinc-700">
+          <p>
+            Button stuck in Brave/extension-heavy browsers? Use fallback accept to set the same acknowledgement cookie
+            and reload this page without relying on React hydration.
           </p>
-          <form method="post" action="/api/safety-ack" className="mt-2">
-            <button
-              type="submit"
-              className="rounded-md border border-zinc-300 bg-white px-2.5 py-1.5 text-xs font-medium text-zinc-800 hover:bg-zinc-100"
-            >
-              Accept via Fallback Reload
-            </button>
-          </form>
-        </details>
+          <a
+            href={fallbackUrl}
+            className="mt-2 inline-flex rounded-md border border-zinc-300 bg-white px-2.5 py-1.5 text-xs font-medium text-zinc-800 hover:bg-zinc-100"
+          >
+            Accept via Fallback Reload
+          </a>
+        </div>
 
         {showBypass ? (
           <div className="mt-3 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs text-zinc-700">

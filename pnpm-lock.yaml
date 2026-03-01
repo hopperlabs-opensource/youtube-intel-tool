@@ -63,6 +63,9 @@ importers:
       '@yt/experience-core':
         specifier: workspace:*
         version: link:../../packages/experience-core
+      '@yt/karaoke-ui':
+        specifier: workspace:*
+        version: link:../../packages/karaoke-ui
       '@yt/sdk':
         specifier: workspace:*
         version: link:../../packages/sdk
@@ -242,6 +245,25 @@ importers:
 
   packages/experience-core:
     devDependencies:
+      typescript:
+        specifier: ^5.5.4
+        version: 5.9.3
+
+  packages/karaoke-ui:
+    dependencies:
+      '@yt/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      '@yt/experience-core':
+        specifier: workspace:*
+        version: link:../experience-core
+      react:
+        specifier: ^19.2.4
+        version: 19.2.4
+    devDependencies:
+      '@types/react':
+        specifier: ^19.2.2
+        version: 19.2.14
       typescript:
         specifier: ^5.5.4
         version: 5.9.3

@@ -3,6 +3,7 @@ import { CapabilitiesResponseSchema } from "@yt/contracts";
 import { NextResponse } from "next/server";
 import { spawnSync } from "node:child_process";
 import { getEmbeddingsEnvForRequest } from "@/lib/server/openai_key";
+import { classifyApiError, jsonError } from "@/lib/server/api";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -92,8 +93,8 @@ export async function GET(req: Request) {
       })
     );
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : String(err);
-    metrics.httpRequestsTotal.inc({ route: "/api/capabilities", method: "GET", status: "400" });
-    return NextResponse.json({ error: { code: "capabilities_failed", message: msg } }, { status: 400 });
+    const apiErr = classifyApiError(err);
+    metrics.httpRequestsTotal.inc({ route: "/api/capabilities", method: "GET", status: String(apiErr.status) });
+    return jsonError(apiErr.code, apiErr.message, { status: apiErr.status, details: apiErr.details });
   }
 }

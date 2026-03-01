@@ -26,11 +26,11 @@ pnpm yit capabilities
 ```
 
 ### Verify
-- Web UI: `http://localhost:<YIT_WEB_PORT>` (default `3333`)
-- Karaoke UI: `http://localhost:<YIT_KARAOKE_PORT>` (default `3334`)
-- Worker metrics: `http://localhost:<YIT_WORKER_METRICS_PORT>/metrics` (default `4010`)
-- Grafana: `http://localhost:<YIT_GRAFANA_PORT>` (default `53000`)
-- Prometheus: `http://localhost:<YIT_PROMETHEUS_PORT>` (default `59092`)
+- Web UI: `http://localhost:<YIT_WEB_PORT>` (default `48333`)
+- Karaoke UI: `http://localhost:<YIT_KARAOKE_PORT>` (default `48334`)
+- Worker metrics: `http://localhost:<YIT_WORKER_METRICS_PORT>/metrics` (default `48410`)
+- Grafana: `http://localhost:<YIT_GRAFANA_PORT>` (default `48300`)
+- Prometheus: `http://localhost:<YIT_PROMETHEUS_PORT>` (default `49092`)
 
 ## 2. Foreground Development Mode
 
@@ -169,8 +169,8 @@ pnpm exec playwright test --config apps/web/e2e/playwright.config.cjs --project=
 ```bash
 YIT_WEB_PORT=3344 \
 YIT_WORKER_METRICS_PORT=4011 \
-YIT_PROMETHEUS_PORT=59093 \
-YIT_GRAFANA_PORT=53001 \
+YIT_PROMETHEUS_PORT=49093 \
+YIT_GRAFANA_PORT=48301 \
 pnpm bg:up
 ```
 
@@ -233,7 +233,7 @@ pnpm yit policy hits <policyId> --bucket high --limit 20
 Cron example (every 30 minutes):
 
 ```bash
-*/30 * * * * cd /path/to/youtube-intel-tool && YIT_BASE_URL=http://localhost:3333 pnpm yit policy run <policyId> --triggered-by cron >> .run/logs/policy-cron.log 2>&1
+*/30 * * * * cd /path/to/youtube-intel-tool && YIT_BASE_URL=http://localhost:48333 pnpm yit policy run <policyId> --triggered-by cron >> .run/logs/policy-cron.log 2>&1
 ```
 
 ### Verify

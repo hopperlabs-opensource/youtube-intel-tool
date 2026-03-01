@@ -1,5 +1,6 @@
 import { getJobById, getPool, initMetrics, listJobLogsAfter } from "@yt/core";
 import { randomUUID } from "crypto";
+import { classifyApiError } from "@/lib/server/api";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -74,9 +75,9 @@ export async function GET(req: Request, ctx: { params: Promise<{ jobId: string }
             client.release();
           }
         } catch (err: unknown) {
-          const msg = err instanceof Error ? err.message : String(err);
-          metrics.httpRequestsTotal.inc({ route: "/api/jobs/:id/stream", method: "GET", status: "400" });
-          send({ type: "error", error: { code: "stream_failed", message: msg } });
+          const apiErr = classifyApiError(err);
+          metrics.httpRequestsTotal.inc({ route: "/api/jobs/:id/stream", method: "GET", status: String(apiErr.status) });
+          send({ type: "error", error: { code: apiErr.code, message: apiErr.message } });
           controller.close();
           return;
         }

@@ -1,8 +1,15 @@
 import { NextResponse } from "next/server";
-import { createEmbedderFromEnv, getPool, initMetrics, searchChunksByVideoSemantic, searchCuesByVideo, searchCuesByVideoUnified, searchFrameChunksByVideoSemantic } from "@yt/core";
+import {
+  createEmbedderFromEnv,
+  getPool,
+  initMetrics,
+  searchChunksByVideoSemantic,
+  searchCuesByVideoUnified,
+  searchFrameChunksByVideoSemantic,
+} from "@yt/core";
 import { SearchRequestSchema, SearchResponseSchema } from "@yt/contracts";
 import type { SearchHit } from "@yt/contracts";
-import { jsonError } from "@/lib/server/api";
+import { jsonError, classifyApiError } from "@/lib/server/api";
 import { getEmbeddingsEnvForRequest } from "@/lib/server/openai_key";
 
 export const runtime = "nodejs";
@@ -136,8 +143,8 @@ export async function POST(req: Request, ctx: { params: Promise<{ videoId: strin
       client.release();
     }
   } catch (err: unknown) {
-    metrics.httpRequestsTotal.inc({ route: "/api/videos/:id/search", method: "POST", status: "400" });
-    const msg = err instanceof Error ? err.message : String(err);
-    return jsonError("invalid_request", msg, { status: 400 });
+    const apiErr = classifyApiError(err);
+    metrics.httpRequestsTotal.inc({ route: "/api/videos/:id/search", method: "POST", status: String(apiErr.status) });
+    return jsonError(apiErr.code, apiErr.message, { status: apiErr.status, details: apiErr.details });
   }
 }

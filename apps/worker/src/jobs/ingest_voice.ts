@@ -1,5 +1,6 @@
-import { execFile, type ExecFileOptions } from "child_process";
-import { promisify } from "util";
+import { writeFile, mkdtemp, rm } from "fs/promises";
+import { tmpdir } from "os";
+import path from "path";
 import { getPool } from "@yt/core";
 import {
   addJobLog,
@@ -17,8 +18,7 @@ import {
   createOrLinkGlobalSpeaker,
 } from "@yt/core";
 import { ensureVideoFile } from "@yt/core";
-
-const execFileAsync = promisify(execFile);
+import { runVoiceEmbedding } from "../providers/voice_embed.js";
 
 export type IngestVoiceJobData = {
   videoId: string;
@@ -89,10 +89,8 @@ export async function runIngestVoice(jobId: string, data: IngestVoiceJobData) {
     }
     await updateJobStatus(client, jobId, { progress: 30 });
 
-    // ── Step 3: Run voice embedding via Python script ──────────────────────
-    const scriptPath = `${process.cwd()}/scripts/voice_embed.py`;
-
-    // Build speaker segments JSON for stdin
+    // ── Step 3: Run voice embedding via provider ──────────────────────────
+    // Build speaker segments JSON and write to temp file for the provider
     const speakerSegments = speakers.map((s) => ({
       speaker_id: s.id,
       speaker_key: s.key,
@@ -107,30 +105,32 @@ export async function runIngestVoice(jobId: string, data: IngestVoiceJobData) {
     });
 
     let voiceEmbeddings: PythonVoiceEmbedding[] = [];
+    let tmpDir: string | null = null;
     try {
-      const input = JSON.stringify({
+      tmpDir = await mkdtemp(path.join(tmpdir(), "yit-voice-"));
+      const segmentsJsonPath = path.join(tmpDir, "segments.json");
+      await writeFile(segmentsJsonPath, JSON.stringify({
         audio_path: audioPath,
         speakers: speakerSegments,
+      }));
+
+      const result = await runVoiceEmbedding({
+        audioPath,
+        segmentsJsonPath,
       });
 
-      const { stdout } = await new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
-        const child = execFile("python3", [
-          scriptPath,
-          "--output", "json",
-        ], { maxBuffer: 50 * 1024 * 1024, timeout: 300_000 } satisfies ExecFileOptions, (err, stdout, stderr) => {
-          if (err) return reject(err);
-          resolve({ stdout: stdout as string, stderr: stderr as string });
-        });
-        child.stdin?.write(input);
-        child.stdin?.end();
-      });
-
-      voiceEmbeddings = JSON.parse(stdout);
+      // Map provider result shape to internal PythonVoiceEmbedding shape
+      voiceEmbeddings = (result.speakers ?? []).map((s) => ({
+        speaker_id: s.label, // label corresponds to speaker_id/key
+        embedding: s.embedding_256d,
+        model_id: result.model ?? "unknown",
+        segment_count: s.segment_count,
+      }));
     } catch (e: any) {
       const msg = String(e?.message || e);
       await addJobLog(client, jobId, {
         level: "warn",
-        message: "Python voice_embed.py not available or failed",
+        message: "Voice embedding provider not available or failed",
         data_json: { error: msg },
       });
       await updateJobStatus(client, jobId, {
@@ -139,6 +139,8 @@ export async function runIngestVoice(jobId: string, data: IngestVoiceJobData) {
         progress: 100,
       });
       return;
+    } finally {
+      if (tmpDir) await rm(tmpDir, { recursive: true, force: true }).catch(() => {});
     }
 
     await updateJobStatus(client, jobId, { progress: 60 });

@@ -1,6 +1,7 @@
 import { getEmbeddingsStatus, initMetrics } from "@yt/core";
 import { NextResponse } from "next/server";
 import { getEmbeddingsEnvForRequest, getOpenAIKeySourceForRequest } from "@/lib/server/openai_key";
+import { classifyApiError, jsonError } from "@/lib/server/api";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -20,12 +21,8 @@ export async function GET(req: Request) {
       embeddings,
     });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    metrics.httpRequestsTotal.inc({ route: "/api/settings/openai", method: "GET", status: "400" });
-    return NextResponse.json(
-      { error: { code: "settings_openai_failed", message } },
-      { status: 400 }
-    );
+    const apiErr = classifyApiError(err);
+    metrics.httpRequestsTotal.inc({ route: "/api/settings/openai", method: "GET", status: String(apiErr.status) });
+    return jsonError(apiErr.code, apiErr.message, { status: apiErr.status, details: apiErr.details });
   }
 }
-

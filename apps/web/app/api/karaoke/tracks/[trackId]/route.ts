@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getKaraokeTrackById, getPool, initMetrics } from "@yt/core";
 import { GetKaraokeTrackResponseSchema } from "@yt/contracts";
-import { jsonError } from "@/lib/server/api";
+import { jsonError, classifyApiError } from "@/lib/server/api";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -24,8 +24,8 @@ export async function GET(_req: Request, ctx: { params: Promise<{ trackId: strin
       client.release();
     }
   } catch (err: unknown) {
-    metrics.httpRequestsTotal.inc({ route: "/api/karaoke/tracks/:trackId", method: "GET", status: "400" });
-    const msg = err instanceof Error ? err.message : String(err);
-    return jsonError("invalid_request", msg, { status: 400 });
+    const apiErr = classifyApiError(err);
+    metrics.httpRequestsTotal.inc({ route: "/api/karaoke/tracks/:trackId", method: "GET", status: String(apiErr.status) });
+    return jsonError(apiErr.code, apiErr.message, { status: apiErr.status, details: apiErr.details });
   }
 }

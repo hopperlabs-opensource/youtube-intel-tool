@@ -43,6 +43,11 @@ import {
   LibrarySearchResponseSchema,
   ListKaraokeThemesResponseSchema,
   ListKaraokeTracksResponseSchema,
+  BootstrapKaraokeLibraryRequestSchema,
+  BootstrapKaraokeLibraryResponseSchema,
+  KaraokeLibraryImportResponseSchema,
+  KaraokeLibraryManifestSchema,
+  KaraokeLibraryStatsResponseSchema,
   ListChatTurnsResponseSchema,
   ListCuesResponseSchema,
   ListEntitiesResponseSchema,
@@ -108,6 +113,8 @@ import {
   ListFaceAppearancesResponseSchema,
   UpdateFaceIdentityRequestSchema,
   UpdateFaceIdentityResponseSchema,
+  IngestFacesResponseSchema,
+  IngestVoiceResponseSchema,
   MatchSpeakerResponseSchema,
   ListGlobalSpeakersResponseSchema,
   CreateGlobalSpeakerRequestSchema,
@@ -120,7 +127,8 @@ import {
 import { apiJson, apiText, HttpError, makeApiClient } from "./http.js";
 import { formatMs, printTable, truncate } from "./format.js";
 import { readSse } from "./sse.js";
-import { writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname } from "node:path";
 
 function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
@@ -152,6 +160,11 @@ function parseCsvList(input: string | undefined): string[] {
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean);
+}
+
+function readJsonFile(path: string): unknown {
+  const raw = readFileSync(path, "utf8");
+  return JSON.parse(raw);
 }
 
 async function resolveVideoId(client: ReturnType<typeof makeApiClient>, videoIdOrUrl: string): Promise<string> {
@@ -2694,6 +2707,47 @@ faces
     }
   });
 
+faces
+  .command("ingest <videoId>")
+  .description("Run face detection and clustering pipeline on a video")
+  .option("--det-threshold <n>", "Detection confidence threshold 0-1", "0.5")
+  .option("--cluster-threshold <n>", "Clustering distance threshold 0-1", "0.68")
+  .option("--force", "Force re-processing (clears existing face data)", false)
+  .action(async (videoId: string, cmd: {
+    detThreshold: string;
+    clusterThreshold: string;
+    force: boolean;
+  }) => {
+    try {
+      const opts = program.opts<{ baseUrl?: string; json: boolean }>();
+      const client = makeApiClient({ baseUrl: opts.baseUrl });
+      videoId = await resolveVideoId(client, videoId);
+
+      const body = {
+        det_threshold: parseFloat(cmd.detThreshold),
+        cluster_threshold: parseFloat(cmd.clusterThreshold),
+        force: cmd.force,
+      };
+
+      const { data } = await apiJson({
+        client,
+        method: "POST",
+        path: `/api/videos/${videoId}/faces/ingest`,
+        body,
+        schema: IngestFacesResponseSchema,
+      });
+
+      if (opts.json) {
+        console.log(JSON.stringify(data, null, 2));
+      } else {
+        console.log(`face ingest job queued: ${data.job.id}`);
+        console.log(`track with: yit job ${data.job.id} --follow`);
+      }
+    } catch (err) {
+      handleErr(err);
+    }
+  });
+
 // ─── Voice Fingerprinting Commands ───────────────────────────────────────────
 
 const voice = program.command("voice").description("Voice fingerprinting and cross-video speaker recognition");
@@ -2758,6 +2812,37 @@ voice
         for (const v of match.videos) {
           console.log(`    video: ${v.video_id}  speaker: ${v.speaker_id}${v.title ? `  "${v.title}"` : ""}`);
         }
+      }
+    } catch (err) {
+      handleErr(err);
+    }
+  });
+
+voice
+  .command("ingest <videoId>")
+  .description("Run voice embedding extraction pipeline on a video")
+  .option("--force", "Force re-processing (clears existing voice data)", false)
+  .action(async (videoId: string, cmd: { force: boolean }) => {
+    try {
+      const opts = program.opts<{ baseUrl?: string; json: boolean }>();
+      const client = makeApiClient({ baseUrl: opts.baseUrl });
+      videoId = await resolveVideoId(client, videoId);
+
+      const body = { force: cmd.force };
+
+      const { data } = await apiJson({
+        client,
+        method: "POST",
+        path: `/api/videos/${videoId}/speakers/voice-ingest`,
+        body,
+        schema: IngestVoiceResponseSchema,
+      });
+
+      if (opts.json) {
+        console.log(JSON.stringify(data, null, 2));
+      } else {
+        console.log(`voice ingest job queued: ${data.job.id}`);
+        console.log(`track with: yit job ${data.job.id} --follow`);
       }
     } catch (err) {
       handleErr(err);
@@ -2955,6 +3040,7 @@ const karaokeSession = karaoke.command("session").description("Karaoke sessions"
 const karaokeQueue = karaoke.command("queue").description("Karaoke queue operations");
 const karaokeRound = karaoke.command("round").description("Karaoke round operations");
 const karaokeScore = karaoke.command("score").description("Karaoke scoring operations");
+const karaokeLibrary = karaoke.command("library").description("Karaoke library bootstrap tools");
 const karaokePlaylist = karaoke.command("playlist").description("Karaoke playlists");
 const karaokeGuest = karaoke.command("guest").description("Karaoke guest join and moderation");
 
@@ -3044,6 +3130,148 @@ karaokeTrack
       });
       if (opts.json) return void console.log(JSON.stringify(data, null, 2));
       console.log(`${data.track.id}  ${data.track.ready_state}  cues=${data.track.cue_count}  ${data.track.title || data.track.provider_video_id}`);
+    } catch (err) {
+      handleErr(err);
+    }
+  });
+
+karaokeLibrary
+  .command("stats")
+  .description("Show karaoke library totals by readiness state")
+  .action(async () => {
+    try {
+      const opts = program.opts<{ baseUrl?: string; json: boolean }>();
+      const client = makeApiClient({ baseUrl: opts.baseUrl });
+      const { data } = await apiJson({
+        client,
+        method: "GET",
+        path: "/api/karaoke/library/stats",
+        schema: KaraokeLibraryStatsResponseSchema,
+      });
+      if (opts.json) return void console.log(JSON.stringify(data, null, 2));
+      printTable([
+        {
+          tracks_total: data.tracks_total,
+          tracks_ready: data.tracks_ready,
+          tracks_pending: data.tracks_pending,
+          tracks_failed: data.tracks_failed,
+          playlists_total: data.playlists_total,
+          playlist_items_total: data.playlist_items_total,
+        },
+      ]);
+    } catch (err) {
+      handleErr(err);
+    }
+  });
+
+karaokeLibrary
+  .command("manifest-init")
+  .description("Write a starter karaoke manifest JSON file")
+  .option("--file <path>", "Output file path", "manifests/karaoke/library.local.json")
+  .action(async (cmd: { file: string }) => {
+    try {
+      const manifest = KaraokeLibraryManifestSchema.parse({
+        version: 1,
+        language: "en",
+        tracks: [{ url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ" }],
+        playlists: [
+          {
+            name: "Party Starters",
+            description: "Warmup songs for local sessions",
+            tracks: [{ url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ" }],
+          },
+        ],
+      });
+      mkdirSync(dirname(cmd.file), { recursive: true });
+      writeFileSync(cmd.file, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
+      console.log(`wrote: ${cmd.file}`);
+    } catch (err) {
+      handleErr(err);
+    }
+  });
+
+karaokeLibrary
+  .command("manifest-validate")
+  .description("Validate a karaoke manifest against contract schema")
+  .requiredOption("--file <path>", "Manifest JSON file")
+  .action(async (cmd: { file: string }) => {
+    try {
+      const manifest = KaraokeLibraryManifestSchema.parse(readJsonFile(cmd.file));
+      const totalPlaylistTracks = manifest.playlists.reduce((sum, playlist) => sum + playlist.tracks.length, 0);
+      const summary = {
+        version: manifest.version,
+        language: manifest.language,
+        root_tracks: manifest.tracks.length,
+        playlists: manifest.playlists.length,
+        playlist_tracks: totalPlaylistTracks,
+      };
+      const opts = program.opts<{ json: boolean }>();
+      if (opts.json) {
+        console.log(JSON.stringify({ ok: true, summary }, null, 2));
+      } else {
+        console.log("manifest valid");
+        printTable([summary]);
+      }
+    } catch (err) {
+      handleErr(err);
+    }
+  });
+
+karaokeLibrary
+  .command("manifest-import")
+  .description("Import a karaoke manifest into local tracks/playlists")
+  .requiredOption("--file <path>", "Manifest JSON file")
+  .action(async (cmd: { file: string }) => {
+    try {
+      const opts = program.opts<{ baseUrl?: string; json: boolean }>();
+      const client = makeApiClient({ baseUrl: opts.baseUrl });
+      const manifest = KaraokeLibraryManifestSchema.parse(readJsonFile(cmd.file));
+      const { data } = await apiJson({
+        client,
+        method: "POST",
+        path: "/api/karaoke/library/import",
+        body: { manifest },
+        schema: KaraokeLibraryImportResponseSchema,
+      });
+      if (opts.json) return void console.log(JSON.stringify(data, null, 2));
+      console.log(
+        `imported tracks=${data.imported_track_count}, new_playlists=${data.imported_playlist_count}, playlist_items=${data.imported_playlist_item_count}`
+      );
+      if (data.failed.length) {
+        printTable(data.failed.map((f) => ({ url: truncate(f.url, 72), reason: truncate(f.reason, 80) })));
+      }
+    } catch (err) {
+      handleErr(err);
+    }
+  });
+
+karaokeLibrary
+  .command("bootstrap")
+  .description("Seed a starter karaoke catalog and playlists via yt-dlp discovery")
+  .option("--target <n>", "Target number of tracks", "1000")
+  .option("--language <code>", "Track language", "en")
+  .option("--pack <pack>", "Query pack (default|quick)", "default")
+  .action(async (cmd: { target: string; language: string; pack: string }) => {
+    try {
+      const opts = program.opts<{ baseUrl?: string; json: boolean }>();
+      const client = makeApiClient({ baseUrl: opts.baseUrl });
+      const body = BootstrapKaraokeLibraryRequestSchema.parse({
+        target_count: asInt(cmd.target, 1000),
+        language: cmd.language,
+        query_pack: cmd.pack === "quick" ? "quick" : "default",
+      });
+      const { data } = await apiJson({
+        client,
+        method: "POST",
+        path: "/api/karaoke/library/bootstrap",
+        body,
+        schema: BootstrapKaraokeLibraryResponseSchema,
+      });
+      if (opts.json) return void console.log(JSON.stringify(data, null, 2));
+      console.log(`seeded tracks: ${data.seeded_track_count}/${data.target_count}`);
+      if (data.playlists.length) {
+        printTable(data.playlists.map((p) => ({ playlist: p.name, playlist_id: p.id, added: p.added_count })));
+      }
     } catch (err) {
       handleErr(err);
     }

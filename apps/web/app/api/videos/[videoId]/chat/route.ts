@@ -13,7 +13,7 @@ import {
   runGeminiCliText,
 } from "@yt/core";
 import { ChatRequestSchema, ChatResponseSchema } from "@yt/contracts";
-import { jsonError } from "@/lib/server/api";
+import { classifyApiError, jsonError } from "@/lib/server/api";
 import { getEmbeddingsEnvForRequest } from "@/lib/server/openai_key";
 import { randomUUID } from "crypto";
 
@@ -153,11 +153,11 @@ export async function POST(req: Request, ctx: { params: Promise<{ videoId: strin
 
     return NextResponse.json(response, { headers: { "x-trace-id": trace_id } });
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : String(err);
+    const apiErr = classifyApiError(err);
     const durationMs = Date.now() - startedAt;
     metrics.chatRequestsTotal.inc({ provider, status: "failed" });
     metrics.chatDurationMs.observe({ provider, status: "failed" }, durationMs);
-    metrics.httpRequestsTotal.inc({ route: "/api/videos/:id/chat", method: "POST", status: "400" });
+    metrics.httpRequestsTotal.inc({ route: "/api/videos/:id/chat", method: "POST", status: String(apiErr.status) });
 
     // Best-effort failure writeback for provenance.
     if (chatTurnId) {
@@ -170,7 +170,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ videoId: strin
             status: "failed",
             response_text: null,
             response_json: null,
-            error: msg,
+            error: apiErr.message,
             duration_ms: durationMs,
           });
         } finally {
@@ -179,6 +179,6 @@ export async function POST(req: Request, ctx: { params: Promise<{ videoId: strin
       } catch {}
     }
 
-    return jsonError("chat_failed", msg, { status: 400 });
+    return jsonError(apiErr.code, apiErr.message, { status: apiErr.status, details: apiErr.details });
   }
 }

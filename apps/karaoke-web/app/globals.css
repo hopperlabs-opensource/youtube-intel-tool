@@ -297,8 +297,17 @@ button:disabled {
   color: #ced7e5;
 }
 
+.safety-consent-form {
+  margin-top: 10px;
+}
+
 .safety-modal button {
   margin-top: 8px;
+}
+
+.safety-consent-form:has(#karaoke-safety-local:not(:checked)) .safety-accept-btn,
+.safety-consent-form:has(#karaoke-safety-risk:not(:checked)) .safety-accept-btn {
+  opacity: 0.45;
 }
 
 .safety-note {
@@ -326,6 +335,21 @@ button:disabled {
 
 .safety-fallback p {
   margin: 8px 0;
+}
+
+.safety-fallback-link {
+  display: inline-flex;
+  margin-top: 4px;
+  border: 1px solid #475569;
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 12px;
+  color: #e2e8f0;
+  background: #0f172a;
+}
+
+.safety-fallback-link:hover {
+  background: #1e293b;
 }
 
 .safety-bypass {

@@ -5,7 +5,7 @@ Last updated: 2026-02-28
 
 ## TL;DR
 - API handlers live under `apps/web/app/api`.
-- Base URL is local: `http://localhost:<YIT_WEB_PORT>` (default `3333`).
+- Base URL is local: `http://localhost:<YIT_WEB_PORT>` (default `48333`).
 - Contracts are defined in `packages/contracts/src/index.ts`.
 
 > ⚠️ **Watch out**
@@ -36,13 +36,13 @@ Last updated: 2026-02-28
 ## Base URL
 
 ```text
-http://localhost:<YIT_WEB_PORT>  (default 3333)
+http://localhost:<YIT_WEB_PORT>  (default 48333)
 ```
 
 Helper used in examples:
 
 ```bash
-BASE_URL="${YIT_BASE_URL:-http://localhost:${YIT_WEB_PORT:-3333}}"
+BASE_URL="${YIT_BASE_URL:-http://localhost:${YIT_WEB_PORT:-48333}}"
 ```
 
 ## Health and Capabilities
@@ -228,6 +228,8 @@ Policy/feed error semantics:
 - `POST /api/karaoke/join/:token/requests`
 - `GET /api/karaoke/sessions/:sessionId/guest-requests`
 - `PATCH /api/karaoke/sessions/:sessionId/guest-requests/:requestId`
+- `POST /api/karaoke/library/import`
+- `GET /api/karaoke/library/stats`
 
 Resolve and queue example:
 

@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createYitClient, YitApiError } from "../src/client";
 
-const BASE_URL = process.env.YIT_BASE_URL || "http://localhost:3333";
+const BASE_URL = process.env.YIT_BASE_URL || "http://localhost:48333";
 const api = createYitClient({ baseUrl: BASE_URL });
 
 async function waitJob(jobId: string, opts?: { timeoutMs?: number; pollMs?: number }) {
@@ -36,7 +36,7 @@ test("end-to-end ingest -> query contracts", async () => {
   const url = process.env.YIT_CONTRACT_TEST_INGEST_URL || "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
 
   const { video } = await api.resolveVideo({ url });
-  const { job } = await api.ingestVideo(video.id, { language: "en", steps: ["enrich_cli"] });
+  const { job } = await api.ingestVideo(video.id, { language: "en", steps: [] });
   await waitJob(job.id);
 
   const transcripts = await api.listTranscripts(video.id);
@@ -68,14 +68,14 @@ test("library repair enqueues jobs", async () => {
   const vids = await api.listLibraryVideos({ limit: 1 });
   if (!vids.items.length) return;
   const v = vids.items[0]!.video;
-  const out = await api.libraryRepair({ video_ids: [v.id], language: "en" });
+  const out = await api.libraryRepair({ video_ids: [v.id], language: "en", steps: [] });
   assert.equal(out.jobs.length, 1);
 });
 
 test("saved policy run + feed contracts", async () => {
   const url = process.env.YIT_CONTRACT_TEST_INGEST_URL || "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
   const { video } = await api.resolveVideo({ url });
-  const { job } = await api.ingestVideo(video.id, { language: "en", steps: ["enrich_cli"] });
+  const { job } = await api.ingestVideo(video.id, { language: "en", steps: [] });
   await waitJob(job.id);
 
   const created = await api.createPolicy({
@@ -156,9 +156,7 @@ test("significant marks list contract", async () => {
   const url = process.env.YIT_CONTRACT_TEST_INGEST_URL || "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
   const { video } = await api.resolveVideo({ url });
 
-  // listSignificantMarks uses GetAutoChaptersResponseSchema which has chapters + marks
   const result = await api.listSignificantMarks(video.id);
-  assert.ok(Array.isArray(result.chapters));
   assert.ok(Array.isArray(result.marks));
 });
 

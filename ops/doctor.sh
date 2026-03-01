@@ -38,6 +38,46 @@ check_cmd() {
   return 1
 }
 
+read_local_env_value() {
+  local key="$1"
+  local file="${ROOT_DIR}/.env"
+  if [ ! -f "${file}" ]; then
+    return 0
+  fi
+  local line
+  line="$(grep -E "^${key}=" "${file}" | tail -n1 || true)"
+  if [ -z "${line}" ]; then
+    return 0
+  fi
+  local value="${line#*=}"
+  if [ "${#value}" -ge 2 ]; then
+    if [[ "${value}" == \"*\" ]] || [[ "${value}" == \'*\' ]]; then
+      value="${value:1:${#value}-2}"
+    fi
+  fi
+  printf '%s' "${value}"
+}
+
+extract_port_from_url() {
+  local value="$1"
+  if [ -z "${value}" ]; then
+    return 0
+  fi
+  if ! command -v node >/dev/null 2>&1; then
+    return 0
+  fi
+  node -e '
+    const raw = process.argv[1] || "";
+    try {
+      const normalized = raw.includes("://") ? raw : `http://${raw}`;
+      const u = new URL(normalized);
+      process.stdout.write(u.port || "");
+    } catch {
+      process.stdout.write("");
+    }
+  ' "${value}"
+}
+
 echo "YouTube Intel Tool Doctor"
 echo "cwd: ${ROOT_DIR}"
 echo
@@ -62,16 +102,40 @@ if check_cmd pnpm; then
   fi
 fi
 
-if check_cmd docker; then
+# External DB/Redis mode is valid; Docker should be optional in that case.
+EXTERNAL_INFRA_OK=0
+if pnpm db:migrate >/dev/null 2>&1; then
+  EXTERNAL_INFRA_OK=1
+  ok "database reachable via current DATABASE_URL/REDIS_URL (external infra mode supported)"
+else
+  warn "database not reachable yet (local Docker infra may be required)"
+fi
+
+if command -v docker >/dev/null 2>&1; then
+  ok "docker installed ($(command -v docker))"
   if docker info >/dev/null 2>&1; then
     ok "docker daemon reachable"
   else
-    fail "docker installed but daemon not reachable (start Docker Desktop)"
+    if [ "${EXTERNAL_INFRA_OK}" -eq 1 ]; then
+      warn "docker daemon not reachable (acceptable: external infra mode)"
+    else
+      fail "docker installed but daemon not reachable, and external DB is unavailable"
+    fi
   fi
   if docker compose version >/dev/null 2>&1; then
     ok "docker compose available"
   else
-    fail "docker compose not available"
+    if [ "${EXTERNAL_INFRA_OK}" -eq 1 ]; then
+      warn "docker compose not available (acceptable: external infra mode)"
+    else
+      fail "docker compose not available and external DB is unavailable"
+    fi
+  fi
+else
+  if [ "${EXTERNAL_INFRA_OK}" -eq 1 ]; then
+    warn "docker not found (acceptable: external infra mode)"
+  else
+    fail "docker not found and external DB is unavailable"
   fi
 fi
 
@@ -92,11 +156,50 @@ else
   warn ".env missing (copy .env.example -> .env)"
 fi
 
-WEB_PORT_DEFAULT="$(yit_read_default_env "${ROOT_DIR}" "YIT_WEB_PORT" "3333")"
-WORKER_METRICS_PORT_DEFAULT="$(yit_read_default_env "${ROOT_DIR}" "YIT_WORKER_METRICS_PORT" "4010")"
+POSTGRES_PORT_DEFAULT="$(yit_read_default_env "${ROOT_DIR}" "YIT_POSTGRES_PORT" "48432")"
+REDIS_PORT_DEFAULT="$(yit_read_default_env "${ROOT_DIR}" "YIT_REDIS_PORT" "48379")"
+WEB_PORT_DEFAULT="$(yit_read_default_env "${ROOT_DIR}" "YIT_WEB_PORT" "48333")"
+WORKER_METRICS_PORT_DEFAULT="$(yit_read_default_env "${ROOT_DIR}" "YIT_WORKER_METRICS_PORT" "48410")"
 
+POSTGRES_PORT="${YIT_POSTGRES_PORT:-$(read_local_env_value "YIT_POSTGRES_PORT")}"
+POSTGRES_PORT="${POSTGRES_PORT:-${POSTGRES_PORT_DEFAULT}}"
+REDIS_PORT="${YIT_REDIS_PORT:-$(read_local_env_value "YIT_REDIS_PORT")}"
+REDIS_PORT="${REDIS_PORT:-${REDIS_PORT_DEFAULT}}"
 WEB_PORT="${YIT_WEB_PORT:-${WEB_PORT_DEFAULT}}"
 WORKER_METRICS_PORT="${YIT_WORKER_METRICS_PORT:-${WORKER_METRICS_PORT_DEFAULT}}"
+
+DATABASE_URL_LOCAL="${DATABASE_URL:-$(read_local_env_value "DATABASE_URL")}"
+if [ -n "${DATABASE_URL_LOCAL}" ]; then
+  DB_PORT="$(extract_port_from_url "${DATABASE_URL_LOCAL}")"
+  if [ -n "${DB_PORT}" ] && [ "${DB_PORT}" != "${POSTGRES_PORT}" ]; then
+    warn "DATABASE_URL port (${DB_PORT}) differs from YIT_POSTGRES_PORT (${POSTGRES_PORT}); services may not connect to local docker DB"
+  fi
+fi
+
+REDIS_URL_LOCAL="${REDIS_URL:-$(read_local_env_value "REDIS_URL")}"
+if [ -n "${REDIS_URL_LOCAL}" ]; then
+  REDIS_URL_PORT="$(extract_port_from_url "${REDIS_URL_LOCAL}")"
+  if [ -n "${REDIS_URL_PORT}" ] && [ "${REDIS_URL_PORT}" != "${REDIS_PORT}" ]; then
+    warn "REDIS_URL port (${REDIS_URL_PORT}) differs from YIT_REDIS_PORT (${REDIS_PORT}); worker queue may fail"
+  fi
+fi
+
+METRICS_PORT_LOCAL="${METRICS_PORT:-$(read_local_env_value "METRICS_PORT")}"
+if [ -n "${METRICS_PORT_LOCAL}" ] && [ "${METRICS_PORT_LOCAL}" != "${WORKER_METRICS_PORT}" ]; then
+  warn "METRICS_PORT (${METRICS_PORT_LOCAL}) differs from YIT_WORKER_METRICS_PORT (${WORKER_METRICS_PORT})"
+fi
+
+PY_BIN_LOCAL="${YIT_PYTHON_BIN:-$(read_local_env_value "YIT_PYTHON_BIN")}"
+if [ -z "${PY_BIN_LOCAL}" ]; then
+  PY_BIN_LOCAL="${PYTHON_BIN:-$(read_local_env_value "PYTHON_BIN")}"
+fi
+if [ -n "${PY_BIN_LOCAL}" ] && command -v "${PY_BIN_LOCAL}" >/dev/null 2>&1; then
+  if "${PY_BIN_LOCAL}" -c 'import youtube_transcript_api' >/dev/null 2>&1; then
+    ok "python runtime has youtube_transcript_api (${PY_BIN_LOCAL})"
+  else
+    warn "python runtime (${PY_BIN_LOCAL}) is missing youtube_transcript_api; worker will auto-fallback to .run/venvs/tests when available"
+  fi
+fi
 
 if curl -fsS "http://localhost:${WEB_PORT}/api/health" >/dev/null 2>&1; then
   ok "web health reachable on :${WEB_PORT}"

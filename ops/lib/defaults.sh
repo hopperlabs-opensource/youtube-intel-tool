@@ -3,7 +3,7 @@
 # Helpers for reading tracked defaults from `.env.example`.
 # Usage:
 #   source "ops/lib/defaults.sh"
-#   value="$(yit_read_default_env "${ROOT_DIR}" "YIT_WEB_PORT" "3333")"
+#   value="$(yit_read_default_env "${ROOT_DIR}" "YIT_WEB_PORT" "48333")"
 
 yit_read_default_env() {
   local root_dir="$1"

@@ -6,7 +6,6 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${HERE}/_common.sh"
 
 require_cmd curl
-require_cmd docker
 require_cmd lsof
 require_cmd node
 
@@ -19,7 +18,11 @@ stop_by_port_if_healthy "karaoke-web" "${KARAOKE_WEB_PORT}" "karaoke"
 stop_by_port_if_healthy "worker" "${WORKER_METRICS_PORT}" "worker"
 
 log "docker: stopping containers (postgres/redis/prometheus/grafana)"
-(cd "${ROOT_DIR}" && docker compose -f docker-compose.yml -f docker-compose.observability.yml down >/dev/null 2>&1 || true)
+if command -v docker >/dev/null 2>&1 && docker_ready; then
+  (cd "${ROOT_DIR}" && docker_compose_cmd -f docker-compose.yml -f docker-compose.observability.yml down >/dev/null 2>&1 || true)
+else
+  log "docker: unavailable; skipped container shutdown"
+fi
 
 rm -f "${RUN_DIR}/web.pid" "${RUN_DIR}/karaoke-web.pid" "${RUN_DIR}/worker.pid" >/dev/null 2>&1 || true
 

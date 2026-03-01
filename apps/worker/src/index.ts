@@ -12,7 +12,7 @@ const metrics = initMetrics();
 
 const REDIS_URL = process.env.REDIS_URL || getYitDefault("REDIS_URL");
 const METRICS_PORT = Number(
-  process.env.METRICS_PORT || process.env.YIT_WORKER_METRICS_PORT || getYitDefaultNumber("YIT_WORKER_METRICS_PORT", 4010)
+  process.env.METRICS_PORT || process.env.YIT_WORKER_METRICS_PORT || getYitDefaultNumber("YIT_WORKER_METRICS_PORT", 48410)
 );
 
 const parsedRedis = new URL(REDIS_URL);

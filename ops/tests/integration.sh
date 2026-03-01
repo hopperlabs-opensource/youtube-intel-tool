@@ -41,9 +41,9 @@ export YIT_DIARIZE_BACKEND="${YIT_DIARIZE_BACKEND:-}"
 echo "integration: python=${YIT_PYTHON_BIN} embed=${YIT_EMBED_PROVIDER} stt=${YIT_STT_PROVIDER:-<unset>}"
 # Force a clean restart so worker/web pick up test env (python path/provider overrides).
 pnpm bg:down >/dev/null 2>&1 || true
-kill_listener "${YIT_WEB_PORT:-3333}"
-kill_listener "${YIT_KARAOKE_PORT:-3334}"
-kill_listener "${YIT_WORKER_METRICS_PORT:-4010}"
+kill_listener "${YIT_WEB_PORT:-48333}"
+kill_listener "${YIT_KARAOKE_PORT:-48334}"
+kill_listener "${YIT_WORKER_METRICS_PORT:-48410}"
 YIT_PYTHON_BIN="${YIT_PYTHON_BIN}" \
 PYTHON_BIN="${PYTHON_BIN}" \
 YIT_EMBED_PROVIDER="${YIT_EMBED_PROVIDER}" \
@@ -52,7 +52,7 @@ YIT_DIARIZE_BACKEND="${YIT_DIARIZE_BACKEND:-}" \
 pnpm bg:up
 
 if [ -z "${YIT_BASE_URL:-}" ]; then
-  export YIT_BASE_URL="http://localhost:${YIT_WEB_PORT:-3333}"
+  export YIT_BASE_URL="http://localhost:${YIT_WEB_PORT:-48333}"
 fi
 
 echo "integration: waiting for API health"

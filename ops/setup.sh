@@ -37,7 +37,7 @@ pnpm yit capabilities
 
 echo
 echo "setup complete"
-DEFAULT_WEB_PORT="$(yit_read_default_env "${ROOT_DIR}" "YIT_WEB_PORT" "3333")"
+DEFAULT_WEB_PORT="$(yit_read_default_env "${ROOT_DIR}" "YIT_WEB_PORT" "48333")"
 echo "open: http://localhost:${YIT_WEB_PORT:-${DEFAULT_WEB_PORT}}"
 echo "stop: pnpm bg:down"
 echo "optional demo seed: pnpm seed:demo"

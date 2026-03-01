@@ -26,8 +26,30 @@ function loadDotEnv(filePath) {
   }
 }
 
+function cleanupStaleNextLock(appDir) {
+  const lockPath = path.join(appDir, ".next/dev/lock");
+  if (!fs.existsSync(lockPath)) return;
+  try {
+    const raw = fs.readFileSync(lockPath, "utf8").trim();
+    const pid = Number(raw);
+    if (Number.isFinite(pid) && pid > 0) {
+      try {
+        process.kill(pid, 0);
+        return;
+      } catch {
+        // Process is gone; safe to remove stale lock.
+      }
+    }
+    fs.unlinkSync(lockPath);
+    console.warn(`warn: removed stale Next lock at ${lockPath}`);
+  } catch {
+    // Ignore: if this fails, Next will report the lock state.
+  }
+}
+
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(here, "../../..");
+const appRoot = path.resolve(here, "..");
 const dotEnvExample = loadDotEnv(path.join(repoRoot, ".env.example"));
 const dotEnv = loadDotEnv(path.join(repoRoot, ".env"));
 const mergedEnv = { ...dotEnvExample, ...dotEnv, ...process.env };
@@ -71,7 +93,7 @@ async function pickPort(startPort, maxTries = 20) {
   return startPort;
 }
 
-const defaultPort = Number(dotEnvExample.YIT_KARAOKE_PORT || 3334);
+const defaultPort = Number(dotEnvExample.YIT_KARAOKE_PORT || 48334);
 const desired = Number(mergedEnv.KARAOKE_WEB_PORT || mergedEnv.WEB_PORT || mergedEnv.PORT || mergedEnv.YIT_KARAOKE_PORT || defaultPort);
 const port = Number.isFinite(desired) ? await pickPort(desired) : await pickPort(defaultPort);
 if (port !== desired) {
@@ -80,7 +102,9 @@ if (port !== desired) {
 console.log(`karaoke-web: http://localhost:${port}`);
 const baseUrl = `http://localhost:${port}`;
 
-const child = spawn(process.platform === "win32" ? "next.cmd" : "next", ["dev", "-p", String(port)], {
+cleanupStaleNextLock(appRoot);
+
+const child = spawn(process.platform === "win32" ? "next.cmd" : "next", ["dev", "--webpack", "-p", String(port)], {
   stdio: "inherit",
   env: { ...mergedEnv, KARAOKE_WEB_PORT: String(port), PORT: String(port), WEB_PORT: String(port) },
 });

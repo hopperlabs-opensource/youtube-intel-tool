@@ -33,7 +33,7 @@ yit --help
 Example:
 
 ```bash
-YIT_BASE_URL="http://localhost:${YIT_WEB_PORT:-3333}" pnpm yit --json health
+YIT_BASE_URL="http://localhost:${YIT_WEB_PORT:-48333}" pnpm yit --json health
 ```
 
 ## Core Commands
@@ -119,7 +119,7 @@ pnpm yit feed url <policyId>
 ### 9. Cron-friendly run
 
 ```bash
-YIT_BASE_URL="http://localhost:3333" pnpm yit policy run <policyId> --triggered-by cron
+YIT_BASE_URL="http://localhost:48333" pnpm yit policy run <policyId> --triggered-by cron
 ```
 
 ### 10. Karaoke flow
@@ -149,6 +149,12 @@ pnpm yit karaoke guest token --session <sessionId> --ttl 240
 pnpm yit karaoke guest request-add --token <token> --track <trackId> --name "Sam"
 pnpm yit karaoke guest request-list --session <sessionId>
 pnpm yit karaoke guest request-handle --session <sessionId> --request <requestId> --action approve
+
+# manifest-driven library (recommended for repeatable local setups)
+pnpm yit karaoke library manifest-init --file manifests/karaoke/library.local.json
+pnpm yit karaoke library manifest-validate --file manifests/karaoke/library.local.json
+pnpm yit karaoke library manifest-import --file manifests/karaoke/library.local.json
+pnpm yit karaoke library stats
 ```
 
 ## Ingest Flags

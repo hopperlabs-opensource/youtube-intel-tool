@@ -66,12 +66,13 @@ export async function extractFrames(
       throw new Error(`Unknown extraction strategy: ${strategy}`);
   }
 
-  const vf = `${selectFilter},showinfo,scale=${maxWidth}:-1`;
+  // format=yuvj420p converts to full-range YUV which mjpeg requires
+  const vf = `${selectFilter},showinfo,scale=${maxWidth}:-1,format=yuvj420p`;
 
   const ffmpegArgs = [
     "-i", videoPath,
     "-vf", vf,
-    "-vsync", "vfr",
+    "-fps_mode", "vfr",
   ];
 
   if (outputFormat === "jpg") {

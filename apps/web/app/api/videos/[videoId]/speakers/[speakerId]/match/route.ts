@@ -1,19 +1,16 @@
 import { NextResponse } from "next/server";
 import { getPool, initMetrics } from "@yt/core";
 import { matchSpeakerAcrossVideos } from "@yt/core";
-import { getGlobalSpeakerLinks, listGlobalSpeakers } from "@yt/core";
 import { MatchSpeakerResponseSchema } from "@yt/contracts";
 import { jsonError } from "@/lib/server/api";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function POST(
-  _req: Request,
-  ctx: { params: Promise<{ videoId: string; speakerId: string }> },
-) {
+export async function POST(ctxReq: Request, ctx: { params: Promise<{ videoId: string; speakerId: string }> }) {
   const metrics = initMetrics();
   try {
+    void ctxReq;
     const { videoId, speakerId } = await ctx.params;
     const pool = getPool();
     const client = await pool.connect();

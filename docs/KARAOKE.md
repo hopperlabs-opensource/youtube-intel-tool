@@ -4,7 +4,7 @@ Status: Stable
 Last updated: 2026-03-01
 
 ## TL;DR
-- Karaoke mode is a local-first app at `http://localhost:<YIT_KARAOKE_PORT>` (default `3334`).
+- Karaoke mode is a local-first app at `http://localhost:<YIT_KARAOKE_PORT>` (default `48334`).
 - It runs on the same API/DB as the main web app and uses transcript cues for timing.
 - Start it with `pnpm dev:karaoke` (or `pnpm bg:up` for background mode).
 
@@ -37,9 +37,9 @@ pnpm dev:karaoke
 ```
 
 ### Verify
-- Main app: `http://localhost:<YIT_WEB_PORT>` (default `3333`)
-- Karaoke app: `http://localhost:<YIT_KARAOKE_PORT>` (default `3334`)
-- Karaoke health: `curl -s http://localhost:${YIT_KARAOKE_PORT:-3334}/api/health | jq`
+- Main app: `http://localhost:<YIT_WEB_PORT>` (default `48333`)
+- Karaoke app: `http://localhost:<YIT_KARAOKE_PORT>` (default `48334`)
+- Karaoke health: `curl -s http://localhost:${YIT_KARAOKE_PORT:-48334}/api/health | jq`
 
 ## Background Mode
 
@@ -61,6 +61,31 @@ pnpm bg:down
 - `/api/karaoke/sessions/:sessionId/queue/from-playlist` for bulk queue seeding.
 - `/api/karaoke/sessions/:sessionId/guest-token` for local guest join links.
 - `/api/karaoke/join/:token/requests` and `/api/karaoke/sessions/:sessionId/guest-requests*` for moderation flow.
+- `/api/karaoke/library/import` + `/api/karaoke/library/stats` for manifest imports and inventory health.
+
+## Manifest Workflow
+
+Use manifest files for repeatable local catalogs without bundling a giant list in the repo.
+
+### Steps
+
+```bash
+# create starter file (editable)
+pnpm yit karaoke library manifest-init --file manifests/karaoke/library.local.json
+
+# validate locally
+pnpm yit karaoke library manifest-validate --file manifests/karaoke/library.local.json
+
+# import into local DB
+pnpm yit karaoke library manifest-import --file manifests/karaoke/library.local.json
+
+# inspect resulting counts
+pnpm yit karaoke library stats
+```
+
+Schema and example files:
+- `manifests/karaoke/library.schema.json`
+- `manifests/karaoke/library.example.json`
 
 ## Notes
 

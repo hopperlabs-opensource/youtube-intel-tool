@@ -85,8 +85,8 @@ pnpm seed:demo   # optional starter ingest list
 
 Open:
 
-- Main app: `http://localhost:<YIT_WEB_PORT>` (default `3333`)
-- Karaoke app: `http://localhost:<YIT_KARAOKE_PORT>` (default `3334`, run `pnpm dev:karaoke`)
+- Main app: `http://localhost:<YIT_WEB_PORT>` (default `48333`)
+- Karaoke app: `http://localhost:<YIT_KARAOKE_PORT>` (default `48334`, run `pnpm dev:karaoke`)
 
 Stop everything:
 
@@ -198,10 +198,10 @@ pnpm run setup
 
 Open:
 
-- App: `http://localhost:<YIT_WEB_PORT>` (default `3333`)
-- Karaoke app: `http://localhost:<YIT_KARAOKE_PORT>` (default `3334`, optional)
+- App: `http://localhost:<YIT_WEB_PORT>` (default `48333`)
+- Karaoke app: `http://localhost:<YIT_KARAOKE_PORT>` (default `48334`, optional)
 - Web metrics: `http://localhost:<YIT_WEB_PORT>/metrics`
-- Worker metrics: `http://localhost:<YIT_WORKER_METRICS_PORT>` (default `4010`)
+- Worker metrics: `http://localhost:<YIT_WORKER_METRICS_PORT>` (default `48410`)
 
 First workflow:
 
@@ -233,7 +233,7 @@ Advanced overrides remain available in `.env` (`DATABASE_URL`, `REDIS_URL`, `MET
 If your local web port is customized, set CLI base URL accordingly:
 
 ```bash
-export YIT_BASE_URL="http://localhost:${YIT_WEB_PORT:-3333}"
+export YIT_BASE_URL="http://localhost:${YIT_WEB_PORT:-48333}"
 ```
 
 ---
@@ -320,6 +320,12 @@ pnpm yit karaoke queue add --session <sessionId> --track <trackId> --player Host
 pnpm yit karaoke playlist create --name "Warmup Set"
 pnpm yit karaoke guest token --session <sessionId>
 pnpm yit karaoke leaderboard --session <sessionId>
+
+# manifest-driven karaoke library
+pnpm yit karaoke library manifest-init --file manifests/karaoke/library.local.json
+pnpm yit karaoke library manifest-validate --file manifests/karaoke/library.local.json
+pnpm yit karaoke library manifest-import --file manifests/karaoke/library.local.json
+pnpm yit karaoke library stats
 ```
 
 CLI guide: [docs/CLI.md](docs/CLI.md)
@@ -348,6 +354,8 @@ CLI guide: [docs/CLI.md](docs/CLI.md)
 - `POST /api/karaoke/sessions/:sessionId/scores/events`
 - `GET|POST /api/karaoke/playlists`
 - `POST /api/karaoke/sessions/:sessionId/guest-token`
+- `POST /api/karaoke/library/import`
+- `GET /api/karaoke/library/stats`
 
 API guide: [docs/API.md](docs/API.md)
 

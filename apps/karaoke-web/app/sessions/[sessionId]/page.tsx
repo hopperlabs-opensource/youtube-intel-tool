@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { DEFAULT_KARAOKE_UI_SETTINGS, loadKaraokeUiSettings, saveKaraokeUiSettings, type KaraokeUiSettings } from "@yt/experience-core";
+import { KaraokeSkinControls, KaraokeThemeSelect } from "@yt/karaoke-ui";
 import { getApiClient } from "@/lib/api";
 
 export default function SessionPage() {
@@ -21,6 +22,7 @@ export default function SessionPage() {
   const [playlistId, setPlaylistId] = useState("");
   const [joinToken, setJoinToken] = useState("");
   const [joinPath, setJoinPath] = useState("");
+  const [origin, setOrigin] = useState("");
   const [qrDataUrl, setQrDataUrl] = useState("");
   const [playUiSettings, setPlayUiSettings] = useState<KaraokeUiSettings>(DEFAULT_KARAOKE_UI_SETTINGS);
 
@@ -134,8 +136,14 @@ export default function SessionPage() {
   const queue = sessionQ.data?.queue || [];
   const leaderboard = sessionQ.data?.leaderboard || [];
   const guestRequests = guestRequestsQ.data?.requests || [];
-  const origin = typeof window !== "undefined" ? window.location.origin : "";
   const joinUrl = joinPath && origin ? `${origin}${joinPath}` : "";
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setOrigin(window.location.origin);
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -157,8 +165,10 @@ export default function SessionPage() {
   }, [joinUrl]);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    setPlayUiSettings(loadKaraokeUiSettings());
+    const timer = window.setTimeout(() => {
+      setPlayUiSettings(loadKaraokeUiSettings());
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   if (sessionQ.isPending) {
@@ -218,13 +228,7 @@ export default function SessionPage() {
           <label style={{ marginTop: 14, display: "block" }}>
             Theme
             <div className="row" style={{ marginTop: 6 }}>
-              <select value={theme || session.theme_id} onChange={(e) => setTheme(e.target.value)}>
-                {(themesQ.data?.themes || []).map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.name}
-                  </option>
-                ))}
-              </select>
+              <KaraokeThemeSelect themes={themesQ.data?.themes || []} value={theme || session.theme_id} onChange={setTheme} />
               <button
                 disabled={!theme.trim()}
                 onClick={() => {
@@ -239,32 +243,13 @@ export default function SessionPage() {
 
           <label style={{ marginTop: 14, display: "block" }}>
             Play Screen Skin
-            <div className="row" style={{ marginTop: 6 }}>
-              <select
-                value={playUiSettings.themeMode}
-                onChange={(e) => {
-                  const next: KaraokeUiSettings = { ...playUiSettings, themeMode: e.target.value as KaraokeUiSettings["themeMode"] };
-                  setPlayUiSettings(next);
-                  saveKaraokeUiSettings(next);
-                }}
-              >
-                <option value="theme">Theme</option>
-                <option value="light">Light</option>
-                <option value="dark">Dark</option>
-              </select>
-              <input
-                type="range"
-                min={0.8}
-                max={1.6}
-                step={0.05}
-                value={playUiSettings.lyricScale}
-                onChange={(e) => {
-                  const next: KaraokeUiSettings = { ...playUiSettings, lyricScale: Number(e.target.value) };
-                  setPlayUiSettings(next);
-                  saveKaraokeUiSettings(next);
-                }}
-              />
-            </div>
+            <KaraokeSkinControls
+              settings={playUiSettings}
+              onChange={(next) => {
+                setPlayUiSettings(next);
+                saveKaraokeUiSettings(next);
+              }}
+            />
           </label>
 
           <label style={{ marginTop: 14, display: "block" }}>

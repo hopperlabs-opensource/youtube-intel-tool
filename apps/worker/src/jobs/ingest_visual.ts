@@ -15,6 +15,8 @@ import {
   createFrameStore,
   buildVisualCacheKey,
   createVisionProvider,
+  createFallbackVisionProvider,
+  autoSelectProviderChain,
   deduplicateFrames,
   applyQualityGates,
   computeQualityReport,
@@ -163,7 +165,14 @@ export async function runIngestVisual(jobId: string, data: IngestVisualJobData) 
       data_json: { provider: data.vision.provider, model: data.vision.model },
     });
 
-    const visionProvider = createVisionProvider(data.vision);
+    let visionProvider;
+    if (data.vision.provider === "auto" || data.vision.provider === "auto-local") {
+      const chain = autoSelectProviderChain(data.vision.provider === "auto-local");
+      const adapters = chain.map((cfg) => createVisionProvider(cfg));
+      visionProvider = createFallbackVisionProvider(adapters);
+    } else {
+      visionProvider = createVisionProvider(data.vision);
+    }
 
     // Load transcript cues for audio-visual alignment
     let transcriptCues: any[] = [];

@@ -1,6 +1,6 @@
 import { execSync } from "node:child_process";
 import type { VisionConfig } from "@yt/contracts";
-import type { VisionProviderAdapter } from "./types";
+import type { VisionProviderAdapter, VisionRequest, VisionResponse } from "./types";
 import { createClaudeVisionProvider } from "./providers/claude";
 import { createOpenAIVisionProvider } from "./providers/openai";
 import { createGeminiVisionProvider } from "./providers/gemini";
@@ -90,15 +90,6 @@ export function detectAvailableProviders(): DetectedProvider[] {
 export function autoSelectProvider(preferLocal: boolean = true): VisionConfig {
   const providers = detectAvailableProviders();
 
-  const makeConfig = (p: DetectedProvider): VisionConfig => ({
-    provider: p.provider as VisionConfig["provider"],
-    model: getDefaultModel(p.provider),
-    maxTokensPerFrame: 512,
-    temperature: 0.2,
-    contextCarryover: true,
-    promptTemplate: "describe",
-  });
-
   if (preferLocal) {
     // Prefer free options
     const freeAvailable = providers.filter((p) => p.free && p.available);
@@ -119,11 +110,100 @@ export function autoSelectProvider(preferLocal: boolean = true): VisionConfig {
   );
 }
 
+/**
+ * Return an ordered list of provider configs to try, for use with createFallbackVisionProvider().
+ * Priority when preferLocal: claude-cli → codex-cli → gemini-cli → ollama → API providers.
+ */
+export function autoSelectProviderChain(preferLocal: boolean = true): VisionConfig[] {
+  const providers = detectAvailableProviders();
+  const available = providers.filter((p) => p.available);
+
+  let ordered: DetectedProvider[];
+  if (preferLocal) {
+    ordered = [
+      ...available.filter((p) => p.provider === "claude-cli"),
+      ...available.filter((p) => p.provider === "codex-cli"),
+      ...available.filter((p) => p.provider === "gemini-cli"),
+      ...available.filter((p) => p.provider === "ollama"),
+      ...available.filter((p) => p.type === "api"),
+    ];
+  } else {
+    // API-first ordering
+    ordered = [
+      ...available.filter((p) => p.type === "api"),
+      ...available.filter((p) => p.free),
+    ];
+  }
+
+  if (ordered.length === 0) {
+    throw new Error(
+      "No vision providers available. Install a CLI (claude, gemini, codex), " +
+      "run Ollama locally, or set an API key (ANTHROPIC_API_KEY, OPENAI_API_KEY, GEMINI_API_KEY).",
+    );
+  }
+
+  return ordered.map((p) => makeConfig(p));
+}
+
+/**
+ * Wrap multiple providers into a single adapter that tries each in order.
+ * Falls through on errors and on refusal responses (e.g. "I cannot analyze images").
+ */
+export function createFallbackVisionProvider(
+  providers: VisionProviderAdapter[],
+): VisionProviderAdapter {
+  if (providers.length === 0) throw new Error("No vision providers supplied");
+  if (providers.length === 1) return providers[0];
+
+  return {
+    name: providers.map((p) => p.name).join("→"),
+    model: providers[0].model,
+    async analyze(req: VisionRequest): Promise<VisionResponse> {
+      let lastError: Error | undefined;
+      for (const provider of providers) {
+        try {
+          const result = await provider.analyze(req);
+          // Validate the response has actual content (not a refusal)
+          if (
+            result.description &&
+            result.description.length > 20 &&
+            !result.description.toLowerCase().includes("cannot analyze") &&
+            !result.description.toLowerCase().includes("do not have the capability") &&
+            !result.description.toLowerCase().includes("unable to view") &&
+            !result.description.toLowerCase().includes("can't see the image")
+          ) {
+            return result;
+          }
+          // Provider returned a refusal — treat as failure, try next
+          lastError = new Error(
+            `${provider.name} returned a refusal: ${result.description.slice(0, 100)}`,
+          );
+        } catch (err) {
+          lastError = err instanceof Error ? err : new Error(String(err));
+        }
+      }
+      throw lastError ?? new Error("All vision providers failed");
+    },
+  };
+}
+
+function makeConfig(p: DetectedProvider): VisionConfig {
+  return {
+    provider: p.provider as VisionConfig["provider"],
+    model: getDefaultModel(p.provider),
+    maxTokensPerFrame: 512,
+    temperature: 0.2,
+    contextCarryover: true,
+    promptTemplate: "describe",
+  };
+}
+
 function getDefaultModel(provider: string): string {
   switch (provider) {
     case "claude":
-    case "claude-cli":
       return "claude-sonnet-4-20250514";
+    case "claude-cli":
+      return "sonnet";  // CLI resolves aliases; don't hardcode dated model IDs
     case "openai":
       return "gpt-4o";
     case "gemini":

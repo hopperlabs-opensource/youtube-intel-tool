@@ -92,7 +92,7 @@ Schema migrations live in `packages/core/migrations`.
 ## Observability
 
 - Web metrics endpoint: `/metrics`
-- Worker metrics endpoint: `:4010/metrics` by default
+- Worker metrics endpoint: `:48410/metrics` by default
 - Optional local Prometheus/Grafana stack:
 
 ```bash

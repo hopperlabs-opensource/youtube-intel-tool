@@ -3,7 +3,14 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  DEFAULT_KARAOKE_UI_SETTINGS,
+  loadKaraokeUiSettings,
+  saveKaraokeUiSettings,
+  type KaraokeUiSettings,
+} from "@yt/experience-core";
+import { KaraokeSkinControls, KaraokeThemeSelect } from "@yt/karaoke-ui";
 import { getApiClient } from "@/lib/api";
 
 export default function KaraokeHomePage() {
@@ -22,6 +29,15 @@ export default function KaraokeHomePage() {
   const [newPlaylistName, setNewPlaylistName] = useState("Party Starters");
   const [newPlaylistDescription, setNewPlaylistDescription] = useState("Crowd-friendly warmup songs");
   const [activePlaylistId, setActivePlaylistId] = useState("");
+  const [playUiSettings, setPlayUiSettings] = useState<KaraokeUiSettings>(DEFAULT_KARAOKE_UI_SETTINGS);
+  const [bootstrapSummary, setBootstrapSummary] = useState("");
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setPlayUiSettings(loadKaraokeUiSettings());
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   const tracksQ = useQuery({
     queryKey: ["karaokeTracks", query],
@@ -103,7 +119,36 @@ export default function KaraokeHomePage() {
     },
   });
 
-  const tracks = tracksQ.data?.tracks || [];
+  const bootstrapLibrary = useMutation({
+    mutationFn: async (targetCount: number) =>
+      api.bootstrapKaraokeLibrary({
+        target_count: targetCount,
+        language: "en",
+        query_pack: targetCount > 300 ? "default" : "quick",
+      }),
+    onSuccess: async (data) => {
+      if (!activePlaylistId && data.playlists?.[0]?.id) {
+        setActivePlaylistId(data.playlists[0].id);
+      }
+      setBootstrapSummary(
+        `Seeded ${data.seeded_track_count} tracks. Starter playlists updated: ${data.playlists
+          .map((p) => `${p.name} (+${p.added_count})`)
+          .join(", ")}`
+      );
+      await qc.invalidateQueries({ queryKey: ["karaokeTracks"] });
+      await qc.invalidateQueries({ queryKey: ["karaokePlaylists"] });
+      await qc.invalidateQueries({ queryKey: ["karaokePlaylist"] });
+    },
+  });
+
+  const tracks = useMemo(() => tracksQ.data?.tracks || [], [tracksQ.data?.tracks]);
+  const trackTitles = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const t of tracks) {
+      map.set(t.id, t.title || t.provider_video_id);
+    }
+    return map;
+  }, [tracks]);
   const selectedCount = useMemo(() => Object.values(seed).filter(Boolean).length, [seed]);
 
   return (
@@ -124,6 +169,32 @@ export default function KaraokeHomePage() {
         <section className="panel">
           <h2>Track Catalog</h2>
           <p className="muted">Bring your own YouTube links. Tracks become ready once transcript cues are available.</p>
+
+          <div className="row" style={{ marginTop: 10 }}>
+            <button
+              className="secondary"
+              disabled={bootstrapLibrary.isPending}
+              onClick={() => bootstrapLibrary.mutate(120)}
+            >
+              {bootstrapLibrary.isPending ? "Seeding..." : "Quick Seed (120)"}
+            </button>
+            <button disabled={bootstrapLibrary.isPending} onClick={() => bootstrapLibrary.mutate(1000)}>
+              {bootstrapLibrary.isPending ? "Seeding..." : "Seed Library (1000)"}
+            </button>
+            <span className="muted" style={{ fontSize: 12 }}>
+              Builds a large starter catalog and default playlists.
+            </span>
+          </div>
+          {bootstrapSummary ? (
+            <p className="muted" style={{ marginTop: 8 }}>
+              {bootstrapSummary}
+            </p>
+          ) : null}
+          {bootstrapLibrary.error ? (
+            <p className="muted" style={{ marginTop: 8 }}>
+              Seed failed: {(bootstrapLibrary.error as Error).message}
+            </p>
+          ) : null}
 
           <div className="row">
             <input
@@ -191,6 +262,13 @@ export default function KaraokeHomePage() {
                     </td>
                   </tr>
                 ))}
+                {tracks.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="muted">
+                      No tracks yet. Use Quick Seed or add a YouTube URL.
+                    </td>
+                  </tr>
+                ) : null}
               </tbody>
             </table>
           </div>
@@ -207,13 +285,18 @@ export default function KaraokeHomePage() {
 
           <label>
             Theme
-            <select value={themeId} onChange={(e) => setThemeId(e.target.value)}>
-              {(themesQ.data?.themes || []).map((theme) => (
-                <option key={theme.id} value={theme.id}>
-                  {theme.name}
-                </option>
-              ))}
-            </select>
+            <KaraokeThemeSelect themes={themesQ.data?.themes || []} value={themeId} onChange={setThemeId} />
+          </label>
+
+          <label>
+            Play Screen Skin
+            <KaraokeSkinControls
+              settings={playUiSettings}
+              onChange={(next) => {
+                setPlayUiSettings(next);
+                saveKaraokeUiSettings(next);
+              }}
+            />
           </label>
 
           <div className="row" style={{ marginTop: 12 }}>
@@ -286,7 +369,7 @@ export default function KaraokeHomePage() {
               <thead>
                 <tr>
                   <th>Pos</th>
-                  <th>Track ID</th>
+                  <th>Track</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -294,7 +377,7 @@ export default function KaraokeHomePage() {
                 {(playlistQ.data?.items || []).map((item) => (
                   <tr key={item.id}>
                     <td>{item.position}</td>
-                    <td>{item.track_id}</td>
+                    <td>{trackTitles.get(item.track_id) || item.track_id}</td>
                     <td>
                       <button
                         className="secondary"
@@ -306,6 +389,13 @@ export default function KaraokeHomePage() {
                     </td>
                   </tr>
                 ))}
+                {(playlistQ.data?.items || []).length === 0 ? (
+                  <tr>
+                    <td colSpan={3} className="muted">
+                      Select a playlist, then add tracks from the catalog.
+                    </td>
+                  </tr>
+                ) : null}
               </tbody>
             </table>
           </div>

@@ -19,5 +19,5 @@ yit resolve "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
 Set base URL when needed:
 
 ```bash
-YIT_BASE_URL=http://localhost:3333 yit health
+YIT_BASE_URL=http://localhost:48333 yit health
 ```
